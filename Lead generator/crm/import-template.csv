@@ -1,0 +1,3 @@
+email,company,phone,city,country,specialty,employee_count,current_lead_source,original_source,consent_processing_date,lawful_basis,hs_lead_status,utm_source,utm_campaign
+info@voorbeeldinstallatie.nl,Voorbeeld Installatie BV,+31201234567,Eindhoven,NL,warmtepomp,6-15,Mond-tot-mond en Werkspot,apollo-export,2026-04-25,legitimate_interest,NEW,apollo-import,batch-001
+sales@vbinstallatiebv.be,VB Installatie BV,+3232123456,Antwerpen,BE,airco,2-5,Eigen website + Google Ads,apollo-export,2026-04-25,legitimate_interest,NEW,apollo-import,batch-001
