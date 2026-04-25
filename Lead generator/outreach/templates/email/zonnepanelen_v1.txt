@@ -1,0 +1,17 @@
+SUBJECT: Zonnepanelen leads voor {{ifempty:company_name|jullie}} - exclusief, geen massa
+
+Hoi {{first_name}},
+
+Korte mail over warm leads voor zonnepanelen installaties.
+
+Het probleem dat we oplossen: aanbieders zoals Zonnefabriek en Solar.com kopen leads en verkopen ze door aan 5+ installateurs. Resultaat: jij belt mensen die al uitgekookt zijn door 4 anderen.
+
+Wat wij doen: 1 lead = 1 installateur. {{ifempty:city|Lokaal}} gefilterd, met dakcheck en verbruiksgegevens vooraf.
+
+Hoge intent: huiseigenaren die actief offerte zoeken (geen "wat kosten zonnepanelen" googlers).
+
+Eerste 5 leads gratis voor {{ifempty:company_name|jullie}}. Geen contract nodig om te starten.
+
+Reageer met "interesse" of "stuur de eerste 5" en ik plan een 10-min call om af te stemmen.
+
+{{your_name}}

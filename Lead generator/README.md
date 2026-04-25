@@ -4,6 +4,36 @@ Werkbare bestanden + concrete instructies om een AI-powered lead gen agency op t
 
 Gebaseerd op `rapport-ai-lead-gen-nl-be.md` (marktonderzoek) en de week 1 dagplanning. Alle bouw is gedaan zonder externe input — wat alleen jij kunt invullen staat onder ["Wat jij nog zelf moet doen"](#wat-jij-nog-zelf-moet-doen).
 
+---
+
+## TWEE PADEN — kies wat past
+
+### Pad A — GRATIS MVP (start vandaag, geen kosten)
+
+Volledig werkende stack zonder accounts, zonder betaalde tools. Python scripts voor scraping, CSV-CRM, terminal dashboard, template-personalisatie.
+
+**Start hier:** [`MVP-START-HERE.md`](./MVP-START-HERE.md)
+
+```bash
+cd "/Users/claudebot/Lead generator/automation"
+./daily.sh warmtepomp amsterdam 50
+```
+
+| Module | Wat | Doc |
+|---|---|---|
+| [`lead-radar/`](./lead-radar/README.md) | DuckDuckGo + website scraping → leads CSV | Python scripts |
+| [`crm-light/`](./crm-light/README.md) | CSV-based CRM met terminal dashboard | Python scripts |
+| [`outreach/`](./outreach/README.md) | Template personalisatie engine + 7 templates | Python scripts |
+| [`automation/`](./automation/README.md) | End-to-end pipeline runner (`daily.sh`) | Bash + Python |
+
+### Pad B — BETAALDE STACK (opschalen na MVP werkt)
+
+Apollo + HubSpot/Close + Instantly/Maildoso + n8n. Kosten EUR ~50-150/maand. Pas zinvol nadat Pad A bewezen heeft dat de markt werkt.
+
+Zie de [Inhoudsopgave](#inhoudsopgave) hieronder.
+
+---
+
 ## Inhoudsopgave
 
 | Map | Inhoud | Voor wie |

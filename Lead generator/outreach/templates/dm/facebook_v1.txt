@@ -1,0 +1,11 @@
+SUBJECT: (Facebook Messenger - geen subject)
+
+Hoi {{first_name}},
+
+Zag {{ifempty:company_name|jullie pagina}} langskomen via {{rand:de Facebook bedrijvenzoeker|een lokale groep|jullie reviews}}. Snelle vraag.
+
+Hoe regelen jullie nieuwe warmtepomp/airco klanten op dit moment? Mond-op-mond, Google Ads, of via lead platforms?
+
+Reden dat ik vraag: we werken met installateurs aan voorgekwalificeerde, exclusieve leads zonder abonnement. Geen verkoop pitch nu - even benieuwd of dat voor {{ifempty:company_name|jullie}} relevant is.
+
+{{your_name}}

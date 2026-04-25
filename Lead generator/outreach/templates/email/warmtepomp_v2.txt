@@ -1,0 +1,16 @@
+SUBJECT: 5-10 warmtepomp leads/maand voor {{ifempty:company_name|jullie}}?
+
+Hoi {{first_name}},
+
+Korte mail. We helpen warmtepomp installateurs in NL aan 5-10 exclusieve leads per maand:
+- Huiseigenaren die actief offerte zoeken voor lucht-water of hybride
+- Voorgekwalificeerd op postcode + woningtype (geen flatbewoners)
+- ISDE-subsidie wens al gevalideerd
+
+Geen abonnement, alleen betalen per geleverde lead. Eerste 5 leads gratis als test.
+
+Werkt dit voor {{ifempty:company_name|jullie team}} in {{ifempty:city|jullie regio}}? Stuur even {{rand:'ja' of 'misschien'|'interesse' of 'later misschien'|kort 'ja'}} terug, dan plan ik 10 minuten om uit te leggen hoe wij precies kwalificeren.
+
+{{your_name}}
+{{your_company}}
+{{your_email}}

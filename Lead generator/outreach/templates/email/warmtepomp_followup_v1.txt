@@ -1,0 +1,14 @@
+SUBJECT: Re: warmtepomp leads {{ifempty:company_name|}}
+
+Hoi {{first_name}},
+
+Vorige week stuurde ik een bericht over exclusieve warmtepomp leads voor {{ifempty:company_name|jullie}}.
+
+Ik snap dat je inbox vol zit. Een regel reactie volstaat:
+- "ja, plan een gesprek" -> ik stuur een agenda link
+- "later misschien" -> ik bel volgende kwartaal
+- "nooit" -> ik schrap je definitief
+
+Welke past?
+
+{{your_name}}

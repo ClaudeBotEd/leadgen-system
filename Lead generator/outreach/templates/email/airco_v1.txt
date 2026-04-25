@@ -1,0 +1,19 @@
+SUBJECT: Airco offerte aanvragen voor {{ifempty:company_name|jullie regio}}
+
+Hoi {{first_name}},
+
+Met de zomer in zicht zien we een sterke piek in zoekopdrachten naar airco installateurs in {{ifempty:city|NL/BE}}.
+
+Wij filteren die binnenkomende leads en sturen alleen door:
+- Particulieren met budget > 2500 EUR
+- Adres binnen 30 km van jullie postcode
+- Bereid om binnen 4 weken te installeren
+
+Ik heb deze week 8 leads beschikbaar voor de regio {{ifempty:city|jullie}}. Interesse?
+
+{{rand:Reageer met "ja" en ik stuur de eerste 2 gratis als test|Antwoord met een 1 als je de eerste 2 gratis wil zien|Stuur "ok" terug en ik mail de eerste 2 leads gratis}}.
+
+{{your_name}}
+{{your_company}}
+
+PS: alleen reageren als je deze maand nog capacity hebt - anders wachten we tot volgend kwartaal.

@@ -1,0 +1,186 @@
+# Lead Radar Configuration
+# Pas aan naar wens. Default values zijn veilig en respectvol qua rate limiting.
+
+scraper:
+  # Pauze tussen requests in seconden (respectvol)
+  request_delay: 2.0
+  # Max requests per minuut per bron
+  rate_limit: 30
+  # Timeout per HTTP request
+  timeout: 15
+  # User agent (lijkt op een echte browser)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  # Max pages per scraper
+  max_pages: 5
+  # Honor robots.txt
+  respect_robots: true
+
+search:
+  # Welke scrapers gebruiken (true/false)
+  enabled:
+    duckduckgo: true
+    reddit: true
+    kvk: true
+    website: true   # zoekt emails op gevonden websites
+  # Default landen
+  countries:
+    - nl
+    - be
+  # Max resultaten per zoekopdracht
+  max_results_per_query: 30
+
+filtering:
+  # Filter ongewenste domeinen (groothandels, kennisbanken, etc.)
+  blacklist_domains:
+    - facebook.com
+    - linkedin.com
+    - twitter.com
+    - x.com
+    - instagram.com
+    - youtube.com
+    - tiktok.com
+    - wikipedia.org
+    - reddit.com
+    - tweakers.net
+    - kvk.nl
+    - kbo.fgov.be
+    - amazon.com
+    - ebay.com
+    - marktplaats.nl
+    - 2dehands.be
+    - bol.com
+    - coolblue.nl
+    - gamma.nl
+    - karwei.nl
+    - praxis.nl
+    - hornbach.nl
+    - milieucentraal.nl
+    - rijksoverheid.nl
+    - vlaanderen.be
+    - consumentenbond.nl
+    - test-aankoop.be
+    - independer.nl
+    - vaillant.nl
+    - daikin.nl
+    - viessmann.nl
+    - nibe.nl
+    - itho-daalderop.nl
+    - mitsubishi-electric.nl
+  # Min lead score om in output op te nemen (0-100)
+  min_score: 30
+  # Verwijder duplicaten op basis van domein
+  dedup: true
+
+scoring:
+  # Gewichten voor scoring criteria (sommen tot ~100)
+  weights:
+    keyword_density: 30        # Hoe vaak komt 'warmtepomp' / 'airco' op homepage
+    contact_quality: 20        # Named email > info@ > geen email
+    page_quality: 15           # Heeft over-ons, contact, projects pagina
+    location_match: 15         # Stad in adres komt overeen met query
+    company_size: 10           # SMB indicators (klein team, lokaal)
+    website_modern: 10         # HTTPS, responsive, niet uit 2008
+
+output:
+  format: csv         # csv | json | both
+  directory: data
+  include_raw: false  # Sla raw HTML op voor debug
+
+niches:
+  warmtepomp:
+    keywords_primary:
+      - warmtepomp
+      - warmtepompen
+      - hybride warmtepomp
+      - lucht-water warmtepomp
+    keywords_secondary:
+      - duurzame verwarming
+      - ISDE subsidie
+      - aardgasvrij
+      - HVAC
+    queries:
+      - "warmtepomp installateur {location}"
+      - "warmtepomp specialist {location}"
+      - "warmtepomp installatiebedrijf {location}"
+      - "lucht water warmtepomp {location}"
+    sbi_codes:
+      - "4322"
+      - "4329"
+
+  airco:
+    keywords_primary:
+      - airco
+      - airconditioning
+      - klimaatbeheersing
+    keywords_secondary:
+      - split airco
+      - cassette airco
+      - koeling
+      - HVAC
+    queries:
+      - "airco installateur {location}"
+      - "airconditioning installatiebedrijf {location}"
+      - "split airco montage {location}"
+    sbi_codes:
+      - "4322"
+      - "4329"
+
+  zonnepanelen:
+    keywords_primary:
+      - zonnepanelen
+      - zonne-energie
+      - PV-installatie
+    keywords_secondary:
+      - omvormer
+      - thuisbatterij
+      - SDE subsidie
+    queries:
+      - "zonnepanelen installateur {location}"
+      - "zonnepanelen specialist {location}"
+    sbi_codes:
+      - "4321"
+
+  hvac_generiek:
+    keywords_primary:
+      - HVAC
+      - klimaattechniek
+      - installatietechniek
+    keywords_secondary:
+      - ventilatie
+      - verwarming
+      - koeling
+    queries:
+      - "klimaattechniek installateur {location}"
+      - "installatiebedrijf HVAC {location}"
+    sbi_codes:
+      - "4322"
+      - "4329"
+
+locations:
+  nl:
+    - amsterdam
+    - rotterdam
+    - utrecht
+    - eindhoven
+    - groningen
+    - tilburg
+    - almere
+    - breda
+    - nijmegen
+    - apeldoorn
+    - haarlem
+    - arnhem
+    - zaanstad
+    - amersfoort
+    - haarlemmermeer
+  be:
+    - antwerpen
+    - gent
+    - brugge
+    - leuven
+    - mechelen
+    - hasselt
+    - kortrijk
+    - oostende
+    - aalst
+    - sint-niklaas

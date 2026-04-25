@@ -1,0 +1,25 @@
+# Lead Radar — Python dependencies
+# Install: pip install -r requirements.txt
+# Python 3.10+ vereist
+
+# HTTP & scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+urllib3>=2.0.0
+
+# Search engines (gratis, geen API key)
+duckduckgo-search>=6.0.0
+
+# Data & config
+pyyaml>=6.0
+pandas>=2.0.0
+
+# DNS validation (voor email checks)
+dnspython>=2.4.0
+
+# Tekst processing
+unidecode>=1.3.7
+
+# Optioneel — voor mooiere CLI output
+rich>=13.0.0

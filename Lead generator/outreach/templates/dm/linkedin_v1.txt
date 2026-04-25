@@ -1,0 +1,11 @@
+SUBJECT: (LinkedIn DM - geen subject)
+
+Hoi {{first_name}},
+
+Bedankt voor het connecten. Korte vraag: hoe regelen jullie nieuwe klanten voor warmtepomp/HVAC installaties op dit moment?
+
+Vraag omdat we werken met installateurs in {{ifempty:country|NL/BE}} aan exclusieve, voorgekwalificeerde leads (huiseigenaren met actieve aanvraag + budget). Geen 4 andere installateurs op dezelfde lead, geen abonnement.
+
+Niet meteen iets "verkopen" - gewoon benieuwd of dit voor {{ifempty:company_name|jullie team}} interessant kan zijn.
+
+{{your_name}}

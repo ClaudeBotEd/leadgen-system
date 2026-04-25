@@ -1,0 +1,27 @@
+# Lead Radar — test data en outputs (user-specific, niet committen)
+lead-radar/data/leads_*.csv
+lead-radar/data/leads_*.json
+lead-radar/data/leads_master.csv
+lead-radar/.venv/
+lead-radar/__pycache__/
+lead-radar/**/__pycache__/
+
+# CRM-Light — user data (committen wel handig voor backup, maar niet als template)
+crm-light/data/leads.csv
+crm-light/data/activities.csv
+crm-light/__pycache__/
+
+# Outreach — gegenereerde batches (privé, niet versleutelen op git)
+outreach/outbox/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db

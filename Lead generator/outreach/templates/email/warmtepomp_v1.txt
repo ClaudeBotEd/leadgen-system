@@ -1,0 +1,17 @@
+SUBJECT: Snelle vraag over {{ifempty:company_name|jullie warmtepomp werk}} in {{ifempty:city|de regio}}
+
+Hoi {{first_name}},
+
+Ik zag {{ifempty:company_name|jullie bedrijf}} kwam langs in een zoekopdracht naar warmtepomp installateurs in {{ifempty:city|jullie regio}}.
+
+We werken met installateurs zoals jullie aan iets specifiek: we leveren warme, voorgekwalificeerde leads (huiseigenaren die actief op zoek zijn naar warmtepomp installatie + ISDE subsidie aanvraag) — exclusief, dus geen 3 andere installateurs die op dezelfde lead bellen.
+
+Eerste maand 0 risk: alleen betalen voor leads die jullie als kwalitatief beoordelen.
+
+Mag ik volgende week even bellen om te zien of dit voor jullie interessant is? {{rand:Dinsdag of donderdag rond 10u?|Maandag of woensdag rond 14u?|Donderdag of vrijdag begin van de middag?}}
+
+Vriendelijke groet,
+{{your_name}}
+{{your_company}}
+
+PS: geen interesse? één woord ('nee') volstaat — dan hoor je niets meer van me.

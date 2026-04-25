@@ -1,0 +1,139 @@
+# Lead Radar — Keyword Library
+# Wordt gebruikt door scoring/intent_scorer.py voor lead kwalificatie
+
+high_intent:
+  nl:
+    - "warmtepomp aanvragen"
+    - "warmtepomp offerte"
+    - "warmtepomp installeren"
+    - "warmtepomp prijs"
+    - "warmtepomp kosten"
+    - "ISDE subsidie aanvragen"
+    - "aardgasvrij maken"
+    - "verwarming vervangen"
+    - "cv-ketel vervangen"
+    - "airco installeren laten"
+    - "airco offerte"
+    - "zonnepanelen offerte"
+    - "zonnepanelen aanvragen"
+    - "duurzaam verwarmen"
+    - "warmtepomp leverancier"
+  be:
+    - "warmtepomp installateur"
+    - "warmtepomp premie"
+    - "Mijn VerbouwPremie"
+    - "EPC verbeteren"
+    - "verwarming vervangen"
+    - "airco plaatsen"
+    - "zonnepanelen installateur"
+    - "energierenovatie"
+
+mid_intent:
+  - "warmtepomp informatie"
+  - "warmtepomp soorten"
+  - "warmtepomp werking"
+  - "warmtepomp vergelijken"
+  - "warmtepomp adviseurs"
+  - "warmtepomp ervaringen"
+  - "airco vergelijken"
+  - "warmtepomp vs cv-ketel"
+  - "hybride warmtepomp"
+  - "duurzame verwarming"
+
+low_intent:
+  - "wat is een warmtepomp"
+  - "hoe werkt warmtepomp"
+  - "warmtepomp uitleg"
+  - "warmtepomp duurzaam"
+
+business_indicators:
+  has_business:
+    - "btw"
+    - "kvk"
+    - "kbo"
+    - "ondernemingsnummer"
+    - "rsz"
+    - "iban"
+    - "algemene voorwaarden"
+    - "privacybeleid"
+  has_contact_page:
+    - "contact"
+    - "neem contact op"
+    - "offerte aanvragen"
+    - "vrijblijvend gesprek"
+    - "afspraak maken"
+  has_about_page:
+    - "over ons"
+    - "over mij"
+    - "ons team"
+    - "over het bedrijf"
+    - "wie zijn wij"
+  has_portfolio:
+    - "projecten"
+    - "referenties"
+    - "klanten"
+    - "ons werk"
+    - "case studies"
+    - "realisaties"
+
+negative_indicators:
+  too_big:
+    - "vacatures"
+    - "career"
+    - "investor relations"
+    - "annual report"
+    - "international"
+    - "global"
+  not_installer:
+    - "fabrikant"
+    - "manufacturer"
+    - "groothandel"
+    - "wholesale"
+    - "distributeur"
+    - "leverancier producten"
+  blog_only:
+    - "blog"
+    - "nieuwsartikel"
+    - "kennisbank"
+    - "wiki"
+
+industry_terms:
+  hvac:
+    - "HVAC"
+    - "klimaattechniek"
+    - "installatietechniek"
+    - "ventilatie"
+    - "koeling"
+    - "verwarming"
+  warmtepomp:
+    - "warmtepomp"
+    - "lucht-water"
+    - "lucht/water"
+    - "lucht water"
+    - "bodemwarmtepomp"
+    - "hybride warmtepomp"
+    - "monoblock"
+    - "split warmtepomp"
+  certifications:
+    - "Bosch"
+    - "Daikin"
+    - "Mitsubishi"
+    - "Vaillant"
+    - "Viessmann"
+    - "Nibe"
+    - "Itho Daalderop"
+    - "BRL 6000"
+    - "ISDE"
+    - "InstallQ"
+    - "VCA"
+
+location_variants:
+  amsterdam: ["amsterdam", "a'dam", "020"]
+  rotterdam: ["rotterdam", "010"]
+  utrecht: ["utrecht", "030"]
+  den_haag: ["den haag", "the hague", "070", "'s-gravenhage"]
+  eindhoven: ["eindhoven", "040"]
+  antwerpen: ["antwerpen", "antwerp", "anvers"]
+  brussel: ["brussel", "brussels", "bruxelles"]
+  gent: ["gent", "gand", "ghent"]
+  brugge: ["brugge", "bruges"]
