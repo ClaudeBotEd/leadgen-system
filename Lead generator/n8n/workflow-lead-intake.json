@@ -1,0 +1,481 @@
+{
+  "name": "Lead Intake — installatiebedrijven",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "webhook-1",
+      "name": "Webhook (POST /lead-intake)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "lead-intake-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "consent-check",
+              "leftValue": "={{ $json.body.consent_processing }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "email-check",
+              "leftValue": "={{ $json.body.contact_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "company-check",
+              "leftValue": "={{ $json.body.company_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-1",
+      "name": "Validate payload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "lead_id",
+              "value": "=lead_{{ $now.toMillis() }}_{{ $json.body.contact_email.split('@')[0] }}"
+            },
+            {
+              "name": "email_domain",
+              "value": "={{ $json.body.contact_email.split('@')[1] }}"
+            },
+            {
+              "name": "country",
+              "value": "={{ $json.body.contact_email.endsWith('.be') ? 'BE' : 'NL' }}"
+            },
+            {
+              "name": "received_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-1",
+      "name": "Add lead metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/organizations/enrich",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.email_domain }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $env.APOLLO_API_KEY }}"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "apollo-1",
+      "name": "Enrich via Apollo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 220],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "industry",
+              "value": "={{ $json.organization?.industry || 'unknown' }}"
+            },
+            {
+              "name": "estimated_employees",
+              "value": "={{ $json.organization?.estimated_num_employees || $('Webhook (POST /lead-intake)').item.json.body.employee_count || 'unknown' }}"
+            },
+            {
+              "name": "website",
+              "value": "={{ $json.organization?.website_url || 'https://' + $('Add lead metadata').item.json.email_domain }}"
+            },
+            {
+              "name": "linkedin_url",
+              "value": "={{ $json.organization?.linkedin_url || '' }}"
+            },
+            {
+              "name": "city_apollo",
+              "value": "={{ $json.organization?.city || $('Webhook (POST /lead-intake)').item.json.body.region }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-2",
+      "name": "Merge enrichment data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "specialty-match",
+              "leftValue": "={{ $('Webhook (POST /lead-intake)').item.json.body.specialty }}",
+              "rightValue": "warmtepomp,airco,zonnepanelen,cv,ventilatie,multi",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "qualify-1",
+      "name": "Qualification check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.HUBSPOT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"email\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.contact_email }}\",\n    \"company\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.company_name }}\",\n    \"phone\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.phone || '' }}\",\n    \"city\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.region }}\",\n    \"country\": \"{{ $('Add lead metadata').item.json.country }}\",\n    \"website\": \"{{ $json.website }}\",\n    \"industry\": \"installatie\",\n    \"hs_lead_status\": \"NEW\",\n    \"lifecyclestage\": \"lead\",\n    \"specialty\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.specialty }}\",\n    \"employee_count\": \"{{ $json.estimated_employees }}\",\n    \"current_lead_source\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.current_lead_source || '' }}\",\n    \"original_source\": \"landingspagina\",\n    \"utm_source\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.utm?.utm_source || '' }}\",\n    \"utm_campaign\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.utm?.utm_campaign || '' }}\",\n    \"consent_processing_date\": \"{{ $('Webhook (POST /lead-intake)').item.json.body.submitted_at }}\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "hubspot-1",
+      "name": "Create HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 140],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"{{ $env.NOTIFICATION_FROM_EMAIL }}\",\n  \"to\": [\"{{ $env.AGENCY_INTERNAL_EMAIL }}\"],\n  \"subject\": \"Nieuwe lead: {{ $('Webhook (POST /lead-intake)').item.json.body.company_name }} ({{ $('Webhook (POST /lead-intake)').item.json.body.specialty }})\",\n  \"html\": \"<h2>Nieuwe pilot-aanvraag</h2><table style='border-collapse:collapse'><tr><td style='padding:4px 12px'><b>Bedrijf</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.company_name }}</td></tr><tr><td style='padding:4px 12px'><b>Email</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.contact_email }}</td></tr><tr><td style='padding:4px 12px'><b>Telefoon</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.phone || '—' }}</td></tr><tr><td style='padding:4px 12px'><b>Werkgebied</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.region }}</td></tr><tr><td style='padding:4px 12px'><b>Specialiteit</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.specialty }}</td></tr><tr><td style='padding:4px 12px'><b>Medewerkers</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.employee_count || '—' }}</td></tr><tr><td style='padding:4px 12px'><b>Land</b></td><td>{{ $('Add lead metadata').item.json.country }}</td></tr><tr><td style='padding:4px 12px'><b>Industrie (Apollo)</b></td><td>{{ $json.industry }}</td></tr><tr><td style='padding:4px 12px'><b>Website</b></td><td><a href='{{ $json.website }}'>{{ $json.website }}</a></td></tr><tr><td style='padding:4px 12px'><b>Huidige bron</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.current_lead_source || '—' }}</td></tr><tr><td style='padding:4px 12px'><b>UTM</b></td><td>{{ $('Webhook (POST /lead-intake)').item.json.body.utm?.utm_source || '—' }} / {{ $('Webhook (POST /lead-intake)').item.json.body.utm?.utm_campaign || '—' }}</td></tr><tr><td style='padding:4px 12px'><b>Lead ID</b></td><td>{{ $('Add lead metadata').item.json.lead_id }}</td></tr></table><p style='margin-top:24px'><a href='https://app.hubspot.com/contacts/{{ $env.HUBSPOT_PORTAL_ID }}/contact/list/view/all/' style='background:#0b6cf2;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block'>Open in HubSpot</a></p>\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "notify-1",
+      "name": "Notify agency",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 320],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"{{ $env.AGENCY_FROM_EMAIL }}\",\n  \"to\": [\"{{ $('Webhook (POST /lead-intake)').item.json.body.contact_email }}\"],\n  \"subject\": \"Bedankt — wij nemen binnen 1 werkdag contact op\",\n  \"html\": \"<p>Beste team van {{ $('Webhook (POST /lead-intake)').item.json.body.company_name }},</p><p>Bedankt voor uw aanvraag voor de pilot. Wij nemen binnen 1 werkdag contact op om de criteria voor uw 3 gratis leads te bespreken.</p><p>Wat u kunt verwachten:</p><ul><li>Kort gesprek van ~15 minuten</li><li>Inventarisatie van uw werkgebied en gewenste lead-criteria</li><li>Geen verplichting, geen contract vooraf</li></ul><p>Met vriendelijke groet,<br/>{{ $env.AGENCY_NAME }}</p><hr/><p style='font-size:12px;color:#666'>Lead-referentie: {{ $('Add lead metadata').item.json.lead_id }}<br/>Ontvangen: {{ $('Add lead metadata').item.json.received_at }}</p>\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "confirm-1",
+      "name": "Confirm to lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 500],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"received\",\n  \"lead_id\": \"{{ $('Add lead metadata').item.json.lead_id }}\",\n  \"message\": \"Bedankt — wij nemen binnen 1 werkdag contact op.\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-1",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1780, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "={\n  \"status\": \"rejected\",\n  \"error\": \"missing_required_fields_or_consent\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-fail-1",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 460]
+    }
+  ],
+  "connections": {
+    "Webhook (POST /lead-intake)": {
+      "main": [
+        [
+          {
+            "node": "Validate payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate payload": {
+      "main": [
+        [
+          {
+            "node": "Add lead metadata",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add lead metadata": {
+      "main": [
+        [
+          {
+            "node": "Enrich via Apollo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich via Apollo": {
+      "main": [
+        [
+          {
+            "node": "Merge enrichment data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge enrichment data": {
+      "main": [
+        [
+          {
+            "node": "Qualification check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualification check": {
+      "main": [
+        [
+          {
+            "node": "Create HubSpot contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify agency",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm to lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify agency": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "Europe/Amsterdam"
+  },
+  "active": false,
+  "tags": [
+    { "name": "lead-gen" },
+    { "name": "production" }
+  ]
+}

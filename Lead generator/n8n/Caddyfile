@@ -1,0 +1,39 @@
+{$N8N_HOST} {
+  reverse_proxy n8n:5678 {
+    flush_interval -1
+  }
+
+  encode gzip
+
+  # Beveiligingsheaders
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    -Server
+  }
+
+  # Webhook endpoint moet CORS toestaan vanaf landingspagina
+  @webhook path /webhook/* /webhook-test/*
+  handle @webhook {
+    header {
+      Access-Control-Allow-Origin "*"
+      Access-Control-Allow-Methods "POST, OPTIONS"
+      Access-Control-Allow-Headers "Content-Type"
+    }
+    @options method OPTIONS
+    handle @options {
+      respond 204
+    }
+  }
+
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size 10mb
+      roll_keep 5
+    }
+    format json
+  }
+}

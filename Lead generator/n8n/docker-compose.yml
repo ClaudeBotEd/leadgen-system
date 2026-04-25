@@ -1,0 +1,93 @@
+version: "3.8"
+
+# Self-hosted n8n setup voor lead intake en follow-up workflows.
+# Persistente data: ./n8n_data (workflows, credentials, executions)
+# Database: ingebouwde SQLite (genoeg voor <100k executies/maand)
+# Voor productie met meer volume: schakel over naar Postgres (zie commentaar onderaan)
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    container_name: n8n-leadgen
+    env_file:
+      - .env
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_HOST}/
+      - N8N_EDITOR_BASE_URL=https://${N8N_HOST}/
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_TEMPLATES_ENABLED=true
+      - APOLLO_API_KEY=${APOLLO_API_KEY}
+      - HUBSPOT_API_KEY=${HUBSPOT_API_KEY}
+      - HUBSPOT_PORTAL_ID=${HUBSPOT_PORTAL_ID}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AGENCY_INTERNAL_EMAIL=${AGENCY_INTERNAL_EMAIL}
+      - AGENCY_FROM_EMAIL=${AGENCY_FROM_EMAIL}
+      - NOTIFICATION_FROM_EMAIL=${NOTIFICATION_FROM_EMAIL}
+      - AGENCY_NAME=${AGENCY_NAME}
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - ./workflow-lead-intake.json:/workflows/lead-intake.json:ro
+      - ./workflow-followup.json:/workflows/followup.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    container_name: caddy-leadgen
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - n8n
+    environment:
+      - N8N_HOST=${N8N_HOST}
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+# === Productie-upgrade naar Postgres ===
+# Vervang het ingebouwde SQLite door Postgres voor >100k executies/maand:
+#
+# services:
+#   postgres:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_USER: n8n
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#       POSTGRES_DB: n8n
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#
+#   n8n:
+#     environment:
+#       - DB_TYPE=postgresdb
+#       - DB_POSTGRESDB_HOST=postgres
+#       - DB_POSTGRESDB_DATABASE=n8n
+#       - DB_POSTGRESDB_USER=n8n
+#       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+#     depends_on:
+#       - postgres

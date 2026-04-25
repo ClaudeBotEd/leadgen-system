@@ -1,0 +1,187 @@
+{
+  "name": "Lead Follow-up — 24h reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "cron-1",
+      "name": "Every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.HUBSPOT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filterGroups\": [{\n    \"filters\": [\n      {\"propertyName\": \"hs_lead_status\", \"operator\": \"EQ\", \"value\": \"NEW\"},\n      {\"propertyName\": \"createdate\", \"operator\": \"LT\", \"value\": \"{{ $now.minus({hours: 24}).toMillis() }}\"},\n      {\"propertyName\": \"createdate\", \"operator\": \"GT\", \"value\": \"{{ $now.minus({hours: 48}).toMillis() }}\"},\n      {\"propertyName\": \"original_source\", \"operator\": \"EQ\", \"value\": \"landingspagina\"}\n    ]\n  }],\n  \"properties\": [\"email\", \"company\", \"phone\", \"specialty\", \"hs_lead_status\", \"createdate\"],\n  \"limit\": 100\n}",
+        "options": {}
+      },
+      "id": "fetch-1",
+      "name": "Find stale new leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "id": "split-1",
+      "name": "Split per lead",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"{{ $env.NOTIFICATION_FROM_EMAIL }}\",\n  \"to\": [\"{{ $env.AGENCY_INTERNAL_EMAIL }}\"],\n  \"subject\": \"Follow-up reminder: {{ $json.properties.company }} (24u zonder contact)\",\n  \"html\": \"<h2>Lead nog niet opgevolgd</h2><p>Een lead die meer dan 24 uur geleden binnenkwam staat nog op status NEW in HubSpot.</p><table style='border-collapse:collapse'><tr><td style='padding:4px 12px'><b>Bedrijf</b></td><td>{{ $json.properties.company }}</td></tr><tr><td style='padding:4px 12px'><b>Email</b></td><td>{{ $json.properties.email }}</td></tr><tr><td style='padding:4px 12px'><b>Telefoon</b></td><td>{{ $json.properties.phone || '—' }}</td></tr><tr><td style='padding:4px 12px'><b>Specialiteit</b></td><td>{{ $json.properties.specialty }}</td></tr><tr><td style='padding:4px 12px'><b>Aangemaakt</b></td><td>{{ $json.properties.createdate }}</td></tr></table><p><a href='https://app.hubspot.com/contacts/{{ $env.HUBSPOT_PORTAL_ID }}/contact/{{ $json.id }}/' style='background:#0b6cf2;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block'>Open in HubSpot</a></p>\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "notify-2",
+      "name": "Send reminder email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.HUBSPOT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"followup_reminder_sent_at\": \"{{ $now.toISO() }}\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "tag-1",
+      "name": "Mark reminder sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Every 6 hours": {
+      "main": [
+        [
+          {
+            "node": "Find stale new leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find stale new leads": {
+      "main": [
+        [
+          {
+            "node": "Split per lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split per lead": {
+      "main": [
+        [
+          {
+            "node": "Send reminder email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reminder email": {
+      "main": [
+        [
+          {
+            "node": "Mark reminder sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "timezone": "Europe/Amsterdam"
+  },
+  "active": false,
+  "tags": [
+    { "name": "lead-gen" },
+    { "name": "followup" }
+  ]
+}
