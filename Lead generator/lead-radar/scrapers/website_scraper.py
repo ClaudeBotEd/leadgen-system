@@ -32,8 +32,24 @@ KVK_RE = re.compile(r"\bKvK[\s:.-]*([0-9]{8})\b", re.IGNORECASE)
 KBO_RE = re.compile(r"\b(?:BTW|VAT|KBO|BCE)[\s:.-]*BE\s?([0-9]{4}[\s.]?[0-9]{3}[\s.]?[0-9]{3})\b", re.IGNORECASE)
 BTW_NL_RE = re.compile(r"\bNL\s?([0-9]{9})B[0-9]{2}\b", re.IGNORECASE)
 
-POSTCODE_NL_RE = re.compile(r"\b([1-9][0-9]{3})\s?([A-Z]{2})\b\s+([A-Z][a-zA-Z\s\-']+)")
-POSTCODE_BE_RE = re.compile(r"\b([1-9][0-9]{3})\s+([A-Z][a-zA-Z\s\-']+)")
+# Tighter — city is max 3 capitalized words om "Den Haag" / "Sint Niklaas" te matchen
+POSTCODE_NL_RE = re.compile(
+    r"\b([1-9][0-9]{3})\s?([A-Z]{2})\b\s+"
+    r"([A-Z][a-zA-Z\-']+(?:\s+[A-Z][a-zA-Z\-']+){0,2})\b"
+)
+# BE: 4 digits + city, ook tot 3 woorden
+POSTCODE_BE_RE = re.compile(
+    r"\b([1-9][0-9]{3})\s+"
+    r"([A-Z][a-zA-Z\-']{2,}(?:\s+[A-Z][a-zA-Z\-']+){0,2})\b"
+)
+
+# Steden/woorden die NIET als city moeten worden geparsed (false positives)
+CITY_BLACKLIST = {
+    "Klimaat", "Warmtepomp", "Installatie", "Beheerders",
+    "Verwarming", "Service", "Sale", "Trustoo",
+    "Solvari", "Slimster", "Independer",
+    "KvK", "BTW", "Iban", "Bic",
+}
 
 CONTACT_PATHS = [
     "/contact", "/contact/", "/contact-us", "/contact-ons",
@@ -181,13 +197,19 @@ def _harvest(html: str, text: str, soup: BeautifulSoup, base: str, out: dict) ->
     if not out["city"]:
         m = POSTCODE_NL_RE.search(text)
         if m:
-            out["address"] = f"{m.group(1)} {m.group(2)} {m.group(3).strip()}".strip()
-            out["city"] = m.group(3).strip().split()[0]
+            city_raw = m.group(3).strip()
+            first_word = city_raw.split()[0] if city_raw.split() else ""
+            if first_word and first_word not in CITY_BLACKLIST:
+                out["address"] = f"{m.group(1)} {m.group(2)} {city_raw}".strip()
+                out["city"] = city_raw  # bewaar de volle multi-word stad
         else:
-            m = POSTCODE_BE_RE.search(text)
-            if m:
-                out["address"] = f"{m.group(1)} {m.group(2).strip()}".strip()
-                out["city"] = m.group(2).strip().split()[0]
+            for m in POSTCODE_BE_RE.finditer(text):
+                city_raw = m.group(2).strip()
+                first_word = city_raw.split()[0] if city_raw.split() else ""
+                if first_word and first_word not in CITY_BLACKLIST and len(first_word) >= 3:
+                    out["address"] = f"{m.group(1)} {city_raw}".strip()
+                    out["city"] = city_raw
+                    break
 
     text_low = text.lower()
     if any(p in text_low for p in ("contact", "neem contact", "offerte aanvragen", "afspraak maken")):

@@ -66,7 +66,56 @@ filtering:
     - nibe.nl
     - itho-daalderop.nl
     - mitsubishi-electric.nl
-  # Min lead score om in output op te nemen (0-100)
+    # Lead-gen aggregators — DIRECTE CONCURRENTEN, niet pitchen
+    - slimster.nl
+    - bobex.nl
+    - bobex.com
+    - bobex.be
+    - trustoo.nl
+    - solvari.nl
+    - solvari.com
+    - werkspot.nl
+    - offerteadviseur.nl
+    - offerte-vergelijker.nl
+    - offerte.nl
+    - offertes.nl
+    - bouwoffertes.nl
+    - casius.nl
+    - moving.nl
+    - homedeal.nl
+    # HVAC aggregators / niet-eindklant pages
+    - warmtepompgids.nl
+    - warmtepomp.nu
+    - warmtepompplek.nl
+    - warmtepompspot.nl
+    - warmtepomprevolutie.nl
+    - warmtepompaanbieders.nl
+    - warmtepompnederland.nl
+    - warmtepompamsterdam.com
+    - warmtepompamsterdam.nl
+    - warmtepomp-amsterdam.com
+    - warmtepomp-info.nl
+    - warmtepompbedrijf.nl
+    - warmgarant.nl
+    - warmplus.nl
+    - zenovo.nl
+    # Energie-leveranciers (gross HVAC bedrijven, niet SMB target)
+    - frankenergie.nl
+    - vattenfall.nl
+    - essent.nl
+    - eneco.nl
+    - engie.nl
+    - feenstra.com
+    # Generic info / kennisbanken
+    - eigenhuis.nl
+    - hetgebeurtinamsterdam.nl
+    - uwgroenestroom.nl
+    - verwarming-plaatsen.nl
+    - energiewacht.nl
+    - warmtepomp-bnl.nl
+    # Internationaal (we focus NL/BE)
+    - nettbureau.no
+    # Min lead score om in output op te nemen (0-100)
   min_score: 30
   # Verwijder duplicaten op basis van domein
   dedup: true

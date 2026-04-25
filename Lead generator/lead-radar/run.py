@@ -35,7 +35,17 @@ def build_queries(niche_cfg: dict, location: str) -> list[str]:
     return [q.format(location=location) for q in raw]
 
 
-def filter_urls(results: list[dict], blacklist: list[str], dedup: bool = True) -> list[dict]:
+DEFAULT_ALLOWED_TLDS = {"nl", "be", "eu", "com", "net", "org", "info", "io"}
+
+
+def filter_urls(
+    results: list[dict],
+    blacklist: list[str],
+    dedup: bool = True,
+    allowed_tlds: set[str] | None = None,
+) -> list[dict]:
+    """Filter URLs op blacklist + dedup + (optioneel) allowed TLDs."""
+    allowed_tlds = allowed_tlds if allowed_tlds is not None else DEFAULT_ALLOWED_TLDS
     seen_domains: set[str] = set()
     out: list[dict] = []
     for r in results:
@@ -45,8 +55,14 @@ def filter_urls(results: list[dict], blacklist: list[str], dedup: bool = True) -
         host = urlparse(url).netloc.lower().replace("www.", "")
         if not host:
             continue
+        # TLD filter — alleen NL/BE/EU/INT bedrijven
+        tld = host.rsplit(".", 1)[-1] if "." in host else ""
+        if allowed_tlds and tld not in allowed_tlds:
+            continue
+        # Blacklist
         if any(host == bd or host.endswith("." + bd) for bd in blacklist):
             continue
+        # Dedup
         if dedup and host in seen_domains:
             continue
         seen_domains.add(host)

@@ -14,9 +14,25 @@ EMAIL_RE = re.compile(
     r"@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?"
 )
 
+# Strict obfuscated email pattern — requires:
+#  - whitespace OR explicit brackets around "at"/"dot"
+#  - dat zorgt dat 'gstatic.com' of 'cookieblocksrc' niet als email matcht
 OBFUSCATED_RE = re.compile(
-    r"([a-zA-Z0-9._%+-]+)\s*[\[\(]?\s*(?:at|@|AT)\s*[\]\)]?\s*([a-zA-Z0-9.-]+)\s*[\[\(]?\s*(?:dot|\.|DOT)\s*[\]\)]?\s*([a-zA-Z]{2,})",
-    re.IGNORECASE,
+    r"([a-zA-Z0-9._%+-]+)"
+    r"(?:"
+        r"\s+(?:at|AT)\s+"                  # info at example
+        r"|\s*\[\s*(?:at|AT|@)\s*\]\s*"     # info [at] example
+        r"|\s*\(\s*(?:at|AT|@)\s*\)\s*"     # info (at) example
+        r"|\s*\{\s*(?:at|AT|@)\s*\}\s*"     # info {at} example
+    r")"
+    r"([a-zA-Z0-9.-]+)"
+    r"(?:"
+        r"\s+(?:dot|DOT)\s+"
+        r"|\s*\[\s*(?:dot|DOT|\.)\s*\]\s*"
+        r"|\s*\(\s*(?:dot|DOT|\.)\s*\)\s*"
+        r"|\s*\{\s*(?:dot|DOT|\.)\s*\}\s*"
+    r")"
+    r"([a-zA-Z]{2,})"
 )
 
 BLACKLIST_LOCAL_PARTS = {
@@ -25,6 +41,17 @@ BLACKLIST_LOCAL_PARTS = {
     "example", "test", "demo", "user",
 }
 
+# Local-part prefixen die wijzen op asset / URL fragment, geen echte email
+ASSET_PREFIXES = (
+    "www.", "api.", "cdn.", "static.", "assets.", "img.", "image.",
+    "fonts.", "iframe.", "element.", "script.", "style.", "stylesheet.",
+    "media.", "video.", "audio.", "font.", "icon.",
+    "track.", "tracker.", "tag.", "tags.", "pixel.",
+    "analytics.", "metrics.", "ads.", "ad.",
+    "youtu.", "youtube.", "twitter.", "facebook.", "instagram.",
+    "google.", "googleads.", "googletagmanager.",
+)
+
 BLACKLIST_DOMAINS = {
     "example.com", "example.org", "example.net",
     "domain.com", "yourdomain.com", "company.com",
@@ -32,6 +59,34 @@ BLACKLIST_DOMAINS = {
     "godaddy.com", "wix.com", "squarespace.com",
     "wordpress.com", "shopify.com",
     "sentry-next.wixpress.com",
+    # CDN's en third-party assets die emails-achtig kunnen lijken
+    "gstatic.com", "googleapis.com", "googletagmanager.com",
+    "google-analytics.com", "googleadservices.com", "doubleclick.net",
+    "cloudflare.com", "cloudfront.net", "akamaihd.net", "akamai.net",
+    "fbcdn.net", "twimg.com", "ytimg.com",
+    "jquery.com", "bootstrapcdn.com", "jsdelivr.net", "unpkg.com",
+    "cookielaw.org", "onetrust.com", "cookiebot.com",
+    "facebook.com", "instagram.com", "twitter.com", "linkedin.com",
+    "youtube.com", "tiktok.com", "pinterest.com",
+    "whatsapp.com", "wa.me",
+    "schema.org", "w3.org",
+}
+
+# Whitelist van bekende geldige TLD's — vooral NL/BE focus + grote internationale
+KNOWN_TLDS = {
+    # NL/BE/EU
+    "nl", "be", "eu", "lu", "de", "fr", "uk", "ie", "es", "it", "pt", "at",
+    "ch", "se", "no", "dk", "fi", "pl", "cz", "hu", "ro", "gr",
+    # Internationaal
+    "com", "net", "org", "info", "biz", "co", "io", "ai", "app",
+    "tech", "shop", "store", "online", "site", "website", "world",
+    "agency", "company", "services", "expert", "pro",
+    "email", "mail", "name",
+    # Branche
+    "energy", "solar", "construction", "design", "build", "build",
+    "estate", "rental", "house", "home", "tools",
+    # Anders
+    "us", "ca", "au", "nz", "jp", "cn", "in", "br", "mx", "ru",
 }
 
 FILE_EXTENSIONS = {
@@ -70,24 +125,51 @@ def is_usable_email(email: str) -> bool:
     if not local or not domain:
         return False
 
+    # Hard blacklist
     if local in BLACKLIST_LOCAL_PARTS:
         return False
     for blocked in BLACKLIST_LOCAL_PARTS:
         if local.startswith(blocked):
             return False
 
+    # Asset / URL fragments — local part begint met www. / api. / fonts. / etc.
+    for prefix in ASSET_PREFIXES:
+        if local.startswith(prefix):
+            return False
+
+    # Domain blacklist (CDN's, social platforms, etc.)
     if domain in BLACKLIST_DOMAINS:
         return False
+    for blocked_domain in BLACKLIST_DOMAINS:
+        if domain.endswith("." + blocked_domain):
+            return False
 
+    # File extension false positives
     for ext in FILE_EXTENSIONS:
         if email.endswith(ext):
             return False
 
-    if "sentry" in domain or "wixpress" in domain or "googleusercontent" in domain:
+    # Substrings die wijzen op asset/script
+    suspicious_substrings = (
+        "sentry", "wixpress", "googleusercontent",
+        "rocketlazyload", "lazyload", "cookieblock",
+        "wp-content", "wpcontent", "asset.", "assets.",
+        "polyfill", "addthis", "googletag", "tagmanager",
+    )
+    if any(s in domain for s in suspicious_substrings):
+        return False
+    if any(s in local for s in suspicious_substrings):
         return False
 
+    # TLD validatie — moet bekende TLD zijn (anti-junk: cookieblocksrc, rocketlazyloaded)
     tld = domain.rsplit(".", 1)[-1]
     if not (2 <= len(tld) <= 24):
+        return False
+    if tld not in KNOWN_TLDS:
+        return False
+
+    # Te veel dots in local part = waarschijnlijk URL fragment
+    if local.count(".") > 2:
         return False
 
     return True

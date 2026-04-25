@@ -14,6 +14,9 @@
 
 set -euo pipefail
 
+# Unbuffered Python output - zie progressie real-time
+export PYTHONUNBUFFERED=1
+
 NICHE="${1:-warmtepomp}"
 LOCATION="${2:-amsterdam}"
 MAX="${3:-25}"
