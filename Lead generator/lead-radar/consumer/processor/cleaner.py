@@ -53,8 +53,17 @@ def strip_html(text: str) -> str:
     return decoded
 
 
+RE_CAMELSPLIT = re.compile(r"([a-z])([A-Z])")
+
+
 def normalize_whitespace(text: str) -> str:
-    return RE_WHITESPACE.sub(" ", text or "").strip()
+    if not text:
+        return ""
+    # Marktplaats e.d. zetten title+description vaak smushed naast elkaar
+    # ("monteurZoekt u").  Split CamelCase boundaries terug uit elkaar
+    # zodat regex en woord-detectie blijft werken.
+    decamel = RE_CAMELSPLIT.sub(r"\1 \2", text)
+    return RE_WHITESPACE.sub(" ", decamel).strip()
 
 
 def normalize_unicode(text: str) -> str:

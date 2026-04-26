@@ -23,6 +23,15 @@ PROMO_SIGNALS = [
     r"\b(wij plaatsen|wij installeren|wij bieden|wij verzorgen|wij leveren|onze monteurs|ons bedrijf|onze specialiteit|al \d+ jaar ervaring)\b",
     r"\b(neem contact op|bel ons|bel naar|mail ons|stuur een mail|whatsapp ons|onze website|onze diensten|ons aanbod)\b",
     r"\b(gratis offerte|gratis advies|geheel vrijblijvend|vrijblijvend offerte)\b.*\b(via ons|bij ons|onze)\b",
+    # Marketer-vraagvormen die juist NIEMAND uit de doelgroep gebruikt
+    r"\b(zoekt u|zoek je een|wil je besparen|bespaar tot|scherpe prijs|voordelig|laagste prijs|beste prijs|met garantie)\b",
+    # Product/sale listings (Marktplaats etc.)
+    r"\b(te koop|aangeboden|nieuw in doos|fabrieksnieuw|origineel verpakt|incl\. btw|incl btw|excl\. btw|nieuwprijs)\b",
+    r"€\s?\d{2,}",                         # prijs in titel = verkoop, geen vraag
+    r"\b(?:vanaf|reeds vanaf|al vanaf)\s+€?\s?\d+\b",
+    r"\b(?:bel|app|whatsapp|sms)\s+(?:naar\s+)?\+?\d[\d\s\-]{6,}\b",  # tel-nr in tekst
+    # Bedrijfsnamen in titels
+    r"\b(b\.?v\.?|bvba|n\.?v\.?|gmbh)\b",
 ]
 
 INFO_SIGNALS = [
@@ -35,6 +44,14 @@ _RE_PROMO = [re.compile(p, re.IGNORECASE) for p in PROMO_SIGNALS]
 _RE_INFO = [re.compile(p, re.IGNORECASE) for p in INFO_SIGNALS]
 
 
+_RE_STRONG_SEEK = re.compile(
+    r"(?:^|\b)(wie kan|wie heeft|iemand een|iemand tip|iemand ervaring|hoe vind ik|"
+    r"wie weet|wie kent|kunnen jullie|kun je|tip nodig|advies nodig|hulp nodig|help nodig|"
+    r"raden|advies welke|gezocht|gevraagd)\b",
+    re.IGNORECASE,
+)
+
+
 def classify_post_kind(text: str) -> str:
     """'lead' | 'promo' | 'info' | 'unknown'."""
     if not text:
@@ -42,15 +59,18 @@ def classify_post_kind(text: str) -> str:
     promo_hits = sum(1 for r in _RE_PROMO if r.search(text))
     info_hits = sum(1 for r in _RE_INFO if r.search(text))
     lead_hits = sum(1 for r in _RE_LEAD if r.search(text))
+    strong_seek = bool(_RE_STRONG_SEEK.search(text))
 
-    if promo_hits >= 2:
+    # Strong-promo signal in tekst (bv prijs in titel, "zoekt u", telefoonnummer):
+    # zelfs een enkele hit telt — tenzij we ook een echte seeker-zin zien.
+    if promo_hits >= 1 and not strong_seek:
         return "promo"
-    if info_hits >= 1 and lead_hits == 0:
+    if info_hits >= 1 and lead_hits == 0 and not strong_seek:
         return "info"
+    if strong_seek or lead_hits >= 2:
+        return "lead"
     if lead_hits >= 1:
         return "lead"
-    if promo_hits >= 1:
-        return "promo"
     return "unknown"
 
 

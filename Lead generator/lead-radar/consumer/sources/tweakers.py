@@ -32,60 +32,78 @@ def _extract_thread_id(href: str) -> str | None:
     return href
 
 
-def _parse_search(html: str) -> list[RawPost]:
+def _parse_search(html: str, query_terms: list[str] | None = None) -> list[RawPost]:
+    """Parse Tweakers' /forum/find HTML.
+
+    Tweakers returnt vaak ALLE recente topics ipv te filteren op keyword,
+    daarom doen we client-side keyword-filter als query_terms gegeven is.
+    """
     soup = BeautifulSoup(html, "html.parser")
+    seen_ids: set[str] = set()
     out: list[RawPost] = []
 
-    candidates = soup.select(
-        "div.searchresult, li.result, tr.topic, div.result, article.result"
-    )
-    if not candidates:
-        candidates = soup.select("a[href*='/forum/list_messages']")
-
-    for node in candidates:
-        if node.name == "a":
-            link = node
-            container = node
-        else:
-            link = node.select_one("a[href*='/forum/list_messages'], a[href*='/forum/view_message']")
-            container = node
-        if not link:
-            continue
-        href = link.get("href") or ""
+    anchors = soup.select("a[href*='/forum/list_messages']")
+    for a in anchors:
+        href = a.get("href") or ""
         if not href:
             continue
         url = urljoin(BASE, href)
-        title = (link.get_text() or "").strip()
-        if not title:
+        title = (a.get_text() or "").strip()
+        if not title or title.isdigit() or len(title) < 5:
             continue
-        snippet = ""
-        snip_el = container.select_one(".snippet, .description, p")
-        if snip_el:
-            snippet = snip_el.get_text(" ", strip=True)
-        author = None
-        auth_el = container.select_one(".author, .username, .userlink")
-        if auth_el:
-            author = auth_el.get_text(strip=True) or None
-
         thread_id = _extract_thread_id(href) or url
+        rid = f"tweakers:{thread_id}"
+        if rid in seen_ids:
+            continue
+        seen_ids.add(rid)
+
+        if query_terms:
+            tl = title.lower()
+            if not any(qt.lower() in tl for qt in query_terms):
+                continue
+
         out.append(RawPost(
-            id=f"tweakers:{thread_id}",
+            id=rid,
             source="tweakers",
             url=url,
             title=title,
-            text=snippet,
-            author=author,
+            text="",
+            author=None,
             created_at=None,
             metadata={},
         ))
     return out
 
 
+def _set_dpg_consent(sess: PoliteSession) -> None:
+    """Tweakers verbergt zoekresultaten achter een DPG Media privacy-gate.
+    Met de juiste consent-cookies + 1 warmup-call naar de privacy-gate
+    krijgen we volledige HTML."""
+    for name, val in [
+        ("pwv2-token", "accepted"),
+        ("pwv2-consent-tracking-tcfv2", "1"),
+        ("cmp_pwv2", "accepted"),
+        ("TweakersPrivacyAccepted", "1"),
+    ]:
+        try:
+            sess.session.cookies.set(name, val, domain=".tweakers.net")
+        except Exception:
+            pass
+    # Warmup GET (status mag 400 zijn — zet nog steeds de juiste sessie-cookies)
+    try:
+        sess.session.get("https://tweakers.net/privacy-gate/store/", timeout=10)
+    except Exception:
+        pass
+
+
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
           session: PoliteSession | None = None, **_: object) -> list[RawPost]:
     sess = session or PoliteSession(HttpConfig(request_delay=3.0))
+    _set_dpg_consent(sess)
     q = f"{query} {location}".strip() if location else query
 
+    # Splits query in betekenisvolle terms voor client-side filter
+    terms = [t for t in re.findall(r"[A-Za-z]{4,}", q) if t.lower() not in {"nederland", "belgie", "belgium"}]
     out: list[RawPost] = []
     for page in range(1, 4):
         if len(out) >= limit:
@@ -96,7 +114,7 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
             log.warning("Tweakers gaf geen response voor q=%r page=%d", q, page)
             break
         try:
-            page_posts = _parse_search(resp.text)
+            page_posts = _parse_search(resp.text, query_terms=terms or None)
         except Exception as e:
             log.warning("Tweakers parsing fout: %s", e)
             page_posts = []

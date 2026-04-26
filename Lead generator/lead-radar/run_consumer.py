@@ -141,7 +141,8 @@ def run_pipeline(args: argparse.Namespace) -> int:
         for q in queries:
             t0 = time.monotonic()
             try:
-                posts = fetch(q, limit=args.limit, location=args.location, session=polite)
+                # location is al verwerkt in expand_queries() — niet nogmaals toevoegen
+                posts = fetch(q, limit=args.limit, location=None, session=polite)
             except Exception as e:
                 log.warning("Source %s crashte op q=%r: %s", source_name, q, e)
                 posts = []

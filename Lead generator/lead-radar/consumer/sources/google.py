@@ -40,6 +40,31 @@ def _ddg_search(query: str, max_results: int) -> Iterable[dict]:
         return []
 
 
+_FORUM_URL_PATTERNS = [
+    "reddit.com/r/",
+    "gathering.tweakers.net/forum/",
+    "tweakers.net/forum/",
+    "bouwinfo.be/",
+    "forum.",
+    "/forum/",
+    "/topic/",
+    "/thread/",
+    "/discussion/",
+    "facebook.com/groups/",
+    "hvac-forum",
+    "klimaatforum",
+    "forums.",
+]
+
+
+def _is_post_url(url: str) -> bool:
+    """Filter: alleen forum/post-stijl URLs.  Skipt vendor homepages."""
+    if not url:
+        return False
+    u = url.lower()
+    return any(p in u for p in _FORUM_URL_PATTERNS)
+
+
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
           **_: object) -> list[RawPost]:
     if not _HAS_DDG:
@@ -52,13 +77,17 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
     elif location:
         q = f"{q} {location}"
 
-    raw = _ddg_search(q, max_results=limit)
+    raw = _ddg_search(q, max_results=limit * 3)  # over-fetch want we filteren ~70% weg
     out: list[RawPost] = []
+    skipped = 0
     for r in raw:
         url = r.get("href") or r.get("url") or ""
         title = r.get("title") or ""
         body = r.get("body") or r.get("description") or ""
         if not url:
+            continue
+        if not _is_post_url(url):
+            skipped += 1
             continue
         rid = f"google:{_short_hash(url)}"
         out.append(RawPost(
@@ -70,6 +99,8 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
             created_at=None,
             metadata={"query": q},
         ))
+        if len(out) >= limit:
+            break
 
-    log.info("Google/DDG: %d resultaten voor q=%r", len(out), q)
+    log.info("Google/DDG: %d post-URLs voor q=%r (skipped %d non-forum)", len(out), q, skipped)
     return out
