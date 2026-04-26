@@ -11,6 +11,7 @@ from . import tweakers as _tweakers
 from . import bouwinfo as _bouwinfo
 from . import google as _google
 from . import marktplaats as _marktplaats
+from . import tweedehands as _tweedehands
 from . import facebook as _facebook
 
 REGISTRY: dict[str, Callable] = {
@@ -19,6 +20,7 @@ REGISTRY: dict[str, Callable] = {
     "bouwinfo": _bouwinfo.fetch,
     "google": _google.fetch,
     "marktplaats": _marktplaats.fetch,
+    "2dehands": _tweedehands.fetch,
 }
 
 ALL_SOURCES: list[str] = list(REGISTRY.keys())

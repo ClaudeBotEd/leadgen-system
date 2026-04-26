@@ -32,7 +32,14 @@ PROMO_SIGNALS = [
     r"\b(?:bel|app|whatsapp|sms)\s+(?:naar\s+)?\+?\d[\d\s\-]{6,}\b",  # tel-nr in tekst
     # Bedrijfsnamen in titels
     r"\b(b\.?v\.?|bvba|n\.?v\.?|gmbh)\b",
+    # Job ads — "monteur gezocht" met salaris/team/fulltime context
+    r"\b(vacature|vacatures|in dienst|dienstverband|fulltime|parttime|full[\s\-]?time|part[\s\-]?time|salaris|salariëring|loon|leuk team|aanmelden|wij zoeken|werken bij)\b",
+    # Discount/sale promo
+    r"\b(\d{1,2}\s?%\s?korting|korting op|kortingsactie|introductieprijs|aanbiedingsprijs|scherp tarief|laagste tarief)\b",
 ]
+
+# All-caps SHOUTING (vaak job ad of advertentie) — case-sensitive check
+_RE_ALLCAPS_TITLE = re.compile(r"^[A-ZÀ-Ý][A-ZÀ-Ý\s\d,\-!\.]{20,}$", re.MULTILINE)
 
 INFO_SIGNALS = [
     r"^\s*(wat is|wat zijn|hoe werkt|hoe werken|wat doet|waarom|verschil tussen|voor- en nadelen|review van|test van|uitleg|samenvatting)\b",
@@ -51,6 +58,16 @@ _RE_STRONG_SEEK = re.compile(
     re.IGNORECASE,
 )
 
+# Definitief PROMO — overrullt strong_seek. Vacatures + bedrijfsadvertenties.
+_RE_DEFINITIVE_PROMO = re.compile(
+    r"\b(vacature|vacatures|in dienst|dienstverband|fulltime|parttime|"
+    r"full[\s\-]?time|part[\s\-]?time|salaris|salariëring|loon|leuk team|"
+    r"aanmelden|wij zoeken|wij zijn op zoek|werken bij|"
+    r"\d{1,2}\s?%\s?korting|introductieprijs|aanbiedingsprijs|"
+    r"erkende installateur|gecertificeerd|met garantie|al \d+ jaar)\b",
+    re.IGNORECASE,
+)
+
 
 def classify_post_kind(text: str) -> str:
     """'lead' | 'promo' | 'info' | 'unknown'."""
@@ -60,6 +77,14 @@ def classify_post_kind(text: str) -> str:
     info_hits = sum(1 for r in _RE_INFO if r.search(text))
     lead_hits = sum(1 for r in _RE_LEAD if r.search(text))
     strong_seek = bool(_RE_STRONG_SEEK.search(text))
+
+    # Extra promo: SHOUTING-titel telt als 1 promo hit
+    if _RE_ALLCAPS_TITLE.search(text or ""):
+        promo_hits += 1
+
+    # Definitief promo (vacatures, bedrijfsadvertenties) — overrult strong_seek.
+    if _RE_DEFINITIVE_PROMO.search(text):
+        return "promo"
 
     # Strong-promo signal in tekst (bv prijs in titel, "zoekt u", telefoonnummer):
     # zelfs een enkele hit telt — tenzij we ook een echte seeker-zin zien.

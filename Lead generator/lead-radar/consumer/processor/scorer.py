@@ -15,7 +15,8 @@ import re
 _RE_URGENCY = re.compile(
     r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|"
     r"deze week|deze maand|binnenkort|vandaag|morgen|volgende week|"
-    r"met spoed|snel mogelijk|liefst snel|liefst nog deze)\b",
+    r"met spoed|snel mogelijk|liefst snel|liefst nog deze|"
+    r"binnen \d+ weken|binnen \d+ dagen|deze winter|voor de winter)\b",
     re.IGNORECASE,
 )
 _RE_INSTALLER = re.compile(
@@ -36,6 +37,26 @@ _RE_BUDGET = re.compile(
     r"\b(?:budget|prijs|prijzen|kosten|bedrag|kostenraming|prijsopgave|"
     r"offerte|offertes|aanbieding|aanbod|investering|tarief)\b|"
     r"\b\d{1,3}(?:[\.\,\s]\d{3})*\s?(?:k|euro|€))",
+    re.IGNORECASE,
+)
+
+# +10 bonus: zeer expliciete koop/lead intent
+_RE_STRONG_BUY = re.compile(
+    r"\b(installateur gezocht|monteur gezocht|aannemer gezocht|vakman gezocht|"
+    r"laten plaatsen|laten installeren|wie kan plaatsen|wie kan installeren|"
+    r"prijsopgave|kostenraming|wat kost het|wat zou kosten|"
+    r"met spoed|spoed nodig|zsm starten|asap|dringend|"
+    r"deze week|deze maand|binnen \d+ weken|binnen \d+ dagen|"
+    r"offerte nodig|offerte gevraagd)\b",
+    re.IGNORECASE,
+)
+
+# -15 penalty: informatie/research/orientatie zonder echte aankoopsignalen
+_RE_RESEARCH_ONLY = re.compile(
+    r"\b(ervaring met|hoe werkt|overweeg|overwegen|aan het orienteren|"
+    r"benieuwd naar|nieuwsgierig|informatie over|info over|"
+    r"ben aan het orienteren|wil gaan onderzoeken|verschil tussen|"
+    r"voor- en nadelen|wat is het verschil|nog niet zeker)\b",
     re.IGNORECASE,
 )
 
@@ -82,11 +103,20 @@ def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[
         "situation": _score_home(text),
         "budget": _score_budget(text),
     }
+
+    # Bonus voor expliciete koopsignalen ("installateur gezocht", "met spoed", etc.)
+    if _RE_STRONG_BUY.search(text):
+        breakdown["intent_bonus"] = 10
+
+    # Penalty voor research/orientatie taal ("ervaring met", "hoe werkt", "overweeg")
+    if _RE_RESEARCH_ONLY.search(text):
+        breakdown["research_penalty"] = -15
+
     total = sum(breakdown.values())
 
     if niche_keywords:
         if not any(kw.lower() in lower for kw in niche_keywords):
-            total = max(0, total - 30)
+            total -= 30
             breakdown["off_topic_penalty"] = -30
 
     total = max(0, min(100, total))

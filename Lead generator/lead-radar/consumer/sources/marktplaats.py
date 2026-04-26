@@ -4,8 +4,7 @@ Gebruikt de publieke search-URL `/q/<query>/`.  Listings worden vaak
 geinjecteerd via een ingebed JSON blob (window.__CONFIG__ / __INITIAL_DATA__)
 — we proberen dat eerst, met BS4-fallback op de HTML cards.
 
-Note: Marktplaats listings zijn vooral 'aangeboden' — om vraag-listings te
-vinden helpen queries met 'gezocht' of 'monteur gezocht'.
+Wordt ook hergebruikt door 2dehands.be (zelfde codebase, andere BASE).
 """
 from __future__ import annotations
 
@@ -24,7 +23,7 @@ log = logging.getLogger("consumer.sources.marktplaats")
 BASE = "https://www.marktplaats.nl"
 
 
-def _parse_html(html: str) -> list[RawPost]:
+def _parse_html(html: str, base: str, source_name: str) -> list[RawPost]:
     soup = BeautifulSoup(html, "html.parser")
     out: list[RawPost] = []
 
@@ -46,17 +45,18 @@ def _parse_html(html: str) -> list[RawPost]:
             title = li.get("title") or ""
             desc = li.get("description") or ""
             vip_url = li.get("vipUrl") or ""
-            url = urljoin(BASE, vip_url) if vip_url else BASE
+            url = urljoin(base, vip_url) if vip_url else base
             cat = (li.get("categorySpecificFields") or {}).get("categoryName") or ""
+            seller_type = (li.get("sellerInformation") or {}).get("sellerName") or ""
             if not ad_id or not title:
                 continue
             out.append(RawPost(
-                id=f"marktplaats:{ad_id}",
-                source="marktplaats",
+                id=f"{source_name}:{ad_id}",
+                source=source_name,
                 url=url,
                 title=title,
                 text=desc,
-                metadata={"category": cat},
+                metadata={"category": cat, "seller": seller_type},
             ))
         if out:
             return out
@@ -66,7 +66,7 @@ def _parse_html(html: str) -> list[RawPost]:
         if not link:
             continue
         href = link.get("href") or ""
-        url = urljoin(BASE, href)
+        url = urljoin(base, href)
         title_el = li.select_one("h3, .mp-Listing-title, .hz-Listing-title")
         title = title_el.get_text(strip=True) if title_el else (link.get_text(strip=True) or "")
         desc_el = li.select_one(".mp-Listing-description, .hz-Listing-description, p")
@@ -76,8 +76,8 @@ def _parse_html(html: str) -> list[RawPost]:
         if not title:
             continue
         out.append(RawPost(
-            id=f"marktplaats:{ad_id}",
-            source="marktplaats",
+            id=f"{source_name}:{ad_id}",
+            source=source_name,
             url=url,
             title=title,
             text=desc,
@@ -86,21 +86,49 @@ def _parse_html(html: str) -> list[RawPost]:
     return out
 
 
-def fetch(query: str, *, limit: int = 25, location: str | None = None,
-          session: PoliteSession | None = None, **_: object) -> list[RawPost]:
-    sess = session or PoliteSession(HttpConfig(request_delay=3.0))
+def fetch_classifieds(
+    base: str,
+    query: str,
+    *,
+    source_name: str,
+    limit: int = 25,
+    location: str | None = None,
+    session: PoliteSession | None = None,
+) -> list[RawPost]:
+    """Generieke fetcher voor marktplaats.nl en 2dehands.be — zelfde JSON/HTML."""
+    sess = session or PoliteSession(HttpConfig(request_delay=2.5))
     q = f"{query} {location}".strip() if location else query
 
-    url = f"{BASE}/q/{quote(q)}/"
-    resp = sess.get(url)
-    if resp is None:
-        return []
-    try:
-        out = _parse_html(resp.text)
-    except Exception as e:
-        log.warning("Marktplaats parsing fout: %s", e)
-        out = []
+    # Search-URL.  Sorteer op datum (recent eerst) voor verse leads.
+    out: list[RawPost] = []
+    seen: set[str] = set()
+    for variant in (q, f"{q} gezocht", f"{q} gevraagd"):
+        if len(out) >= limit:
+            break
+        url = f"{base}/q/{quote(variant)}/"
+        resp = sess.get(url)
+        if resp is None:
+            continue
+        try:
+            page = _parse_html(resp.text, base=base, source_name=source_name)
+        except Exception as e:
+            log.warning("%s parsing fout (q=%r): %s", source_name, variant, e)
+            page = []
+        for p in page:
+            if p.id in seen:
+                continue
+            seen.add(p.id)
+            out.append(p)
+            if len(out) >= limit:
+                break
 
-    out = out[:limit]
-    log.info("Marktplaats: %d listings voor q=%r", len(out), q)
-    return out
+    log.info("%s: %d listings voor q=%r", source_name, len(out), q)
+    return out[:limit]
+
+
+def fetch(query: str, *, limit: int = 25, location: str | None = None,
+          session: PoliteSession | None = None, **_: object) -> list[RawPost]:
+    return fetch_classifieds(
+        BASE, query, source_name="marktplaats",
+        limit=limit, location=location, session=session,
+    )

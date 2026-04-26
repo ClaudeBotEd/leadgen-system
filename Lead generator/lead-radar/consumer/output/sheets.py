@@ -1,16 +1,18 @@
-"""Google Sheets sync — pusht alleen score>=70 leads.
+"""Google Sheets sync — drie tabs voor ALL/HOT/OPPORTUNITIES.
 
 Tabs:
-  - HOT LEADS  : score >= 80 (CONTACT NU)
-  - ALL LEADS  : score >= 70 (HOT + WARM)
+  - HOT LEADS      : score >= 80   (CONTACT NU)
+  - ALL LEADS      : score >= 70   (HOT + WARM)
+  - OPPORTUNITIES  : score 60-69   (WARM + CHECK)
 
 Kolommen: score | status | actie | stad | niche | samenvatting | bron |
           link | gevonden_op | notitie | prioriteit
 
-Status mapping per spec:
-  >= 80  -> HOT  + CONTACT  (priority 4-5)
-  70-79  -> WARM + LATER    (priority 3)
-  <  70  -> NIET geexporteerd
+Mapping per score:
+  >= 80  -> status=HOT,  actie=CONTACT  (HOT + ALL tabs)
+  70-79  -> status=WARM, actie=LATER    (ALL tab)
+  60-69  -> status=WARM, actie=CHECK    (OPPORTUNITIES tab)
+  <  60  -> NIET geexporteerd
 
 Idempotent: dedup op `link`, sortering op score desc.
 """
@@ -37,20 +39,36 @@ HEADERS = [
 ]
 HOT_TAB = "HOT LEADS"
 ALL_TAB = "ALL LEADS"
+OPP_TAB = "OPPORTUNITIES"
 
-HOT_THRESHOLD = 80   # score >= 80 -> HOT
-WARM_THRESHOLD = 70  # 70-79 -> WARM, <70 -> niet exporteren
+HOT_THRESHOLD = 80   # >= 80  -> HOT, CONTACT
+WARM_THRESHOLD = 70  # 70-79  -> WARM, LATER
+OPP_THRESHOLD = 60   # 60-69  -> WARM, CHECK
+# < 60: niet exporteren
 
 
 def status_from_score(score: int) -> str:
+    """HOT = >=80; WARM = 60-79; COLD = <60."""
     if score >= HOT_THRESHOLD:
         return "HOT"
-    if score >= WARM_THRESHOLD:
+    if score >= OPP_THRESHOLD:
         return "WARM"
     return "COLD"
 
 
+def action_from_score(score: int) -> str:
+    """CONTACT(>=80) | LATER(70-79) | CHECK(60-69) | SKIP(<60)."""
+    if score >= HOT_THRESHOLD:
+        return "CONTACT"
+    if score >= WARM_THRESHOLD:
+        return "LATER"
+    if score >= OPP_THRESHOLD:
+        return "CHECK"
+    return "SKIP"
+
+
 def action_from_status(status: str) -> str:
+    """Backwards-compat helper: zonder score is CHECK niet bepaalbaar."""
     return {"HOT": "CONTACT", "WARM": "LATER", "COLD": "SKIP"}.get(status, "SKIP")
 
 
@@ -83,20 +101,19 @@ def lead_to_row(lead: Lead) -> list:
         niche=lead.niche,
     )
     found_at = lead.captured_at or _now_str()
-    # Voor leesbaarheid in de Sheet: kort de timestamp tot 'YYYY-MM-DD HH:MM'
     if "T" in found_at:
         found_at = found_at.replace("T", " ")[:16]
     return [
         int(lead.score),
         status,
-        action_from_status(status),
+        action_from_score(lead.score),
         (lead.city or "").strip(),
         lead.niche,
         summary,
         lead.source,
         lead.url,
         found_at,
-        "",  # notitie — leeg voor de gebruiker
+        "",  # notitie — leeg voor user
         priority_from_score(lead.score, urgency),
     ]
 
@@ -211,24 +228,31 @@ def sync_to_sheets(
             f"Origineel: {e}"
         ) from e
 
-    # HOT eerst (index 0), dan ALL — zo opent de Sheet standaard op HOT.
+    # HOT eerst (index 0), ALL als 2de, OPPORTUNITIES als 3de.
     hot_ws = _open_or_create_worksheet(ss, HOT_TAB, HEADERS, index=0)
     all_ws = _open_or_create_worksheet(ss, ALL_TAB, HEADERS, index=1)
+    opp_ws = _open_or_create_worksheet(ss, OPP_TAB, HEADERS, index=2)
 
     seen_all = _existing_links(all_ws)
     seen_hot = _existing_links(hot_ws)
+    seen_opp = _existing_links(opp_ws)
 
-    # Filter <70 weg + sorteer
-    qualified = [l for l in leads if l.score >= WARM_THRESHOLD]
+    # Filter <60 weg + sorteer
+    qualified = [l for l in leads if l.score >= OPP_THRESHOLD]
     qualified.sort(key=lambda l: l.score, reverse=True)
 
     new_all_rows = [
         lead_to_row(l) for l in qualified
-        if (l.url or "").strip() and l.url not in seen_all
+        if l.score >= WARM_THRESHOLD and (l.url or "").strip() and l.url not in seen_all
     ]
     new_hot_rows = [
         lead_to_row(l) for l in qualified
         if l.score >= HOT_THRESHOLD and (l.url or "").strip() and l.url not in seen_hot
+    ]
+    new_opp_rows = [
+        lead_to_row(l) for l in qualified
+        if OPP_THRESHOLD <= l.score < WARM_THRESHOLD
+           and (l.url or "").strip() and l.url not in seen_opp
     ]
 
     if new_all_rows:
@@ -237,16 +261,22 @@ def sync_to_sheets(
     if new_hot_rows:
         hot_ws.append_rows(new_hot_rows, value_input_option="USER_ENTERED")
         log.info("Sheets: +%d leads in '%s'", len(new_hot_rows), HOT_TAB)
+    if new_opp_rows:
+        opp_ws.append_rows(new_opp_rows, value_input_option="USER_ENTERED")
+        log.info("Sheets: +%d leads in '%s'", len(new_opp_rows), OPP_TAB)
 
     _sort_by_score_desc(all_ws)
     _sort_by_score_desc(hot_ws)
+    _sort_by_score_desc(opp_ws)
 
     url = f"https://docs.google.com/spreadsheets/d/{sid}/edit"
     return {
         "all_added": len(new_all_rows),
         "hot_added": len(new_hot_rows),
+        "opp_added": len(new_opp_rows),
         "all_total": len(seen_all) + len(new_all_rows),
         "hot_total": len(seen_hot) + len(new_hot_rows),
+        "opp_total": len(seen_opp) + len(new_opp_rows),
         "qualified": len(qualified),
         "rejected_low_score": len(leads) - len(qualified),
         "spreadsheet_url": url,

@@ -42,8 +42,8 @@ DEFAULT_OUTDIR = HERE / "data" / "leads" / "consumer"
 DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
 DAILY_LOCATION = "nederland"
 DAILY_LIMIT = 25
-DAILY_MAX_QUERIES = 5
-DAILY_MIN_SCORE = 70   # alleen HOT/WARM richting sheets
+DAILY_MAX_QUERIES = 12  # hogere variatie -> meer raw posts -> meer leads
+DAILY_MIN_SCORE = 60    # >=60 voor OPPORTUNITIES tab; sheets.py filtert <60 weg
 DAILY_MAX_AGE_DAYS = 7
 
 
@@ -254,15 +254,20 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
 def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) -> None:
     hot = sum(1 for l in leads if l.score >= 80)
     warm = sum(1 for l in leads if 70 <= l.score < 80)
+    opp = sum(1 for l in leads if 60 <= l.score < 70)
     print()
     print("─" * 70)
-    print(f"  {niche:<14}  leads={len(leads):>3}   HOT(>=80)={hot:>3}   WARM(70-79)={warm:>3}")
+    print(f"  {niche:<14}  leads={len(leads):>3}   HOT={hot:>3}   WARM={warm:>3}   OPP={opp:>3}")
     if sheets_result:
-        print(f"                  sheets ALL +{sheets_result['all_added']}  HOT +{sheets_result['hot_added']}")
+        print(
+            f"                  sheets HOT +{sheets_result.get('hot_added',0)}  "
+            f"ALL +{sheets_result.get('all_added',0)}  "
+            f"OPP +{sheets_result.get('opp_added',0)}"
+        )
     if leads:
         top = sorted(leads, key=lambda l: l.score, reverse=True)[:3]
         for l in top:
-            mark = "🔥" if l.score >= 80 else "⚡"
+            mark = "🔥" if l.score >= 80 else ("⚡" if l.score >= 70 else "·")
             city = (l.city or "—")[:12]
             print(f"   {mark} [{l.score:>3}] {city:<14} {l.title[:50]}")
 
@@ -287,7 +292,7 @@ def run_daily(args: argparse.Namespace) -> int:
     niches_to_run = [n for n in DAILY_NICHES if n in available]
 
     grand_total: list[Lead] = []
-    sheets_total = {"all_added": 0, "hot_added": 0, "spreadsheet_url": ""}
+    sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
     for niche in niches_to_run:
         leads = run_one_niche(args, niche)
@@ -299,19 +304,28 @@ def run_daily(args: argparse.Namespace) -> int:
                     spreadsheet_id=args.spreadsheet_id,
                     credentials_path=args.credentials,
                 )
-                sheets_total["all_added"] += sheets_result["all_added"]
-                sheets_total["hot_added"] += sheets_result["hot_added"]
+                sheets_total["all_added"] += sheets_result.get("all_added", 0)
+                sheets_total["hot_added"] += sheets_result.get("hot_added", 0)
+                sheets_total["opp_added"] += sheets_result.get("opp_added", 0)
                 sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
             except Exception as e:
                 log.error("Sheets sync (%s) faalde: %s", niche, e)
         _print_summary(niche, leads, sheets_result)
         grand_total.extend(leads)
 
+    hot = sum(1 for l in grand_total if l.score >= 80)
+    warm = sum(1 for l in grand_total if 70 <= l.score < 80)
+    opp = sum(1 for l in grand_total if 60 <= l.score < 70)
     print()
     print("=" * 70)
-    print(f"  TOTAAL: {len(grand_total)} qualified leads (score>=70)")
+    print(f"  TOTAAL leads (score>=60): {len(grand_total)}")
+    print(f"     HOT  (>=80, CONTACT) : {hot}")
+    print(f"     WARM (70-79, LATER)  : {warm}")
+    print(f"     OPP  (60-69, CHECK)  : {opp}")
     if sheets_total["spreadsheet_url"]:
-        print(f"  Sheets: +{sheets_total['all_added']} ALL  +{sheets_total['hot_added']} HOT")
+        print(f"  Sheets pushed: HOT +{sheets_total['hot_added']}  "
+              f"ALL +{sheets_total['all_added']}  "
+              f"OPP +{sheets_total['opp_added']}")
         print(f"  Open  : {sheets_total['spreadsheet_url']}")
     print("=" * 70)
     return 0

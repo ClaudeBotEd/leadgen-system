@@ -1,6 +1,6 @@
 # Consumer Lead Radar — Search queries per niche en bron.
 # Locatie wordt {location} placeholder. Werkt voor NL + BE.
-# Pas aan naar jouw doelgroep — voeg subs/queries toe of haal eruit.
+# Aantal queries fors uitgebreid voor volume (~50 google per niche).
 
 defaults:
   reddit_subreddits:
@@ -18,65 +18,329 @@ defaults:
     - gent
     - DIYNL
     - duurzaam
+    - Klussers
+    - Offertes
+    - tweakers
+    - hvac
+    - heatpumps
+  cities_nl:
+    - amsterdam
+    - rotterdam
+    - utrecht
+    - "den haag"
+    - eindhoven
+    - groningen
+    - tilburg
+    - almere
+    - breda
+    - nijmegen
+    - haarlem
+    - arnhem
+    - amersfoort
+    - leiden
+    - maastricht
+  cities_be:
+    - antwerpen
+    - gent
+    - brussel
+    - leuven
+    - brugge
+    - mechelen
+    - hasselt
+    - kortrijk
 
 niches:
   warmtepomp:
     keywords_required:
       - warmtepomp
     queries_text:
-      - "warmtepomp installateur"
-      - "warmtepomp advies"
+      - "warmtepomp installateur gezocht"
+      - "warmtepomp installateur nodig"
+      - "warmtepomp advies nodig"
       - "warmtepomp offerte"
-      - "hybride warmtepomp"
+      - "warmtepomp offerte nodig"
+      - "warmtepomp laten plaatsen"
+      - "warmtepomp laten installeren"
+      - "warmtepomp plaatsen prijs"
+      - "wie kan warmtepomp installeren"
+      - "wie kan warmtepomp plaatsen"
+      - "hybride warmtepomp installateur"
       - "lucht water warmtepomp"
       - "warmtepomp aansluiten"
       - "warmtepomp installatie"
+      - "warmtepomp uitkiezen"
+      - "warmtepomp keuze advies"
       - "isde subsidie warmtepomp"
+      - "warmtepomp tip"
+      - "warmtepomp aanrader"
+      - "warmtepomp ervaring installateur"
+      - "warmtepomp probleem installateur"
+      - "all electric warmtepomp"
+      - "monteur warmtepomp gezocht"
+      - "vakman warmtepomp"
+      - "warmtepomp vervangen cv"
     google_queries:
-      - 'site:reddit.com warmtepomp installateur OR offerte {location}'
+      - 'site:reddit.com warmtepomp installateur {location}'
+      - 'site:reddit.com warmtepomp offerte {location}'
+      - 'site:reddit.com warmtepomp advies {location}'
+      - 'site:reddit.com hybride warmtepomp {location}'
+      - 'site:reddit.com warmtepomp gezocht {location}'
       - 'site:gathering.tweakers.net warmtepomp installateur'
+      - 'site:gathering.tweakers.net warmtepomp offerte'
+      - 'site:gathering.tweakers.net warmtepomp advies'
+      - 'site:gathering.tweakers.net hybride warmtepomp'
+      - 'site:gathering.tweakers.net all electric warmtepomp'
       - 'site:bouwinfo.be warmtepomp installateur'
-      - '"zoek installateur" warmtepomp {location}'
+      - 'site:bouwinfo.be warmtepomp prijs'
+      - 'site:bouwinfo.be warmtepomp advies'
+      - '"installateur gezocht" warmtepomp {location}'
+      - '"warmtepomp installateur nodig" {location}'
       - '"wie kan warmtepomp" {location}'
+      - '"wie kan warmtepomp plaatsen" {location}'
+      - '"warmtepomp laten plaatsen" {location}'
+      - '"warmtepomp offerte" forum'
+      - '"warmtepomp offerte nodig" {location}'
+      - '"warmtepomp advies" forum {location}'
+      - '"hybride warmtepomp installateur" {location}'
+      - '"warmtepomp installateur amsterdam"'
+      - '"warmtepomp installateur rotterdam"'
+      - '"warmtepomp installateur utrecht"'
+      - '"warmtepomp installateur eindhoven"'
+      - '"warmtepomp installateur den haag"'
+      - '"warmtepomp installateur groningen"'
+      - '"warmtepomp installateur tilburg"'
+      - '"warmtepomp installateur breda"'
+      - '"warmtepomp installateur nijmegen"'
+      - '"warmtepomp installateur arnhem"'
+      - '"warmtepomp installateur antwerpen"'
+      - '"warmtepomp installateur gent"'
+      - '"warmtepomp installateur brussel"'
+      - '"warmtepomp installateur leuven"'
+      - '"warmtepomp installateur hasselt"'
+      - '"warmtepomp plaatsen prijs"'
+      - '"hybride warmtepomp" "wat kost"'
+      - '"warmtepomp" "spoed"'
+      - '"warmtepomp" "deze maand"'
+      - 'site:facebook.com/groups warmtepomp {location}'
+      - '"warmtepomp" "wie kan plaatsen"'
+      - '"warmtepomp" "monteur gezocht"'
+      - '"warmtepomp installatie" "offerte"'
+      - '"warmtepomp" "laten plaatsen" {location}'
+      - '"all electric warmtepomp installateur" {location}'
+      - '"warmtepomp gevraagd" {location}'
+      - 'forum warmtepomp installateur {location}'
+      - 'r/Klussers warmtepomp installateur'
+      - 'r/Offertes warmtepomp'
     marktplaats_queries:
-      - "warmtepomp installateur"
-      - "warmtepomp aansluiten"
-      - "warmtepomp installatie"
+      - "warmtepomp installateur gezocht"
+      - "warmtepomp installateur gevraagd"
+      - "warmtepomp installatie gezocht"
+      - "warmtepomp aansluiten gevraagd"
+      - "warmtepomp monteur gezocht"
+      - "vakman warmtepomp gezocht"
+      - "warmtepomp laten plaatsen"
+      - "warmtepomp specialist gezocht"
+      - "hybride warmtepomp installateur"
+      - "warmtepomp opdrachtgever zoekt"
+      - "wie kan warmtepomp"
+      - "warmtepomp plaatsen prijs"
+      - "warmtepomp installateur antwerpen"
+      - "warmtepomp installateur gent"
+      - "warmtepomp installateur amsterdam"
 
   airco:
     keywords_required:
       - airco
     queries_text:
-      - "airco installateur"
-      - "airco plaatsen"
-      - "split airco aanleg"
+      - "airco installateur gezocht"
+      - "airco installateur nodig"
+      - "airco laten plaatsen"
+      - "airco laten installeren"
+      - "airco plaatsen prijs"
       - "airco offerte"
+      - "airco offerte nodig"
+      - "airco advies nodig"
+      - "wie kan airco plaatsen"
+      - "wie kan airco installeren"
+      - "split airco aanleg"
+      - "split airco installateur"
       - "airco montage"
-      - "airco advies"
+      - "airco monteur gezocht"
+      - "airco vakman gezocht"
+      - "airco specialist"
+      - "airco aanrader"
+      - "airco tip"
+      - "airco probleem"
+      - "airco werkt niet"
+      - "airco kapot installateur"
+      - "cassette airco installateur"
+      - "airconditioning installateur"
+      - "airco huis"
+      - "airco slaapkamer plaatsen"
     google_queries:
-      - 'site:reddit.com airco installateur OR offerte {location}'
+      - 'site:reddit.com airco installateur {location}'
+      - 'site:reddit.com airco offerte {location}'
+      - 'site:reddit.com airco plaatsen {location}'
+      - 'site:reddit.com split airco {location}'
       - 'site:gathering.tweakers.net airco installateur'
+      - 'site:gathering.tweakers.net airco offerte'
+      - 'site:gathering.tweakers.net split airco'
+      - 'site:gathering.tweakers.net airco advies'
+      - 'site:bouwinfo.be airco installateur'
+      - 'site:bouwinfo.be airco prijs'
+      - '"installateur gezocht" airco {location}'
+      - '"airco installateur nodig" {location}'
+      - '"wie kan airco plaatsen" {location}'
+      - '"wie kan airco installeren" {location}'
       - '"airco laten plaatsen" {location}'
+      - '"airco offerte nodig" {location}'
+      - '"airco advies" forum {location}'
+      - '"split airco installateur" {location}'
+      - '"airco installateur amsterdam"'
+      - '"airco installateur rotterdam"'
+      - '"airco installateur utrecht"'
+      - '"airco installateur eindhoven"'
+      - '"airco installateur den haag"'
+      - '"airco installateur groningen"'
+      - '"airco installateur tilburg"'
+      - '"airco installateur breda"'
+      - '"airco installateur nijmegen"'
+      - '"airco installateur antwerpen"'
+      - '"airco installateur gent"'
+      - '"airco installateur brussel"'
+      - '"airco installateur leuven"'
+      - '"airco installateur hasselt"'
+      - '"airco plaatsen prijs"'
+      - '"airco" "wat kost"'
+      - '"airco" "spoed"'
+      - '"airco" "deze maand"'
+      - '"airco gevraagd" {location}'
+      - '"airco" "monteur gezocht"'
+      - '"airco" "vakman gezocht"'
+      - '"airco installatie" "offerte"'
+      - 'site:facebook.com/groups airco {location}'
+      - 'forum airco installateur {location}'
+      - 'r/Klussers airco installateur'
+      - 'r/Offertes airco'
+      - '"split airco aanleg" {location}'
+      - '"airconditioning installateur" {location}'
+      - '"airco" "wie kan" {location}'
+      - '"airco" "laten plaatsen" {location}'
+      - '"airco" "ik zoek" {location}'
+      - '"airco montage" {location}'
     marktplaats_queries:
-      - "airco installateur"
-      - "airco plaatsen"
+      - "airco installateur gezocht"
+      - "airco installateur gevraagd"
+      - "airco plaatsen gezocht"
+      - "airco aanleg gevraagd"
+      - "airco monteur gezocht"
+      - "vakman airco gezocht"
+      - "split airco installateur"
+      - "airco laten plaatsen"
+      - "airco specialist gezocht"
+      - "wie kan airco plaatsen"
+      - "airco montage gevraagd"
+      - "cassette airco installateur"
+      - "airco installateur antwerpen"
+      - "airco installateur gent"
+      - "airco installateur amsterdam"
 
   zonnepanelen:
     keywords_required:
       - zonnepanelen
     queries_text:
-      - "zonnepanelen installateur"
+      - "zonnepanelen installateur gezocht"
+      - "zonnepanelen installateur nodig"
+      - "zonnepanelen laten plaatsen"
+      - "zonnepanelen plaatsen prijs"
       - "zonnepanelen offerte"
-      - "zonnepanelen advies"
+      - "zonnepanelen offerte nodig"
+      - "zonnepanelen advies nodig"
+      - "wie kan zonnepanelen plaatsen"
+      - "wie kan zonnepanelen installeren"
       - "thuisbatterij installateur"
+      - "thuisbatterij gezocht"
       - "omvormer installeren"
+      - "omvormer kapot"
+      - "zonnepanelen monteur"
+      - "zonnepanelen vakman"
+      - "zonnepanelen specialist"
+      - "zonnepanelen tip"
+      - "zonnepanelen aanrader"
+      - "zonnepanelen probleem"
+      - "zonnepanelen werkt niet"
+      - "PV installatie installateur"
+      - "PV systeem advies"
+      - "zonnepanelen huis"
+      - "zonnepanelen schuin dak"
+      - "zonnepanelen plat dak"
     google_queries:
-      - 'site:reddit.com zonnepanelen installateur OR offerte {location}'
+      - 'site:reddit.com zonnepanelen installateur {location}'
+      - 'site:reddit.com zonnepanelen offerte {location}'
+      - 'site:reddit.com zonnepanelen advies {location}'
+      - 'site:reddit.com thuisbatterij {location}'
       - 'site:gathering.tweakers.net zonnepanelen installateur'
+      - 'site:gathering.tweakers.net zonnepanelen offerte'
+      - 'site:gathering.tweakers.net thuisbatterij'
+      - 'site:gathering.tweakers.net omvormer'
+      - 'site:bouwinfo.be zonnepanelen installateur'
+      - 'site:bouwinfo.be zonnepanelen prijs'
+      - '"installateur gezocht" zonnepanelen {location}'
+      - '"zonnepanelen installateur nodig" {location}'
+      - '"wie kan zonnepanelen plaatsen" {location}'
       - '"zonnepanelen laten plaatsen" {location}'
+      - '"zonnepanelen offerte nodig" {location}'
+      - '"zonnepanelen advies" forum {location}'
+      - '"thuisbatterij installateur" {location}'
+      - '"zonnepanelen installateur amsterdam"'
+      - '"zonnepanelen installateur rotterdam"'
+      - '"zonnepanelen installateur utrecht"'
+      - '"zonnepanelen installateur eindhoven"'
+      - '"zonnepanelen installateur den haag"'
+      - '"zonnepanelen installateur groningen"'
+      - '"zonnepanelen installateur tilburg"'
+      - '"zonnepanelen installateur breda"'
+      - '"zonnepanelen installateur nijmegen"'
+      - '"zonnepanelen installateur antwerpen"'
+      - '"zonnepanelen installateur gent"'
+      - '"zonnepanelen installateur brussel"'
+      - '"zonnepanelen installateur leuven"'
+      - '"zonnepanelen installateur hasselt"'
+      - '"zonnepanelen plaatsen prijs"'
+      - '"zonnepanelen" "wat kost"'
+      - '"zonnepanelen" "spoed"'
+      - '"zonnepanelen" "deze maand"'
+      - '"zonnepanelen gevraagd" {location}'
+      - '"zonnepanelen" "monteur gezocht"'
+      - '"PV installatie" {location}'
+      - '"PV systeem" "offerte" {location}'
+      - 'site:facebook.com/groups zonnepanelen {location}'
+      - 'forum zonnepanelen installateur {location}'
+      - 'r/Klussers zonnepanelen installateur'
+      - 'r/Offertes zonnepanelen'
+      - '"zonnepanelen" "wie kan" {location}'
+      - '"zonnepanelen" "laten plaatsen" {location}'
+      - '"omvormer kapot" forum'
+      - '"thuisbatterij" "wie kan plaatsen" {location}'
+      - '"zonnepanelen" "ik zoek" {location}'
+      - 'forum thuisbatterij installateur'
+      - 'site:bouwinfo.be thuisbatterij'
     marktplaats_queries:
-      - "zonnepanelen installateur"
-      - "zonnepanelen plaatsen"
+      - "zonnepanelen installateur gezocht"
+      - "zonnepanelen installateur gevraagd"
+      - "zonnepanelen plaatsen gezocht"
+      - "zonnepanelen monteur gezocht"
+      - "zonnepanelen vakman gezocht"
+      - "zonnepanelen laten plaatsen"
+      - "thuisbatterij installateur"
+      - "wie kan zonnepanelen plaatsen"
+      - "PV installatie gezocht"
+      - "omvormer installateur"
+      - "zonnepanelen specialist gezocht"
+      - "zonnepanelen advies gezocht"
+      - "zonnepanelen installateur antwerpen"
+      - "zonnepanelen installateur gent"
+      - "zonnepanelen installateur amsterdam"
 
   cv:
     keywords_required:
@@ -84,35 +348,193 @@ niches:
       - ketel
       - verwarming
     queries_text:
+      - "cv ketel kapot installateur"
+      - "cv ketel storing monteur"
       - "cv ketel vervangen"
-      - "cv ketel kapot"
-      - "nieuwe cv ketel"
-      - "cv installateur"
-      - "verwarmingsmonteur"
+      - "cv ketel vervangen offerte"
+      - "nieuwe cv ketel installateur"
+      - "cv installateur gezocht"
+      - "cv installateur nodig"
+      - "verwarmingsmonteur gezocht"
+      - "verwarmingsmonteur nodig"
+      - "wie kan cv ketel vervangen"
+      - "wie kan ketel installeren"
+      - "ketel storing monteur"
       - "cv ketel offerte"
-      - "ketel storing"
+      - "cv ketel offerte nodig"
+      - "cv ketel advies"
+      - "cv ketel kapot deze maand"
+      - "verwarming kapot spoed"
+      - "ketel lekt installateur"
+      - "ketel werkt niet monteur"
+      - "cv vervangen advies"
+      - "cv ketel laten plaatsen"
+      - "cv ketel monteur"
+      - "centrale verwarming kapot"
+      - "ketel onderhoud monteur"
+      - "ketel uitvallen installateur"
     google_queries:
-      - 'site:reddit.com cv ketel installateur OR offerte {location}'
+      - 'site:reddit.com cv ketel installateur {location}'
+      - 'site:reddit.com cv ketel offerte {location}'
+      - 'site:reddit.com cv ketel kapot {location}'
+      - 'site:reddit.com cv ketel vervangen {location}'
       - 'site:gathering.tweakers.net cv ketel'
+      - 'site:gathering.tweakers.net cv installateur'
+      - 'site:gathering.tweakers.net ketel storing'
+      - 'site:gathering.tweakers.net cv vervangen'
+      - 'site:bouwinfo.be cv ketel installateur'
+      - 'site:bouwinfo.be cv ketel prijs'
+      - '"installateur gezocht" "cv ketel" {location}'
+      - '"cv ketel" "monteur gezocht" {location}'
+      - '"wie kan cv ketel" {location}'
       - '"cv ketel vervangen" {location}'
+      - '"cv ketel kapot" {location}'
+      - '"verwarmingsmonteur gezocht" {location}'
+      - '"cv ketel offerte" {location}'
+      - '"cv installateur amsterdam"'
+      - '"cv installateur rotterdam"'
+      - '"cv installateur utrecht"'
+      - '"cv installateur eindhoven"'
+      - '"cv installateur den haag"'
+      - '"cv installateur groningen"'
+      - '"cv installateur tilburg"'
+      - '"cv installateur breda"'
+      - '"cv installateur nijmegen"'
+      - '"cv installateur antwerpen"'
+      - '"cv installateur gent"'
+      - '"cv installateur brussel"'
+      - '"cv installateur leuven"'
+      - '"cv installateur hasselt"'
+      - '"cv ketel" "spoed"'
+      - '"cv ketel" "deze week"'
+      - '"cv ketel" "deze maand"'
+      - '"ketel storing" {location}'
+      - '"ketel werkt niet" {location}'
+      - '"ketel lekt" {location}'
+      - '"ketel kapot" "wie kan" {location}'
+      - 'site:facebook.com/groups "cv ketel" {location}'
+      - '"verwarming kapot" {location}'
+      - 'forum cv installateur {location}'
+      - 'r/Klussers cv ketel'
+      - 'r/Offertes cv ketel'
+      - '"cv vervangen" "offerte" {location}'
+      - '"cv ketel" "laten plaatsen" {location}'
+      - '"nieuwe cv ketel" "advies" {location}'
+      - '"cv ketel" "ik zoek" {location}'
+      - '"verwarmingsmonteur" "spoed" {location}'
+      - '"cv onderhoud" {location}'
+      - '"ketel" "monteur gezocht" {location}'
     marktplaats_queries:
-      - "cv installateur"
-      - "verwarmingsmonteur"
+      - "cv installateur gezocht"
+      - "cv installateur gevraagd"
+      - "cv ketel installateur"
+      - "verwarmingsmonteur gezocht"
+      - "verwarmingsmonteur gevraagd"
+      - "cv ketel vervangen monteur"
+      - "wie kan cv ketel"
+      - "cv ketel laten plaatsen"
+      - "ketel storing monteur"
+      - "ketel kapot monteur"
+      - "verwarming kapot installateur"
+      - "cv ketel monteur antwerpen"
+      - "cv installateur antwerpen"
+      - "cv installateur gent"
+      - "cv installateur amsterdam"
 
   renovatie:
     keywords_required:
       - renovatie
+      - verbouwing
     queries_text:
-      - "renovatie aannemer"
+      - "renovatie aannemer gezocht"
+      - "renovatie aannemer nodig"
+      - "verbouwing aannemer"
       - "verbouwing offerte"
+      - "verbouwing offerte nodig"
       - "renovatie advies"
-      - "vakman gezocht"
-      - "aannemer offerte"
+      - "vakman renovatie gezocht"
+      - "vakman gezocht verbouwing"
+      - "wie kan renovatie"
+      - "wie kan verbouwen"
+      - "aannemer offerte renovatie"
       - "renovatie planning"
+      - "renovatie woning advies"
+      - "huis renovatie installateur"
+      - "badkamer renovatie aannemer"
+      - "keuken renovatie aannemer"
+      - "dak renovatie aannemer"
+      - "klusbedrijf gezocht"
+      - "klusjesman gezocht"
+      - "vakman gezocht klus"
+      - "verbouwing planning advies"
+      - "renovatie advies nodig"
+      - "huis verbouwen offerte"
+      - "renovatie aanrader"
+      - "verbouwing tip"
     google_queries:
-      - 'site:reddit.com renovatie aannemer OR offerte {location}'
+      - 'site:reddit.com renovatie aannemer {location}'
+      - 'site:reddit.com verbouwing offerte {location}'
+      - 'site:reddit.com renovatie advies {location}'
+      - 'site:reddit.com aannemer gezocht {location}'
+      - 'site:gathering.tweakers.net renovatie aannemer'
+      - 'site:gathering.tweakers.net verbouwing offerte'
       - 'site:bouwinfo.be renovatie aannemer'
-      - '"verbouwing aannemer" {location}'
+      - 'site:bouwinfo.be verbouwing prijs'
+      - 'site:bouwinfo.be vakman gezocht'
+      - '"aannemer gezocht" renovatie {location}'
+      - '"aannemer gezocht" verbouwing {location}'
+      - '"vakman gezocht" {location}'
+      - '"klusbedrijf gezocht" {location}'
+      - '"wie kan renovatie" {location}'
+      - '"renovatie offerte nodig" {location}'
+      - '"verbouwing offerte nodig" {location}'
+      - '"renovatie aannemer amsterdam"'
+      - '"renovatie aannemer rotterdam"'
+      - '"renovatie aannemer utrecht"'
+      - '"renovatie aannemer eindhoven"'
+      - '"renovatie aannemer den haag"'
+      - '"renovatie aannemer groningen"'
+      - '"renovatie aannemer tilburg"'
+      - '"renovatie aannemer breda"'
+      - '"renovatie aannemer nijmegen"'
+      - '"aannemer renovatie antwerpen"'
+      - '"aannemer renovatie gent"'
+      - '"aannemer renovatie brussel"'
+      - '"aannemer renovatie leuven"'
+      - '"aannemer renovatie hasselt"'
+      - '"badkamer renovatie aannemer" {location}'
+      - '"keuken renovatie aannemer" {location}'
+      - '"dak renovatie aannemer" {location}'
+      - '"renovatie" "spoed" {location}'
+      - '"renovatie" "deze maand" {location}'
+      - '"verbouwing" "deze maand" {location}'
+      - 'site:facebook.com/groups renovatie {location}'
+      - '"verbouwing" "monteur gezocht" {location}'
+      - 'forum renovatie aannemer {location}'
+      - 'r/Klussers aannemer'
+      - 'r/Offertes renovatie'
+      - 'r/Offertes verbouwing'
+      - '"renovatie aannemer" "offerte" {location}'
+      - '"verbouwing aannemer" "offerte" {location}'
+      - '"renovatie woning" {location} aannemer'
+      - '"huis verbouwen" "advies" {location}'
+      - '"renovatie" "ik zoek" {location}'
+      - '"klusbedrijf" "gezocht" {location}'
+      - '"vakman" "renovatie" {location}'
+      - '"aannemer" "verbouwing" "offerte" {location}'
     marktplaats_queries:
-      - "aannemer renovatie"
-      - "vakman renovatie"
+      - "aannemer renovatie gezocht"
+      - "aannemer verbouwing gezocht"
+      - "vakman renovatie gezocht"
+      - "klusbedrijf gezocht"
+      - "klusjesman gezocht"
+      - "renovatie aannemer nodig"
+      - "verbouwing aannemer nodig"
+      - "wie kan renoveren"
+      - "badkamer renovatie aannemer"
+      - "keuken renovatie aannemer"
+      - "dak renovatie aannemer"
+      - "verbouwing offerte"
+      - "aannemer renovatie antwerpen"
+      - "aannemer renovatie gent"
+      - "aannemer renovatie amsterdam"
