@@ -171,6 +171,93 @@ Pipeline:
   recurring vragers (lage waarde) te onderscheiden van nieuwe leads.
 - **Streamlit dashboard** over de CSV met "mark contacted" knop.
 
+## Google Sheets sync
+
+Na elke run kunnen de leads automatisch in een Google Sheet komen. Twee tabs:
+**ALL LEADS** (alles) en **TOP LEADS** (score ≥ 70). Idempotent — dubbele
+leads worden niet opnieuw toegevoegd. Gesorteerd op score (HOT bovenaan).
+
+### 1. Google Cloud project + API aanzetten
+
+1. Ga naar https://console.cloud.google.com/
+2. Maak een project (bv "Lead Radar"), of kies een bestaand project.
+3. Open **APIs & Services → Library**, zoek en enable:
+   - **Google Sheets API**
+   - **Google Drive API**
+
+### 2. Service account aanmaken + JSON-key downloaden
+
+1. **APIs & Services → Credentials → "+ Create Credentials" → Service account**
+2. Naam: `lead-radar-bot`. Klik door tot "Done".
+3. Klik op de zojuist aangemaakte service account → tab **Keys**
+   → **Add Key → Create new key → JSON**.
+4. Er wordt een `<project>-xxxxx.json` gedownload. Verplaats die naar:
+   ```
+   lead-radar/.credentials/google_sheets.json
+   ```
+   (Map staat al in `.gitignore` — wordt nooit gecommit.)
+
+### 3. Sheet aanmaken + toegang geven
+
+1. Maak een nieuwe Google Sheet (https://sheets.new). Geef een titel,
+   bv "Lead Radar — Consumer Leads".
+2. Kopieer het **spreadsheet ID** uit de URL. De URL ziet er zo uit:
+   `https://docs.google.com/spreadsheets/d/`**`<DIT_DEEL_IS_HET_ID>`**`/edit`
+3. Open `lead-radar/.credentials/google_sheets.json`, kopieer de waarde
+   van `client_email` (iets als `lead-radar-bot@<project>.iam.gserviceaccount.com`).
+4. In je Sheet: **Share** knop rechtsboven → plak het service-account email
+   → rol **Editor** → Send. (Geen melding nodig — vink "Notify people" uit.)
+
+### 4. Configureer + run
+
+Eénmalig — geef de spreadsheet-ID door via env var (handigst):
+```bash
+export LEAD_RADAR_SPREADSHEET_ID="<jouw_id>"
+```
+Of zet het in `~/.zshrc` zodat het na elke nieuwe shell beschikbaar is.
+
+Run met sync:
+```bash
+python run_consumer.py --niche warmtepomp --location nederland --limit 25 --sheets
+```
+
+Of expliciet (zonder env):
+```bash
+python run_consumer.py --niche warmtepomp --sheets \
+   --spreadsheet-id "<jouw_id>" \
+   --credentials .credentials/google_sheets.json
+```
+
+### Sheet structuur
+
+Tabs **ALL LEADS** en **TOP LEADS** worden auto-aangemaakt met deze kolommen:
+
+| score | status | stad | niche | samenvatting | actie | bron | link |
+|---|---|---|---|---|---|---|---|
+| 85 | HOT | utrecht | warmtepomp | Wie heeft tip warmtepomp installateur? CV kapot, deze maand offerte… | CONTACT | reddit | https://… |
+
+Status-mapping: ≥70 → HOT, 40-69 → WARM, <40 → COLD.
+Actie-mapping: HOT → CONTACT, WARM → LATER, COLD → SKIP.
+
+### Daily cron
+
+Bv elke ochtend automatisch alle 5 niches naar Sheets:
+```bash
+# crontab -e
+0 8 * * *  cd "$HOME/Lead generator/lead-radar" && \
+   for n in warmtepomp airco zonnepanelen cv renovatie; do \
+     python3 run_consumer.py --niche $n --location nederland --limit 25 --sheets; \
+   done >> /tmp/leadradar.log 2>&1
+```
+
+### Troubleshooting Sheets
+
+- **"Service-account JSON niet gevonden"**: check pad bovenstaand.
+- **"Kon spreadsheet … niet openen"**: vergat je het service-account
+  email als Editor te sharen?
+- **`SpreadsheetNotFound`**: ID klopt niet — kopieer opnieuw uit URL.
+- **`PermissionDenied: Drive API not enabled`**: stap 1 — enable Drive API.
+
 ## Troubleshooting
 
 - **Reddit 429**: `request_delay` omhoog in `consumer/utils.py`.

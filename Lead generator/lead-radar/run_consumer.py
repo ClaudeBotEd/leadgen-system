@@ -27,7 +27,7 @@ from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import REGISTRY, ALL_SOURCES, analyze_manual_posts  # noqa: E402
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
 from consumer.processor import clean_post, is_potential_lead, score_post  # noqa: E402
-from consumer.output import export_leads  # noqa: E402
+from consumer.output import export_leads, sync_to_sheets  # noqa: E402
 from consumer.utils import PoliteSession, HttpConfig, SeenStore  # noqa: E402
 
 log = logging.getLogger("consumer.cli")
@@ -74,6 +74,13 @@ def parse_args() -> argparse.Namespace:
                    help="Cross-run dedup uitzetten (gebruik niet seen_hashes.json)")
     p.add_argument("--max-queries", type=int, default=8,
                    help="Max # tekst-queries per niche (default 8) — beschermt tegen lange runs")
+    # Google Sheets sync
+    p.add_argument("--sheets", action="store_true",
+                   help="Push leads naar Google Sheets na de run (vereist --spreadsheet-id of LEAD_RADAR_SPREADSHEET_ID env)")
+    p.add_argument("--spreadsheet-id", default=None,
+                   help="Google Sheets spreadsheet ID (uit URL).  Default: env LEAD_RADAR_SPREADSHEET_ID")
+    p.add_argument("--credentials", default=None,
+                   help="Pad naar Google service-account JSON.  Default: lead-radar/.credentials/google_sheets.json of env LEAD_RADAR_GS_CREDENTIALS")
     p.add_argument("--verbose", action="store_true")
     return p.parse_args()
 
@@ -209,6 +216,25 @@ def run_pipeline(args: argparse.Namespace) -> int:
              len(raw_total), len(leads), skipped_promo_or_info, skipped_low_score)
 
     paths = export_leads(leads, niche=args.niche, outdir=args.outdir)
+
+    sheets_result: dict | None = None
+    if args.sheets and leads:
+        try:
+            sheets_result = sync_to_sheets(
+                leads,
+                spreadsheet_id=args.spreadsheet_id,
+                credentials_path=args.credentials,
+            )
+            log.info(
+                "Sheets sync OK: +%d ALL, +%d TOP -> %s",
+                sheets_result["all_added"], sheets_result["top_added"],
+                sheets_result["spreadsheet_url"],
+            )
+        except Exception as e:
+            log.error("Sheets sync faalde: %s", e)
+    elif args.sheets and not leads:
+        log.info("Sheets sync overgeslagen — geen leads in deze run")
+
     print()
     print("=" * 70)
     print(f"  CONSUMER LEAD RADAR  —  niche={args.niche}  location={args.location}")
@@ -226,6 +252,9 @@ def run_pipeline(args: argparse.Namespace) -> int:
     print(f"  CSV  : {paths.get('csv')}")
     if "json" in paths:
         print(f"  JSON : {paths.get('json')}")
+    if sheets_result:
+        print(f"  Sheets ALL +{sheets_result['all_added']}  TOP +{sheets_result['top_added']}")
+        print(f"  Sheet  : {sheets_result['spreadsheet_url']}")
     print("=" * 70)
     if leads:
         top = sorted(leads, key=lambda l: l.score, reverse=True)[:5]

@@ -2,6 +2,12 @@
 lead-radar/data/leads_*.csv
 lead-radar/data/leads_*.json
 lead-radar/data/leads_master.csv
+lead-radar/data/leads/
+
+# Google Sheets — service-account credentials NEVER committen
+lead-radar/.credentials/
+*.credentials.json
+**/google_sheets.json
 lead-radar/.venv/
 lead-radar/__pycache__/
 lead-radar/**/__pycache__/
