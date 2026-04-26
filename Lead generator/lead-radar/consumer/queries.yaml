@@ -1,0 +1,118 @@
+# Consumer Lead Radar — Search queries per niche en bron.
+# Locatie wordt {location} placeholder. Werkt voor NL + BE.
+# Pas aan naar jouw doelgroep — voeg subs/queries toe of haal eruit.
+
+defaults:
+  reddit_subreddits:
+    - thenetherlands
+    - Netherlands
+    - belgium
+    - belgium2
+    - dutch
+    - amsterdam
+    - rotterdam
+    - utrecht
+    - eindhoven
+    - groningen
+    - antwerpen
+    - gent
+    - DIYNL
+    - duurzaam
+
+niches:
+  warmtepomp:
+    keywords_required:
+      - warmtepomp
+    queries_text:
+      - "warmtepomp installateur"
+      - "warmtepomp advies"
+      - "warmtepomp offerte"
+      - "hybride warmtepomp"
+      - "lucht water warmtepomp"
+      - "warmtepomp aansluiten"
+      - "warmtepomp installatie"
+      - "isde subsidie warmtepomp"
+    google_queries:
+      - 'site:reddit.com warmtepomp installateur OR offerte {location}'
+      - 'site:gathering.tweakers.net warmtepomp installateur'
+      - 'site:bouwinfo.be warmtepomp installateur'
+      - '"zoek installateur" warmtepomp {location}'
+      - '"wie kan warmtepomp" {location}'
+    marktplaats_queries:
+      - "warmtepomp installateur"
+      - "warmtepomp aansluiten"
+      - "warmtepomp installatie"
+
+  airco:
+    keywords_required:
+      - airco
+    queries_text:
+      - "airco installateur"
+      - "airco plaatsen"
+      - "split airco aanleg"
+      - "airco offerte"
+      - "airco montage"
+      - "airco advies"
+    google_queries:
+      - 'site:reddit.com airco installateur OR offerte {location}'
+      - 'site:gathering.tweakers.net airco installateur'
+      - '"airco laten plaatsen" {location}'
+    marktplaats_queries:
+      - "airco installateur"
+      - "airco plaatsen"
+
+  zonnepanelen:
+    keywords_required:
+      - zonnepanelen
+    queries_text:
+      - "zonnepanelen installateur"
+      - "zonnepanelen offerte"
+      - "zonnepanelen advies"
+      - "thuisbatterij installateur"
+      - "omvormer installeren"
+    google_queries:
+      - 'site:reddit.com zonnepanelen installateur OR offerte {location}'
+      - 'site:gathering.tweakers.net zonnepanelen installateur'
+      - '"zonnepanelen laten plaatsen" {location}'
+    marktplaats_queries:
+      - "zonnepanelen installateur"
+      - "zonnepanelen plaatsen"
+
+  cv:
+    keywords_required:
+      - cv
+      - ketel
+      - verwarming
+    queries_text:
+      - "cv ketel vervangen"
+      - "cv ketel kapot"
+      - "nieuwe cv ketel"
+      - "cv installateur"
+      - "verwarmingsmonteur"
+      - "cv ketel offerte"
+      - "ketel storing"
+    google_queries:
+      - 'site:reddit.com cv ketel installateur OR offerte {location}'
+      - 'site:gathering.tweakers.net cv ketel'
+      - '"cv ketel vervangen" {location}'
+    marktplaats_queries:
+      - "cv installateur"
+      - "verwarmingsmonteur"
+
+  renovatie:
+    keywords_required:
+      - renovatie
+    queries_text:
+      - "renovatie aannemer"
+      - "verbouwing offerte"
+      - "renovatie advies"
+      - "vakman gezocht"
+      - "aannemer offerte"
+      - "renovatie planning"
+    google_queries:
+      - 'site:reddit.com renovatie aannemer OR offerte {location}'
+      - 'site:bouwinfo.be renovatie aannemer'
+      - '"verbouwing aannemer" {location}'
+    marktplaats_queries:
+      - "aannemer renovatie"
+      - "vakman renovatie"
