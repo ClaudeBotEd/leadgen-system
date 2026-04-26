@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Consumer Lead Radar — CLI.
 
-Voorbeelden:
+Daily mode (1 command, alles gepusht naar Sheets):
+    python run_consumer.py --daily
+
+Single niche:
     python run_consumer.py --niche warmtepomp --location nederland --limit 50
     python run_consumer.py --niche airco --sources reddit,tweakers --limit 100
-    python run_consumer.py --niche cv --location amsterdam --min-score 50 --verbose
     python run_consumer.py --niche warmtepomp --facebook-file fb_posts.txt
 
-Geen Reddit-API key nodig.  Geen automatische outreach — alleen discovery,
-filtering, scoring, en CSV/JSON output.
+Geen Reddit-API key nodig.  Geen automatische outreach — discovery,
+filtering, scoring, CSV/JSON output, optioneel Google Sheets sync.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ import argparse
 import logging
 import sys
 import time
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import yaml
@@ -34,6 +37,14 @@ log = logging.getLogger("consumer.cli")
 
 DEFAULT_QUERIES_YAML = HERE / "consumer" / "queries.yaml"
 DEFAULT_OUTDIR = HERE / "data" / "leads" / "consumer"
+
+# Defaults voor --daily mode (production usage)
+DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
+DAILY_LOCATION = "nederland"
+DAILY_LIMIT = 25
+DAILY_MAX_QUERIES = 5
+DAILY_MIN_SCORE = 70   # alleen HOT/WARM richting sheets
+DAILY_MAX_AGE_DAYS = 7
 
 
 def setup_logging(verbose: bool) -> None:
@@ -54,39 +65,50 @@ def load_config(path: Path) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Consumer lead radar — vindt high-intent NL/BE leads")
-    p.add_argument("--niche", required=True,
-                   help="Niche (warmtepomp, airco, zonnepanelen, cv, renovatie). Moet bestaan in queries.yaml")
+
+    # Daily preset (alle niches in 1 command)
+    p.add_argument("--daily", action="store_true",
+                   help="Daily preset: alle niches, score>=70, time filter 7d, sheets sync. Geen --niche nodig.")
+
+    # Niche-specifiek (of via --daily over alle niches)
+    p.add_argument("--niche", default=None,
+                   help="Niche (warmtepomp/airco/zonnepanelen/cv/renovatie). Vereist tenzij --daily.")
     p.add_argument("--location", default=None,
-                   help="Locatie (bv 'nederland', 'amsterdam', 'antwerpen'). Optioneel.")
+                   help="Locatie (bv 'nederland', 'amsterdam'). Optioneel.")
     p.add_argument("--limit", type=int, default=50,
                    help="Max raw posts per source-query (default 50)")
     p.add_argument("--sources", default="",
-                   help=f"Komma-lijst sources. Default = alle scrapers. Beschikbaar: {','.join(ALL_SOURCES)}")
+                   help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}")
     p.add_argument("--min-score", type=int, default=30,
-                   help="Minimum score om in output op te nemen (default 30)")
-    p.add_argument("--queries-file", default=str(DEFAULT_QUERIES_YAML),
-                   help="Pad naar queries.yaml")
-    p.add_argument("--outdir", default=str(DEFAULT_OUTDIR),
-                   help="Output dir (default lead-radar/data/leads/consumer/)")
+                   help="Minimum score om in output op te nemen (default 30; --daily dwingt 70)")
+    p.add_argument("--max-age-days", type=int, default=0,
+                   help="Filter posts ouder dan N dagen weg (0 = uit; --daily dwingt 7)")
+    p.add_argument("--queries-file", default=str(DEFAULT_QUERIES_YAML))
+    p.add_argument("--outdir", default=str(DEFAULT_OUTDIR))
     p.add_argument("--facebook-file", default=None,
-                   help="Optioneel pad naar tekstbestand met handmatige FB-posts (gescheiden door blanke regel of '---')")
+                   help="Optioneel pad naar tekstbestand met handmatige FB-posts")
     p.add_argument("--no-dedup", action="store_true",
-                   help="Cross-run dedup uitzetten (gebruik niet seen_hashes.json)")
+                   help="Cross-run dedup uit (negeer seen_hashes.json)")
     p.add_argument("--max-queries", type=int, default=8,
-                   help="Max # tekst-queries per niche (default 8) — beschermt tegen lange runs")
-    # Google Sheets sync
+                   help="Max # tekst-queries per niche (default 8)")
+
+    # Google Sheets
     p.add_argument("--sheets", action="store_true",
-                   help="Push leads naar Google Sheets na de run (vereist --spreadsheet-id of LEAD_RADAR_SPREADSHEET_ID env)")
+                   help="Push leads naar Google Sheets (--daily zet dit automatisch)")
     p.add_argument("--spreadsheet-id", default=None,
-                   help="Google Sheets spreadsheet ID (uit URL).  Default: env LEAD_RADAR_SPREADSHEET_ID")
+                   help="Spreadsheet ID. Default: env LEAD_RADAR_SPREADSHEET_ID")
     p.add_argument("--credentials", default=None,
-                   help="Pad naar Google service-account JSON.  Default: lead-radar/.credentials/google_sheets.json of env LEAD_RADAR_GS_CREDENTIALS")
+                   help="Pad naar Google service-account JSON")
+
     p.add_argument("--verbose", action="store_true")
-    return p.parse_args()
+    args = p.parse_args()
+
+    if not args.daily and not args.niche:
+        p.error("Geef --niche <name> of --daily")
+    return args
 
 
 def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> dict[str, list[str]]:
-    """Bouw per source een lijst zoekqueries op basis van queries.yaml + location."""
     text_qs = (niche_cfg.get("queries_text") or [])[:max_queries]
     google_qs = (niche_cfg.get("google_queries") or [])[:max_queries]
     market_qs = (niche_cfg.get("marktplaats_queries") or [])[:max_queries]
@@ -112,29 +134,44 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
     }
 
 
-def run_pipeline(args: argparse.Namespace) -> int:
+def _is_recent(created_at: str | None, cutoff_utc: datetime | None) -> bool:
+    """Permissief: geen timestamp = keep.  Anders ouder-dan-cutoff = drop."""
+    if cutoff_utc is None or not created_at:
+        return True
+    try:
+        dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt >= cutoff_utc
+    except Exception:
+        return True
+
+
+def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
+    """Run pipeline voor 1 niche en returnt de Lead-list."""
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
-    if args.niche not in niches:
-        log.error("Niche %r niet gevonden in %s. Beschikbaar: %s",
-                  args.niche, args.queries_file, ", ".join(niches.keys()) or "<geen>")
-        return 2
-    niche_cfg = niches[args.niche]
-    keywords_required = niche_cfg.get("keywords_required") or [args.niche]
+    if niche not in niches:
+        log.error("Niche %r niet in queries.yaml", niche)
+        return []
+    niche_cfg = niches[niche]
+    keywords_required = niche_cfg.get("keywords_required") or [niche]
 
     requested = [s.strip() for s in args.sources.split(",") if s.strip()] if args.sources else ALL_SOURCES
     invalid = [s for s in requested if s not in REGISTRY]
     if invalid:
-        log.error("Onbekende source(s): %s. Geldig: %s", invalid, list(REGISTRY))
-        return 2
+        log.error("Onbekende sources: %s", invalid)
+        return []
 
     queries_per_source = expand_queries(niche_cfg, args.location, args.max_queries)
-    log.info("Niche=%s location=%s sources=%s limit=%d min_score=%d",
-             args.niche, args.location, requested, args.limit, args.min_score)
+    log.info("=== %s @ %s | sources=%s limit=%d min_score=%d max_age_days=%d ===",
+             niche, args.location, requested, args.limit, args.min_score, args.max_age_days)
 
     seen = SeenStore(Path(args.outdir) / "seen_hashes.json") if not args.no_dedup else None
     if seen:
-        log.info("Dedup store: %d eerder geziene posts geladen", len(seen))
+        log.info("Dedup store: %d eerder geziene posts", len(seen))
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=args.max_age_days)) if args.max_age_days > 0 else None
 
     raw_total: list[RawPost] = []
     polite = PoliteSession(HttpConfig(request_delay=2.0))
@@ -143,18 +180,15 @@ def run_pipeline(args: argparse.Namespace) -> int:
         fetch = REGISTRY[source_name]
         queries = queries_per_source.get(source_name) or []
         if not queries:
-            log.warning("Geen queries voor source=%s — skipped", source_name)
             continue
         for q in queries:
             t0 = time.monotonic()
             try:
-                # location is al verwerkt in expand_queries() — niet nogmaals toevoegen
                 posts = fetch(q, limit=args.limit, location=None, session=polite)
             except Exception as e:
                 log.warning("Source %s crashte op q=%r: %s", source_name, q, e)
                 posts = []
-            dt = time.monotonic() - t0
-            log.info("[%s] q=%r -> %d posts in %.1fs", source_name, q, len(posts), dt)
+            log.info("[%s] q=%r -> %d posts in %.1fs", source_name, q, len(posts), time.monotonic() - t0)
             for p in posts:
                 if seen and seen.has(p.fingerprint()):
                     continue
@@ -162,22 +196,25 @@ def run_pipeline(args: argparse.Namespace) -> int:
 
     in_memory_seen: set[str] = set()
     leads: list[Lead] = []
-    skipped_promo_or_info = 0
-    skipped_low_score = 0
+    skipped_promo = skipped_low = skipped_old = 0
 
     for raw in raw_total:
         fp = raw.fingerprint()
         if fp in in_memory_seen:
             continue
         in_memory_seen.add(fp)
+
+        if not _is_recent(raw.created_at, cutoff):
+            skipped_old += 1
+            continue
+
         cleaned = clean_post(raw)
-        full_text = cleaned["full"]
-        if not is_potential_lead(full_text):
-            skipped_promo_or_info += 1
+        if not is_potential_lead(cleaned["full"]):
+            skipped_promo += 1
             continue
         score, breakdown = score_post(cleaned, niche_keywords=keywords_required)
         if score < args.min_score:
-            skipped_low_score += 1
+            skipped_low += 1
             continue
         leads.append(Lead(
             id=raw.id,
@@ -190,7 +227,7 @@ def run_pipeline(args: argparse.Namespace) -> int:
             score=score,
             intent=intent_from_score(score),
             breakdown=breakdown,
-            niche=args.niche,
+            niche=niche,
             author=raw.author,
             created_at=raw.created_at,
         ))
@@ -199,25 +236,90 @@ def run_pipeline(args: argparse.Namespace) -> int:
 
     if args.facebook_file:
         fb_posts = load_posts_from_file(args.facebook_file)
-        log.info("Facebook handmatige posts geladen: %d", len(fb_posts))
-        fb_leads = analyze_manual_posts(
-            fb_posts,
-            niche=args.niche,
-            niche_keywords=keywords_required,
-            min_score=args.min_score,
-        )
-        leads.extend(fb_leads)
+        log.info("FB handmatig: %d posts", len(fb_posts))
+        leads.extend(analyze_manual_posts(
+            fb_posts, niche=niche, niche_keywords=keywords_required, min_score=args.min_score,
+        ))
 
     if seen:
         seen.save()
-        log.info("Dedup store opgeslagen: %d entries", len(seen))
 
-    log.info("Pipeline klaar: raw=%d, leads=%d (skip promo/info=%d, skip lowscore=%d)",
-             len(raw_total), len(leads), skipped_promo_or_info, skipped_low_score)
+    log.info("[%s] raw=%d -> leads=%d (promo=%d, oud=%d, lowscore=%d)",
+             niche, len(raw_total), len(leads), skipped_promo, skipped_old, skipped_low)
 
-    paths = export_leads(leads, niche=args.niche, outdir=args.outdir)
+    export_leads(leads, niche=niche, outdir=args.outdir)
+    return leads
 
-    sheets_result: dict | None = None
+
+def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) -> None:
+    hot = sum(1 for l in leads if l.score >= 80)
+    warm = sum(1 for l in leads if 70 <= l.score < 80)
+    print()
+    print("─" * 70)
+    print(f"  {niche:<14}  leads={len(leads):>3}   HOT(>=80)={hot:>3}   WARM(70-79)={warm:>3}")
+    if sheets_result:
+        print(f"                  sheets ALL +{sheets_result['all_added']}  HOT +{sheets_result['hot_added']}")
+    if leads:
+        top = sorted(leads, key=lambda l: l.score, reverse=True)[:3]
+        for l in top:
+            mark = "🔥" if l.score >= 80 else "⚡"
+            city = (l.city or "—")[:12]
+            print(f"   {mark} [{l.score:>3}] {city:<14} {l.title[:50]}")
+
+
+def run_daily(args: argparse.Namespace) -> int:
+    """Run alle niches, alleen score>=70, push naar Sheets."""
+    args.location = args.location or DAILY_LOCATION
+    args.limit = args.limit if args.limit != 50 else DAILY_LIMIT
+    args.max_queries = args.max_queries if args.max_queries != 8 else DAILY_MAX_QUERIES
+    args.min_score = max(args.min_score, DAILY_MIN_SCORE)
+    args.max_age_days = args.max_age_days if args.max_age_days > 0 else DAILY_MAX_AGE_DAYS
+    args.sheets = True
+
+    print()
+    print("=" * 70)
+    print(f"  CONSUMER LEAD RADAR  —  DAILY  ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
+    print(f"  location={args.location}  limit={args.limit}  min_score>={args.min_score}  max_age={args.max_age_days}d")
+    print("=" * 70)
+
+    cfg = load_config(Path(args.queries_file))
+    available = list((cfg.get("niches") or {}).keys())
+    niches_to_run = [n for n in DAILY_NICHES if n in available]
+
+    grand_total: list[Lead] = []
+    sheets_total = {"all_added": 0, "hot_added": 0, "spreadsheet_url": ""}
+
+    for niche in niches_to_run:
+        leads = run_one_niche(args, niche)
+        sheets_result = None
+        if leads:
+            try:
+                sheets_result = sync_to_sheets(
+                    leads,
+                    spreadsheet_id=args.spreadsheet_id,
+                    credentials_path=args.credentials,
+                )
+                sheets_total["all_added"] += sheets_result["all_added"]
+                sheets_total["hot_added"] += sheets_result["hot_added"]
+                sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
+            except Exception as e:
+                log.error("Sheets sync (%s) faalde: %s", niche, e)
+        _print_summary(niche, leads, sheets_result)
+        grand_total.extend(leads)
+
+    print()
+    print("=" * 70)
+    print(f"  TOTAAL: {len(grand_total)} qualified leads (score>=70)")
+    if sheets_total["spreadsheet_url"]:
+        print(f"  Sheets: +{sheets_total['all_added']} ALL  +{sheets_total['hot_added']} HOT")
+        print(f"  Open  : {sheets_total['spreadsheet_url']}")
+    print("=" * 70)
+    return 0
+
+
+def run_single(args: argparse.Namespace) -> int:
+    leads = run_one_niche(args, args.niche)
+    sheets_result = None
     if args.sheets and leads:
         try:
             sheets_result = sync_to_sheets(
@@ -225,44 +327,9 @@ def run_pipeline(args: argparse.Namespace) -> int:
                 spreadsheet_id=args.spreadsheet_id,
                 credentials_path=args.credentials,
             )
-            log.info(
-                "Sheets sync OK: +%d ALL, +%d TOP -> %s",
-                sheets_result["all_added"], sheets_result["top_added"],
-                sheets_result["spreadsheet_url"],
-            )
         except Exception as e:
             log.error("Sheets sync faalde: %s", e)
-    elif args.sheets and not leads:
-        log.info("Sheets sync overgeslagen — geen leads in deze run")
-
-    print()
-    print("=" * 70)
-    print(f"  CONSUMER LEAD RADAR  —  niche={args.niche}  location={args.location}")
-    print("=" * 70)
-    print(f"  Raw posts gevonden : {len(raw_total)}")
-    print(f"  Promo/info gefilt. : {skipped_promo_or_info}")
-    print(f"  Onder min-score    : {skipped_low_score}")
-    print(f"  Leads in output    : {len(leads)}")
-    hot = sum(1 for l in leads if l.intent == "hot")
-    warm = sum(1 for l in leads if l.intent == "warm")
-    cold = sum(1 for l in leads if l.intent == "cold")
-    print(f"     hot  (>=70)     : {hot}")
-    print(f"     warm (40-69)    : {warm}")
-    print(f"     cold (<40)      : {cold}")
-    print(f"  CSV  : {paths.get('csv')}")
-    if "json" in paths:
-        print(f"  JSON : {paths.get('json')}")
-    if sheets_result:
-        print(f"  Sheets ALL +{sheets_result['all_added']}  TOP +{sheets_result['top_added']}")
-        print(f"  Sheet  : {sheets_result['spreadsheet_url']}")
-    print("=" * 70)
-    if leads:
-        top = sorted(leads, key=lambda l: l.score, reverse=True)[:5]
-        print("  Top 5 leads:")
-        for l in top:
-            city = l.city or "—"
-            print(f"   [{l.score:>3}] {l.intent:<4} {l.source:<11} {city:<14}  {l.title[:60]}")
-            print(f"         {l.url}")
+    _print_summary(args.niche, leads, sheets_result)
     print()
     return 0
 
@@ -271,7 +338,9 @@ def main() -> int:
     args = parse_args()
     setup_logging(args.verbose)
     try:
-        return run_pipeline(args)
+        if args.daily:
+            return run_daily(args)
+        return run_single(args)
     except KeyboardInterrupt:
         log.warning("Onderbroken door gebruiker")
         return 130

@@ -108,6 +108,75 @@ def make_summary(text: str, max_chars: int = 220) -> str:
     return cut.rstrip(" ,.;:") + "…"
 
 
+_NICHE_LABEL = {
+    "warmtepomp": "warmtepomp",
+    "airco": "airco",
+    "zonnepanelen": "zonnepanelen",
+    "cv": "cv-ketel",
+    "renovatie": "renovatie",
+}
+
+_URGENCY_RX = re.compile(
+    r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|"
+    r"deze week|deze maand|binnenkort|vandaag|morgen|volgende week|"
+    r"met spoed|snel mogelijk)\b",
+    re.IGNORECASE,
+)
+
+
+def has_urgency(text: str) -> bool:
+    return bool(_URGENCY_RX.search(text or ""))
+
+
+def smart_summary(*, text: str, title: str, city: str | None, niche: str) -> str:
+    """1 korte zin in simpel Nederlands die direct duidelijk maakt wat iemand wil.
+
+    Voorbeelden:
+      - "Zoekt installateur voor warmtepomp in Utrecht, wil snel beginnen"
+      - "Wil offerte voor airco in Amsterdam"
+      - "Heeft probleem met cv-ketel"
+    """
+    full = f"{title} {text}".lower()
+
+    if any(w in full for w in ("kapot", "stuk", "defect", "storing", "werkt niet", "lekkage", "lekt")):
+        verb = "Heeft probleem met"
+    elif any(w in full for w in ("offerte", "prijsopgave", "kostenraming", "aanbieding", "wat kost", "prijs voor")):
+        verb = "Wil offerte voor"
+    elif any(w in full for w in (
+        "zoek installateur", "zoek monteur", "zoek vakman", "wie kan", "wie heeft",
+        "iemand een", "iemand tip", "tip voor", "tip nodig", "tips voor",
+        "installateur gezocht", "monteur gezocht", "vakman gezocht",
+    )) or " installateur " in f" {full} " or " monteur " in f" {full} ":
+        verb = "Zoekt installateur voor"
+    elif any(w in full for w in ("advies", "advice", "tips", "aanrader", "aanraden", "raden", "welke kiezen")):
+        verb = "Zoekt advies over"
+    elif any(w in full for w in ("vervangen", "nieuwe", "laten plaatsen", "aanleggen", "laten installeren")):
+        verb = "Wil"
+    else:
+        verb = "Geïnteresseerd in"
+
+    label = _NICHE_LABEL.get((niche or "").lower(), (niche or "installatie"))
+
+    loc = ""
+    if city:
+        if city == "nl-postcode":
+            loc = " (NL)"
+        elif city == "be-postcode":
+            loc = " (BE)"
+        else:
+            loc = f" in {city.title()}"
+
+    suffix = ""
+    if has_urgency(full):
+        suffix = ", wil snel beginnen"
+
+    sentence = f"{verb} {label}{loc}{suffix}".strip()
+    # Cap zacht op 140 tekens
+    if len(sentence) > 140:
+        sentence = sentence[:139].rstrip(" ,.;:") + "…"
+    return sentence
+
+
 def clean_post(post: RawPost) -> dict:
     """Run alle cleaners en geef structuur klaar voor scoring."""
     clean_title = normalize_whitespace(strip_html(post.title))
