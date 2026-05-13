@@ -95,6 +95,94 @@ def detect_city(text: str) -> str | None:
     return None
 
 
+# Stad → provincie mapping (NL + BE).  Onbekende stad → None.
+_CITY_TO_PROVINCE: dict[str, str] = {
+    # --- Noord-Holland
+    **{c: "Noord-Holland" for c in (
+        "amsterdam", "haarlem", "alkmaar", "zaanstad", "amstelveen",
+        "haarlemmermeer", "hoorn", "purmerend", "hilversum",
+    )},
+    # --- Zuid-Holland
+    **{c: "Zuid-Holland" for c in (
+        "rotterdam", "den haag", "'s-gravenhage", "the hague", "leiden",
+        "dordrecht", "zoetermeer", "alphen", "delft", "gouda", "schiedam",
+        "vlaardingen", "spijkenisse", "ridderkerk", "rijswijk", "westland",
+        "katwijk",
+    )},
+    # --- Utrecht
+    **{c: "Utrecht" for c in (
+        "utrecht", "amersfoort", "nieuwegein", "veenendaal",
+    )},
+    # --- Noord-Brabant
+    **{c: "Noord-Brabant" for c in (
+        "eindhoven", "tilburg", "breda", "helmond", "oss",
+        "den bosch", "'s-hertogenbosch", "oosterhout", "roosendaal",
+    )},
+    # --- Gelderland
+    **{c: "Gelderland" for c in (
+        "nijmegen", "arnhem", "apeldoorn", "ede", "doetinchem",
+        "harderwijk", "barneveld", "tiel",
+    )},
+    # --- Overijssel
+    **{c: "Overijssel" for c in (
+        "zwolle", "almelo", "hengelo", "deventer", "kampen",
+    )},
+    # --- Groningen
+    "groningen": "Groningen",
+    # --- Friesland
+    "leeuwarden": "Friesland",
+    # --- Drenthe
+    "emmen": "Drenthe",
+    # --- Flevoland
+    **{c: "Flevoland" for c in ("almere", "lelystad")},
+    # --- Limburg (NL)
+    **{c: "Limburg (NL)" for c in ("maastricht", "venlo", "heerlen")},
+
+    # --- BE: Antwerpen
+    **{c: "Antwerpen" for c in (
+        "antwerpen", "antwerp", "mechelen", "lier", "turnhout", "geel",
+        "merksem", "deurne", "berchem", "borgerhout",
+    )},
+    # --- BE: Vlaams-Brabant
+    **{c: "Vlaams-Brabant" for c in (
+        "leuven", "louvain", "vilvoorde", "halle", "diest", "tienen",
+        "aarschot",
+    )},
+    # --- BE: Limburg (BE)
+    **{c: "Limburg (BE)" for c in (
+        "hasselt", "genk", "bilzen", "tongeren", "diepenbeek",
+    )},
+    # --- BE: Oost-Vlaanderen
+    **{c: "Oost-Vlaanderen" for c in (
+        "gent", "ghent", "aalst", "sint-niklaas", "dendermonde", "lokeren",
+        "geraardsbergen", "ronse", "zottegem", "ninove", "deinze",
+        "beveren", "temse",
+    )},
+    # --- BE: West-Vlaanderen
+    **{c: "West-Vlaanderen" for c in (
+        "brugge", "bruges", "kortrijk", "oostende", "ostend", "roeselare",
+        "ieper", "ypres", "izegem", "menen", "wevelgem", "harelbeke",
+        "waregem",
+    )},
+    # --- BE: Henegouwen / Luik / Namen / Brussel
+    **{c: "Henegouwen" for c in ("charleroi", "doornik", "tournai")},
+    **{c: "Luik" for c in ("luik", "liege", "liège")},
+    **{c: "Namen" for c in ("namur", "namen")},
+    **{c: "Brussel" for c in ("brussel", "brussels", "bruxelles")},
+}
+
+
+def detect_province(city: str | None) -> str | None:
+    """Map een stad (lowercase) naar provincie.  Onbekend = None."""
+    if not city:
+        return None
+    if city == "nl-postcode":
+        return "NL (postcode)"
+    if city == "be-postcode":
+        return "BE (postcode)"
+    return _CITY_TO_PROVINCE.get(city.strip().lower())
+
+
 def make_summary(text: str, max_chars: int = 220) -> str:
     if not text:
         return ""
@@ -192,3 +280,92 @@ def clean_post(post: RawPost) -> dict:
         "city": detect_city(full),
         "summary": make_summary(clean_text or clean_title),
     }
+
+
+# Niche → vakman + (optioneel) installatie-werkwoord voor outreach.
+_NICHE_PRO = {
+    "warmtepomp":   ("installateur", "warmtepomp"),
+    "airco":        ("installateur", "airco"),
+    "zonnepanelen": ("installateur", "zonnepanelen"),
+    "cv":           ("cv-monteur", "cv-ketel"),
+    "renovatie":    ("aannemer", "renovatie"),
+}
+
+
+def _detect_intent_for_message(full_lower: str) -> str:
+    """Pak het overheersende intent-signaal voor de outreach-tone."""
+    if any(w in full_lower for w in (
+        "kapot", "stuk", "defect", "storing", "werkt niet",
+        "lekkage", "lekt", "doet het niet", "geen warm water",
+    )):
+        return "broken"
+    if any(w in full_lower for w in (
+        "offerte gehad", "al een offerte", "al offertes",
+        "andere offertes", "offertes vergelijken", "ik heb een offerte",
+    )):
+        return "comparing"
+    if any(w in full_lower for w in (
+        "offerte", "prijsopgave", "kostenraming", "wat kost", "prijs voor",
+    )):
+        return "quote"
+    if any(w in full_lower for w in (
+        "zsm", "spoed", "dringend", "deze week", "binnen ",
+        "snel mogelijk", "vandaag", "morgen",
+    )):
+        return "urgent"
+    return "default"
+
+
+def generate_message(
+    *,
+    niche: str,
+    city: str | None,
+    text: str = "",
+    title: str = "",
+) -> str:
+    """Genereer een kort NL outreach-bericht (2-3 zinnen, human tone).
+
+    Voorbeeld:
+      "Hoi, ik zag dat je een warmtepomp installateur zoekt in Utrecht.
+       Ik werk met installateurs die daar nog plek hebben. Zal ik je koppelen?"
+    """
+    pro, label = _NICHE_PRO.get((niche or "").lower(), ("installateur", niche or "installatie"))
+    full_lower = f"{title} {text}".lower()
+    intent = _detect_intent_for_message(full_lower)
+
+    if city and city not in ("nl-postcode", "be-postcode"):
+        in_city = f" in {city.title()}"
+        there = " daar"
+    elif city == "nl-postcode":
+        in_city = " (NL)"
+        there = ""
+    elif city == "be-postcode":
+        in_city = " (BE)"
+        there = ""
+    else:
+        in_city = ""
+        there = ""
+
+    if intent == "broken" and niche in ("warmtepomp", "airco", "cv"):
+        equip = {"warmtepomp": "warmtepomp", "airco": "airco", "cv": "cv-ketel"}[niche]
+        hook = f"Hoi, ik zag dat je {equip} stuk is{in_city}."
+        body = "Ik werk met monteurs die snel kunnen langskomen."
+        cta = "Zal ik er eentje vragen om contact op te nemen?"
+    elif intent == "comparing":
+        hook = f"Hoi, ik zag dat je offertes aan het vergelijken bent voor {label}{in_city}."
+        body = "Ik werk met installateurs die scherp kunnen aanbieden."
+        cta = "Zal ik je nog een paar offertes laten doen?"
+    elif intent == "quote":
+        hook = f"Hoi, ik zag dat je een offerte zoekt voor {label}{in_city}."
+        body = f"Ik werk met {pro}s die snel een prijs kunnen geven."
+        cta = "Zal ik er een paar voor je vragen?"
+    elif intent == "urgent":
+        hook = f"Hoi, ik zag dat je snel een {pro} zoekt voor {label}{in_city}."
+        body = f"Ik heb {pro}s die deze week nog kunnen."
+        cta = "Zal ik je koppelen?"
+    else:
+        hook = f"Hoi, ik zag dat je een {label} {pro} zoekt{in_city}."
+        body = f"Ik werk met {pro}s die{there} nog plek hebben."
+        cta = "Zal ik je koppelen?"
+
+    return f"{hook} {body} {cta}"

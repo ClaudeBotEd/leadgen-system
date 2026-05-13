@@ -29,9 +29,16 @@ sys.path.insert(0, str(HERE))
 from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import REGISTRY, ALL_SOURCES, analyze_manual_posts  # noqa: E402
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
-from consumer.processor import clean_post, is_potential_lead, score_post  # noqa: E402
+from consumer.processor import (  # noqa: E402
+    clean_post,
+    is_potential_lead,
+    score_post,
+    smart_summary,
+)
 from consumer.output import export_leads, sync_to_sheets  # noqa: E402
 from consumer.utils import PoliteSession, HttpConfig, SeenStore  # noqa: E402
+
+HOT_ALERT_THRESHOLD = 80
 
 log = logging.getLogger("consumer.cli")
 
@@ -216,7 +223,7 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
         if score < args.min_score:
             skipped_low += 1
             continue
-        leads.append(Lead(
+        lead = Lead(
             id=raw.id,
             source=raw.source,
             title=cleaned["title"] or raw.title,
@@ -230,9 +237,19 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
             niche=niche,
             author=raw.author,
             created_at=raw.created_at,
-        ))
+        )
+        leads.append(lead)
         if seen:
             seen.add(fp)
+        if score >= HOT_ALERT_THRESHOLD:
+            stad = (lead.city or "—").title()
+            summary = smart_summary(
+                text=lead.text or "",
+                title=lead.title or "",
+                city=lead.city,
+                niche=niche,
+            )
+            print(f"\n🔥 HOT LEAD:\n   {stad} — {summary}\n", flush=True)
 
     if args.facebook_file:
         fb_posts = load_posts_from_file(args.facebook_file)

@@ -60,6 +60,56 @@ _RE_RESEARCH_ONLY = re.compile(
     re.IGNORECASE,
 )
 
+# +30 bonus: stuk/defect apparatuur — hoogste urgentie ("cv kapot", "storing")
+# "Harde" signalen vuren op zichzelf; "zachte" signalen alleen samen met apparatuur.
+_RE_BROKEN_HARD = re.compile(
+    r"\b(storing|lekkage|lekt water|"
+    r"foutmelding|error\s?code|f\d{1,3}|"
+    r"geen warm water|geen verwarming|cv valt uit|"
+    r"valt steeds uit|reset zichzelf)\b",
+    re.IGNORECASE,
+)
+_RE_EQUIPMENT = re.compile(
+    r"\b(cv|cv\-?ketel|ketel|hr\-?ketel|warmtepomp|airco|verwarming|"
+    r"boiler|radiator|combiketel|condensketel)\b",
+    re.IGNORECASE,
+)
+_RE_BROKEN_STATE = re.compile(
+    r"\b(kapot|stuk|defect|werkt niet|werkt niet meer|doet het niet|doet niks)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_broken(text: str) -> bool:
+    if _RE_BROKEN_HARD.search(text):
+        return True
+    return bool(_RE_EQUIPMENT.search(text) and _RE_BROKEN_STATE.search(text))
+
+
+# +25 bonus: scherpe deadline ("binnen 2 weken", "voor maart")
+# Apart van _RE_URGENCY zodat een concrete deadline bovenop algemene urgentie telt.
+_RE_DEADLINE = re.compile(
+    r"\b(binnen \d+\s*(week|weken|dag|dagen|maand|maanden)|"
+    r"voor (volgende|de) (maand|week)|"
+    r"voor (januari|februari|maart|april|mei|juni|juli|"
+    r"augustus|september|oktober|november|december)|"
+    r"voor (\d{1,2}|begin|eind) (januari|februari|maart|april|mei|juni|juli|"
+    r"augustus|september|oktober|november|december)|"
+    r"deadline|uiterlijk|voor (kerst|de feestdagen|de zomer|de winter)|"
+    r"deze week nog|deze maand nog)\b",
+    re.IGNORECASE,
+)
+
+# +20 bonus: heeft al een offerte gehad / vergelijkt — koopklaar
+_RE_OFFER_RECEIVED = re.compile(
+    r"\b(offerte\s*(gehad|ontvangen|gekregen|binnen)|"
+    r"al een offerte|al offertes|andere offertes|tweede offerte|"
+    r"second opinion|tweede mening|"
+    r"prijzen vergelijken|offertes vergelijken|"
+    r"ik heb een offerte|gisteren een offerte|vorige week offerte)\b",
+    re.IGNORECASE,
+)
+
 
 def _score_location(city: str | None, lower: str) -> int:
     if city:
@@ -107,6 +157,18 @@ def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[
     # Bonus voor expliciete koopsignalen ("installateur gezocht", "met spoed", etc.)
     if _RE_STRONG_BUY.search(text):
         breakdown["intent_bonus"] = 10
+
+    # +30 — stuk/defect apparatuur ("cv kapot", "storing")
+    if _is_broken(text):
+        breakdown["broken_bonus"] = 30
+
+    # +25 — concrete deadline ("binnen 2 weken")
+    if _RE_DEADLINE.search(text):
+        breakdown["deadline_bonus"] = 25
+
+    # +20 — heeft al offerte gehad / vergelijkt
+    if _RE_OFFER_RECEIVED.search(text):
+        breakdown["offer_received_bonus"] = 20
 
     # Penalty voor research/orientatie taal ("ervaring met", "hoe werkt", "overweeg")
     if _RE_RESEARCH_ONLY.search(text):
