@@ -346,26 +346,23 @@ def generate_message(
         in_city = ""
         there = ""
 
+    # Kort en direct: 2 zinnen.  Geen "Ik werk met..."-tussenzin.
+    # CTA is een concrete ja/nee-vraag.
     if intent == "broken" and niche in ("warmtepomp", "airco", "cv"):
         equip = {"warmtepomp": "warmtepomp", "airco": "airco", "cv": "cv-ketel"}[niche]
-        hook = f"Hoi, ik zag dat je {equip} stuk is{in_city}."
-        body = "Ik werk met monteurs die snel kunnen langskomen."
-        cta = "Zal ik er eentje vragen om contact op te nemen?"
+        hook = f"Hoi, las dat je {equip} kapot is{in_city}."
+        cta = "Heb een monteur die snel kan — zal ik 'm doorsturen?"
     elif intent == "comparing":
-        hook = f"Hoi, ik zag dat je offertes aan het vergelijken bent voor {label}{in_city}."
-        body = "Ik werk met installateurs die scherp kunnen aanbieden."
-        cta = "Zal ik je nog een paar offertes laten doen?"
+        hook = f"Hoi, las dat je offertes vergelijkt voor {label}{in_city}."
+        cta = "Heb een scherpe partij — prijs erbij?"
     elif intent == "quote":
-        hook = f"Hoi, ik zag dat je een offerte zoekt voor {label}{in_city}."
-        body = f"Ik werk met {pro}s die snel een prijs kunnen geven."
-        cta = "Zal ik er een paar voor je vragen?"
+        hook = f"Hoi, las dat je een offerte zoekt voor {label}{in_city}."
+        cta = "Kan er 1-2 voor je opvragen — akkoord?"
     elif intent == "urgent":
-        hook = f"Hoi, ik zag dat je snel een {pro} zoekt voor {label}{in_city}."
-        body = f"Ik heb {pro}s die deze week nog kunnen."
-        cta = "Zal ik je koppelen?"
+        hook = f"Hoi, las dat je snel een {pro} zoekt voor {label}{in_city}."
+        cta = "Heb iemand die deze week nog kan — interesse?"
     else:
-        hook = f"Hoi, ik zag dat je een {label} {pro} zoekt{in_city}."
-        body = f"Ik werk met {pro}s die{there} nog plek hebben."
-        cta = "Zal ik je koppelen?"
+        hook = f"Hoi, las je vraag over {label}{in_city}."
+        cta = f"Ik ken een goede {pro}{there} — interesse?"
 
-    return f"{hook} {body} {cta}"
+    return f"{hook} {cta}"

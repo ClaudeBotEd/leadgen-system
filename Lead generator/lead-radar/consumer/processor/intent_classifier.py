@@ -15,8 +15,16 @@ LEAD_SIGNALS = [
     r"\b(installateur|installatiebedrijf|monteur|vakman|aannemer|specialist|technieker|techneut)\b",
     r"\b(kapot|stuk|defect|werkt niet|storing|lekt|lekkage|gaat stuk|moet vervangen|aan vervanging|verouderd)\b",
     r"\b(laten plaatsen|laten installeren|laten aanleggen|laten doen|laten vervangen|laten aansluiten)\b",
-    r"\b(welke kiezen|welk merk|welk model|advies welke|hulp keuze|kiezen tussen|twijfel tussen)\b",
     r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|deze week|deze maand|binnenkort|vandaag|morgen|volgende week|met spoed)\b",
+]
+
+# RESEARCH_SIGNALS: "welke moet ik kiezen", "welk merk is het beste".
+# Posts die hier op matchen + geen strong_seek + geen broken-signal
+# worden geclassificeerd als 'info' (research), niet als 'lead'.
+RESEARCH_SIGNALS = [
+    r"\b(welke kiezen|welk merk|welk model|advies welke|hulp keuze|kiezen tussen|"
+    r"twijfel tussen|welke is beter|welk(e)? is het beste|wat raden jullie|"
+    r"vergelijking|review van|is .{1,40} de moeite|is .{1,40} het beste)\b",
 ]
 
 PROMO_SIGNALS = [
@@ -44,17 +52,27 @@ _RE_ALLCAPS_TITLE = re.compile(r"^[A-ZÀ-Ý][A-ZÀ-Ý\s\d,\-!\.]{20,}$", re.MULT
 INFO_SIGNALS = [
     r"^\s*(wat is|wat zijn|hoe werkt|hoe werken|wat doet|waarom|verschil tussen|voor- en nadelen|review van|test van|uitleg|samenvatting)\b",
     r"\b(wikipedia|wiki-pagina|encyclopedie)\b",
+    # Discussion / opinion threads — forum-gebruikers die meningen willen
+    r"\b(jullie ervaring(en)?|ervaringen met|iemand ervaring met|"
+    r"wat vinden jullie|wat denken jullie|wie heeft ervaring|"
+    r"meningen over|opinie over|hoe ervaren jullie)\b",
+    # Side-of-sentence "wat is" — niet alleen aan begin
+    r"\b(ik vroeg me af wat|kan iemand uitleggen wat|wil graag begrijpen)\b",
 ]
 
 _RE_LEAD = [re.compile(p, re.IGNORECASE) for p in LEAD_SIGNALS]
 _RE_PROMO = [re.compile(p, re.IGNORECASE) for p in PROMO_SIGNALS]
 _RE_INFO = [re.compile(p, re.IGNORECASE) for p in INFO_SIGNALS]
+_RE_RESEARCH_CLASSIFIER = [re.compile(p, re.IGNORECASE) for p in RESEARCH_SIGNALS]
 
 
 _RE_STRONG_SEEK = re.compile(
-    r"(?:^|\b)(wie kan|wie heeft|iemand een|iemand tip|iemand ervaring|hoe vind ik|"
+    # 'iemand ervaring' is verwijderd — dat is een discussie-vraag, geen
+    # echte seeker.  'advies welke' is verwijderd — dat valt nu onder
+    # RESEARCH_SIGNALS (keuze-deliberatie).
+    r"(?:^|\b)(wie kan|wie heeft|iemand een|iemand tip|hoe vind ik|"
     r"wie weet|wie kent|kunnen jullie|kun je|tip nodig|advies nodig|hulp nodig|help nodig|"
-    r"raden|advies welke|gezocht|gevraagd)\b",
+    r"raden|gezocht|gevraagd)\b",
     re.IGNORECASE,
 )
 
@@ -69,6 +87,12 @@ _RE_DEFINITIVE_PROMO = re.compile(
 )
 
 
+_RE_BROKEN_HINT = re.compile(
+    r"\b(kapot|stuk|defect|storing|lekkage|werkt niet|lekt)\b",
+    re.IGNORECASE,
+)
+
+
 def classify_post_kind(text: str) -> str:
     """'lead' | 'promo' | 'info' | 'unknown'."""
     if not text:
@@ -76,7 +100,9 @@ def classify_post_kind(text: str) -> str:
     promo_hits = sum(1 for r in _RE_PROMO if r.search(text))
     info_hits = sum(1 for r in _RE_INFO if r.search(text))
     lead_hits = sum(1 for r in _RE_LEAD if r.search(text))
+    research_hits = sum(1 for r in _RE_RESEARCH_CLASSIFIER if r.search(text))
     strong_seek = bool(_RE_STRONG_SEEK.search(text))
+    broken = bool(_RE_BROKEN_HINT.search(text))
 
     # Extra promo: SHOUTING-titel telt als 1 promo hit
     if _RE_ALLCAPS_TITLE.search(text or ""):
@@ -90,6 +116,12 @@ def classify_post_kind(text: str) -> str:
     # zelfs een enkele hit telt — tenzij we ook een echte seeker-zin zien.
     if promo_hits >= 1 and not strong_seek:
         return "promo"
+
+    # Research/keuze-discussie. Zelfs als er 1 lead-signaal bij staat:
+    # alleen écht een lead als óók strong_seek OF broken-equipment.
+    if research_hits >= 1 and not strong_seek and not broken:
+        return "info"
+
     if info_hits >= 1 and lead_hits == 0 and not strong_seek:
         return "info"
     if strong_seek or lead_hits >= 2:

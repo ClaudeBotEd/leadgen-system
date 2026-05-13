@@ -12,11 +12,22 @@ from __future__ import annotations
 
 import re
 
-_RE_URGENCY = re.compile(
+# HARD urgency: spoed/asap/zsm — koopklaar, +35
+_RE_URGENCY_HARD = re.compile(
     r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|"
-    r"deze week|deze maand|binnenkort|vandaag|morgen|volgende week|"
-    r"met spoed|snel mogelijk|liefst snel|liefst nog deze|"
+    r"met spoed|snel mogelijk|spoed nodig|zo snel mogelijk)\b",
+    re.IGNORECASE,
+)
+# SOFT urgency: deze maand / binnenkort / vandaag — meer ruimte, +20
+_RE_URGENCY_SOFT = re.compile(
+    r"\b(deze week|deze maand|binnenkort|vandaag|morgen|volgende week|"
+    r"liefst snel|liefst nog deze|"
     r"binnen \d+ weken|binnen \d+ dagen|deze winter|voor de winter)\b",
+    re.IGNORECASE,
+)
+# Behouden voor backwards-compat (callers buiten dit module).
+_RE_URGENCY = re.compile(
+    _RE_URGENCY_HARD.pattern + "|" + _RE_URGENCY_SOFT.pattern,
     re.IGNORECASE,
 )
 _RE_INSTALLER = re.compile(
@@ -32,11 +43,21 @@ _RE_HOME = re.compile(
     r"meterkast|zolder|garage)\b",
     re.IGNORECASE,
 )
+# Hard budget: bedrag in euro / klare kostenvragen.
 _RE_BUDGET = re.compile(
     r"(\beuro\b|€|\bEUR\b|"
     r"\b(?:budget|prijs|prijzen|kosten|bedrag|kostenraming|prijsopgave|"
-    r"offerte|offertes|aanbieding|aanbod|investering|tarief)\b|"
+    r"investering|tarief)\b|"
     r"\b\d{1,3}(?:[\.\,\s]\d{3})*\s?(?:k|euro|€))",
+    re.IGNORECASE,
+)
+# Soft budget: kale "offerte"-woord telt alleen als er ook een
+# koop-werkwoord bij staat ("offerte nodig", "offerte gevraagd",
+# "offerte zoeken").  Pure "had een offerte"/"offerte gehad" valt
+# hieronder weg — dat dekt `_RE_OFFER_RECEIVED` al apart.
+_RE_BUDGET_OFFERTE = re.compile(
+    r"\b(?:offerte|offertes|aanbieding|aanbod)\s+"
+    r"(?:nodig|gevraagd|zoek\w*|wil\s|graag|opvragen|aanvragen)",
     re.IGNORECASE,
 )
 
@@ -51,12 +72,25 @@ _RE_STRONG_BUY = re.compile(
     re.IGNORECASE,
 )
 
-# -15 penalty: informatie/research/orientatie zonder echte aankoopsignalen
+# -25 penalty: informatie/research/orientatie zonder echte aankoopsignalen
 _RE_RESEARCH_ONLY = re.compile(
     r"\b(ervaring met|hoe werkt|overweeg|overwegen|aan het orienteren|"
     r"benieuwd naar|nieuwsgierig|informatie over|info over|"
     r"ben aan het orienteren|wil gaan onderzoeken|verschil tussen|"
-    r"voor- en nadelen|wat is het verschil|nog niet zeker)\b",
+    r"voor- en nadelen|wat is het verschil|nog niet zeker|"
+    r"vergelijk(en|ing)?|review|is .{1,40} de moeite|"
+    r"wat raden jullie|welke kiezen|welk merk|welk model|"
+    r"twijfel tussen|is .{1,40} het beste|advies welke|"
+    r"hulp bij keuze|hulp keuze|tips voor keuze)\b",
+    re.IGNORECASE,
+)
+
+# -20 penalty: discussie-/meningsvragen.  Forum-gebruikers die meningen
+# willen, geen monteur.
+_RE_DISCUSSION = re.compile(
+    r"\b(jullie ervaring(en)?|ervaringen met|iemand ervaring met|"
+    r"wat vinden jullie|wat denken jullie|wie heeft ervaring|"
+    r"meningen over|opinie over|hoe ervaren jullie)\b",
     re.IGNORECASE,
 )
 
@@ -120,7 +154,13 @@ def _score_location(city: str | None, lower: str) -> int:
 
 
 def _score_urgency(text: str) -> int:
-    return 25 if _RE_URGENCY.search(text) else 0
+    """+35 voor harde urgentie (spoed/asap/zsm), anders +20 voor zachte
+    urgentie (deze maand / binnenkort).  Geen stacking."""
+    if _RE_URGENCY_HARD.search(text):
+        return 35
+    if _RE_URGENCY_SOFT.search(text):
+        return 20
+    return 0
 
 
 def _score_installer(text: str) -> int:
@@ -132,7 +172,14 @@ def _score_home(text: str) -> int:
 
 
 def _score_budget(text: str) -> int:
-    return 15 if _RE_BUDGET.search(text) else 0
+    """+15 voor hard budget (€/bedrag/budget/kosten).  +15 voor 'offerte'
+    alleen als er een koop-werkwoord bij staat ('offerte nodig').  Pure
+    'had een offerte' valt onder _RE_OFFER_RECEIVED en niet hier."""
+    if _RE_BUDGET.search(text):
+        return 15
+    if _RE_BUDGET_OFFERTE.search(text):
+        return 15
+    return 0
 
 
 def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[int, dict[str, int]]:
@@ -158,9 +205,9 @@ def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[
     if _RE_STRONG_BUY.search(text):
         breakdown["intent_bonus"] = 10
 
-    # +30 — stuk/defect apparatuur ("cv kapot", "storing")
+    # +40 — stuk/defect apparatuur ("cv kapot", "storing") — sterkste single signal
     if _is_broken(text):
-        breakdown["broken_bonus"] = 30
+        breakdown["broken_bonus"] = 40
 
     # +25 — concrete deadline ("binnen 2 weken")
     if _RE_DEADLINE.search(text):
@@ -170,9 +217,14 @@ def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[
     if _RE_OFFER_RECEIVED.search(text):
         breakdown["offer_received_bonus"] = 20
 
-    # Penalty voor research/orientatie taal ("ervaring met", "hoe werkt", "overweeg")
+    # -25 — research/orientatie taal ("ervaring met", "hoe werkt", "vergelijk",
+    # "welke kiezen", "is X de moeite")
     if _RE_RESEARCH_ONLY.search(text):
-        breakdown["research_penalty"] = -15
+        breakdown["research_penalty"] = -25
+
+    # -20 — discussie-/meningsvragen ("jullie ervaring", "wat vinden jullie")
+    if _RE_DISCUSSION.search(text):
+        breakdown["discussion_penalty"] = -20
 
     total = sum(breakdown.values())
 
