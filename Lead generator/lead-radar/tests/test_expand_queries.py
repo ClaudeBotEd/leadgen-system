@@ -40,6 +40,10 @@ def niche_cfg() -> dict:
             "/categories/technieken/verwarming-en-koeling/warmtepompen",
             "/categories/technieken/verwarming-en-koeling",
         ],
+        "klusidee_subforums": [
+            "/Forum/forum/cv-ketels-gaskachels-en-geisers.33/",
+            "/Forum/forum/verwarming-inclusief-leidingwerk.5/",
+        ],
     }
 
 

@@ -163,6 +163,9 @@ niches:
       - /categories/technieken/verwarming-en-koeling/warmtepompen
       - /categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming
       - /categories/technieken/verwarming-en-koeling
+    klusidee_subforums:
+      - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
+      - /Forum/forum/verwarming-inclusief-leidingwerk.5/
     tweedehands_queries:
       # BE-specifiek: vlaamse spreektaal + BE-premies + BE-steden
       - "warmtepomp installateur antwerpen"
@@ -286,6 +289,8 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/verwarming-en-koeling
       - /categories/technieken/ventilatie
+    klusidee_subforums:
+      - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
     tweedehands_queries:
       # BE-specifiek
       - "airco installateur antwerpen"
@@ -402,6 +407,8 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/elektriciteit/zonne-energie
       - /categories/technieken/elektriciteit
+    klusidee_subforums:
+      - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
     tweedehands_queries:
       # BE-specifiek
       - "zonnepanelen installateur antwerpen"
@@ -521,6 +528,9 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/verwarming-en-koeling
       - /categories/technieken/sanitair
+    klusidee_subforums:
+      - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
+      - /Forum/forum/verwarming-inclusief-leidingwerk.5/
     tweedehands_queries:
       # BE-specifiek
       - "cv ketel installateur antwerpen"
@@ -631,6 +641,13 @@ niches:
       - "aannemer renovatie amsterdam"
     bouwinfo_categories:
       - /categories/ruwbouw/isolatie
+    klusidee_subforums:
+      - /Forum/forum/draagconstructie.13/
+      - /Forum/forum/binnenmuren-wanden-en-plafonds.8/
+      - /Forum/forum/badkamer-waterleiding-en-afvoer.2/
+      - /Forum/forum/keuken.3/
+      - /Forum/forum/dak-en-schoorsteen.4/
+      - /Forum/forum/gevels-en-gevelbekleding.34/
     tweedehands_queries:
       # BE-specifiek
       - "renovatiepremie vlaanderen aannemer"

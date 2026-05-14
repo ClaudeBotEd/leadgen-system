@@ -238,11 +238,13 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
         return out
 
     bouwinfo_cats = niche_cfg.get("bouwinfo_categories") or []
+    klusidee_subs = niche_cfg.get("klusidee_subforums") or []
     return {
         "reddit": loc_subst(text_qs),
         "tweakers": text_qs,
         "bouwinfo": text_qs,
         "bouwinfo_forum": bouwinfo_cats,
+        "klusidee_forum": klusidee_subs,
         "google": loc_subst(google_qs) if google_qs else loc_subst(text_qs),
         "marktplaats": market_qs or text_qs,
         # 2dehands krijgt BE-specifieke set als die er is; anders fallback op
