@@ -35,6 +35,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .. import Lead
 from ..processor import (
@@ -43,6 +44,11 @@ from ..processor import (
     detect_province,
     generate_message,
 )
+
+# Tijd in Sheets-cellen schrijven we als NL-lokaal — operator denkt in CET,
+# niet in UTC. Naive datetime.now() gaf UTC-tijd → rond middernacht NL
+# kwam de verkeerde datum in de 'gevonden_op' kolom.
+_NL_TZ = ZoneInfo("Europe/Amsterdam")
 
 log = logging.getLogger("consumer.output.sheets")
 
@@ -119,7 +125,7 @@ def priority_from_score(score: int, urgency: bool) -> int:
 
 
 def _now_str() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M")
+    return datetime.now(_NL_TZ).strftime("%Y-%m-%d %H:%M")
 
 
 def lead_to_row(lead: Lead) -> list:

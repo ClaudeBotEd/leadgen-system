@@ -6,6 +6,7 @@
 - Optioneel: MX-record check via dnspython
 """
 
+import html
 import re
 from typing import Iterable
 

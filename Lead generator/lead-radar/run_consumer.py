@@ -20,6 +20,7 @@ import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -423,7 +424,8 @@ def run_daily(args: argparse.Namespace) -> int:
 
     print()
     print("=" * 70)
-    print(f"  CONSUMER LEAD RADAR  —  DAILY  ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
+    _ts_nl = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d %H:%M")
+    print(f"  CONSUMER LEAD RADAR  —  DAILY  ({_ts_nl})")
     print(f"  location={args.location}  limit={args.limit}  min_score>={args.min_score}  max_age={args.max_age_days}d")
     print("=" * 70)
 

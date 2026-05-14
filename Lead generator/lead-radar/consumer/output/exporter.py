@@ -13,8 +13,13 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .. import Lead
+
+# Filename-datum in NL-tijd. Naive datetime.now() gaf UTC-datum → 'leads_X_<datum>.csv'
+# rolt rond middernacht NL door, terwijl operator de nieuwe datum verwacht.
+_NL_TZ = ZoneInfo("Europe/Amsterdam")
 
 log = logging.getLogger("consumer.output.exporter")
 
@@ -26,7 +31,7 @@ CSV_FIELDS = [
 
 
 def _today() -> str:
-    return datetime.now().strftime("%Y-%m-%d")
+    return datetime.now(_NL_TZ).strftime("%Y-%m-%d")
 
 
 def export_leads(leads: list[Lead], *, niche: str, outdir: Path | str | None = None,

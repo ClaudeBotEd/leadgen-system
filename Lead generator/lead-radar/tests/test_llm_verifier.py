@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from consumer.processor.llm_verifier import (
+    DEFAULT_CACHE_DIR,
     DEFAULT_MAX_SCORE,
     DEFAULT_MIN_SCORE,
     LlmVerdict,
@@ -146,3 +147,57 @@ def test_verify_post_live_call(tmp_path: Path) -> None:
     assert verdict.kind == "lead"
     assert verdict.refined_score is not None
     assert verdict.refined_score >= 70
+
+
+def test_default_cache_dir_is_absolute() -> None:
+    """DEFAULT_CACHE_DIR moet absoluut zijn — anders mist cache hits onder
+    cron/systemd waar cwd niet de repo-root is. Cache miss = elke borderline
+    post triggert een echte Anthropic API call (kost geld)."""
+    assert DEFAULT_CACHE_DIR.is_absolute(), (
+        f"DEFAULT_CACHE_DIR={DEFAULT_CACHE_DIR!r} is relatief; werkt niet onder cron."
+    )
+
+
+def test_default_cache_dir_anchored_to_lead_radar_root() -> None:
+    """Cache zit op lead-radar/.cache/llm_verifier/ ongeacht waar Python wordt
+    aangeroepen."""
+    assert DEFAULT_CACHE_DIR.name == "llm_verifier"
+    assert DEFAULT_CACHE_DIR.parent.name == ".cache"
+    expected_root = Path(__file__).resolve().parent.parent
+    assert DEFAULT_CACHE_DIR.parent.parent == expected_root, (
+        f"Expected cache under {expected_root}, got {DEFAULT_CACHE_DIR}"
+    )
+
+
+def test_parse_response_handles_trailing_text() -> None:
+    """Claude voegt soms uitleg toe na het JSON-object. Oude greedy regex
+    .{.*} matchte van eerste { tot laatste } — bij een tweede { } verderop
+    gaf het invalid JSON en silently dropte de hele verdict."""
+    text = '{"kind": "lead", "confidence": 0.9, "refined_score": 85} extra explanation {meta: ok}'
+    out = _parse_response(text)
+    assert out is not None
+    assert out["kind"] == "lead"
+    assert out["refined_score"] == 85
+
+
+def test_parse_response_handles_prefix_text() -> None:
+    """Tekst vóór het JSON-object mag het parsen niet verstoren."""
+    text = 'Here is my analysis: {"kind": "info", "confidence": 0.5, "refined_score": 30}'
+    out = _parse_response(text)
+    assert out is not None
+    assert out["kind"] == "info"
+
+
+def test_parse_response_handles_nested_objects() -> None:
+    """Geneste objecten binnen het JSON-object moeten correct geteld worden."""
+    text = '{"kind": "lead", "meta": {"nested": true}, "refined_score": 90}'
+    out = _parse_response(text)
+    assert out is not None
+    assert out["kind"] == "lead"
+    assert out["refined_score"] == 90
+
+
+def test_parse_response_returns_none_on_no_json() -> None:
+    """Geen JSON in tekst → None."""
+    assert _parse_response("Sorry, I cannot answer that.") is None
+    assert _parse_response("") is None

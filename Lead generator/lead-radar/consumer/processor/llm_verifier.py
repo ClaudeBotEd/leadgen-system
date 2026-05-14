@@ -16,7 +16,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
@@ -28,7 +27,11 @@ DEFAULT_MIN_SCORE = 40
 DEFAULT_MAX_SCORE = 75
 DEFAULT_TIMEOUT_S = 12
 
-DEFAULT_CACHE_DIR = Path(".cache/llm_verifier")
+# Absoluut pad anchored op repo-root, niet cwd. Onder cron/systemd is cwd
+# vaak / of /var/spool/cron, waardoor een relatief pad cache-misses geeft
+# en elke borderline post een echte Anthropic API call kost.
+# parents[0]=processor/, parents[1]=consumer/, parents[2]=lead-radar/
+DEFAULT_CACHE_DIR = (Path(__file__).resolve().parents[2] / ".cache" / "llm_verifier")
 
 
 SYSTEM_PROMPT = """Je beoordeelt Nederlandse forumposts op koop-intentie voor installatie-diensten (warmtepomp, airco, zonnepanelen, cv-ketel, renovatie).
@@ -107,19 +110,41 @@ def _cache_save(cache_dir: Path, key: str, payload: dict) -> None:
         log.debug("LLM cache write failed: %s", e)
 
 
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
-
-
 def _parse_response(text: str) -> dict | None:
+    # Brace-counting parser: vindt het eerste gebalanceerde JSON-object.
+    # Oude greedy regex r"\{.*\}" matchte van eerste { tot LAATSTE }; bij
+    # trailing tekst met een tweede { (uitleg, voorbeelden) werd dat
+    # invalid JSON en de hele verdict werd silently gedropt.
     if not text:
         return None
-    m = _JSON_RE.search(text)
-    if not m:
+    start = text.find("{")
+    if start == -1:
         return None
-    try:
-        return json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(text[start : i + 1])
+                except json.JSONDecodeError:
+                    return None
+    return None
 
 
 def _build_user_prompt(*, title: str, text: str, city: str | None,
