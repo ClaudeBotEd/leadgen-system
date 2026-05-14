@@ -191,3 +191,27 @@ Lees de README.md per module:
 - `automation/README.md` — pipeline configuratie
 
 **Belangrijk:** alle code draait zonder API keys. Als je later wil opschalen, voeg dan keys toe aan `lead-radar/config.yaml` en de scrapers gebruiken ze automatisch.
+
+---
+
+## 🔗 Project onderdelen
+
+Gratis MVP (Pad A) — start hier:
+
+- [[lead-radar]] — leads scrapen uit publieke bronnen
+- [[crm-light]] — CSV-CRM met terminal dashboard
+- [[outreach]] — template-personalisatie engine
+- [[automation]] — end-to-end pipeline runner
+
+Opschalen / betaalde stack (Pad B):
+
+- [[apollo]] — prospect data op schaal
+- [[crm]] — HubSpot Free / Close Solo
+- [[email-sequences]] — Instantly/Smartlead sequences
+- [[landingspagina]] — lead capture form
+- [[dns]] — cold-email infrastructuur (SPF/DKIM/DMARC)
+- [[n8n]] — workflow automation (self-host of cloud)
+
+Achtergrond:
+
+- [[rapport-ai-lead-gen-nl-be]] — marktonderzoek NL/BE (concurrenten, niches, juridisch kader)
