@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 
 # HARD urgency: spoed/asap/zsm — koopklaar, +35
 # "haast" stond hier eerder maar werd door "geen haast" als positief
@@ -199,12 +200,48 @@ def _score_budget(text: str) -> int:
     return 0
 
 
-def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[int, dict[str, int]]:
+def _time_decay_factor(created_at: str | None, now: datetime | None = None) -> float:
+    """Vermenigvuldigingsfactor op de eindscore op basis van post-leeftijd.
+
+    - ≤14 dagen: ×1.0 (vol gewicht)
+    - 15-30 dagen: ×0.7
+    - 31-60 dagen: ×0.4
+    - >60 dagen: ×0.1
+
+    Onparseerbare/ontbrekende timestamp = geen decay (1.0).
+    """
+    if not created_at:
+        return 1.0
+    try:
+        dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError, TypeError):
+        return 1.0
+    ref = now or datetime.now(timezone.utc)
+    age_days = (ref - dt).total_seconds() / 86400.0
+    if age_days <= 14:
+        return 1.0
+    if age_days <= 30:
+        return 0.7
+    if age_days <= 60:
+        return 0.4
+    return 0.1
+
+
+def score_post(
+    cleaned: dict,
+    niche_keywords: list[str] | None = None,
+    *,
+    created_at: str | None = None,
+    now: datetime | None = None,
+) -> tuple[int, dict[str, int]]:
     """Bereken score + breakdown.
 
     `cleaned` is output van processor.cleaner.clean_post().
     `niche_keywords` is optioneel — als geen enkel keyword voorkomt drukken
     we 30 punten af om totaal off-topic posts uit de top te houden.
+    `created_at` (ISO-8601) activeert time-decay; `now` is voor testbaarheid.
     """
     text = cleaned.get("full_no_url", "") or cleaned.get("full", "")
     lower = cleaned.get("lower", text.lower())
@@ -251,4 +288,11 @@ def score_post(cleaned: dict, niche_keywords: list[str] | None = None) -> tuple[
             breakdown["off_topic_penalty"] = -30
 
     total = max(0, min(100, total))
+
+    factor = _time_decay_factor(created_at, now)
+    if factor < 1.0:
+        decayed = int(round(total * factor))
+        breakdown["time_decay_penalty"] = decayed - total
+        total = decayed
+
     return total, breakdown

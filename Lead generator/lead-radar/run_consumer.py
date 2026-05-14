@@ -219,7 +219,11 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
         if not is_potential_lead(cleaned["full"]):
             skipped_promo += 1
             continue
-        score, breakdown = score_post(cleaned, niche_keywords=keywords_required)
+        score, breakdown = score_post(
+            cleaned,
+            niche_keywords=keywords_required,
+            created_at=raw.created_at,
+        )
         if score < args.min_score:
             skipped_low += 1
             continue
