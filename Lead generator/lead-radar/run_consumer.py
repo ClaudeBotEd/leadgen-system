@@ -153,6 +153,21 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+def extra_kwargs_for_source(source_name: str, defaults: dict) -> dict:
+    """Source-specific kwargs uit queries.yaml `defaults`-section.
+
+    Voorkomt dat per-source config silent dead code wordt.  Reddit is
+    momenteel de enige source die kwargs uit defaults nodig heeft
+    (subreddits-lijst).  Andere sources krijgen lege dict terug zodat
+    `**extra_kwargs` veilig spreidt.
+    """
+    if source_name == "reddit":
+        subs = defaults.get("reddit_subreddits")
+        if subs:
+            return {"subreddits": list(subs)}
+    return {}
+
+
 def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> dict[str, list[str]]:
     text_qs = (niche_cfg.get("queries_text") or [])[:max_queries]
     google_qs = (niche_cfg.get("google_queries") or [])[:max_queries]
@@ -197,6 +212,7 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
     """Run pipeline voor 1 niche en returnt de Lead-list."""
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
+    defaults_cfg = cfg.get("defaults") or {}
     if niche not in niches:
         log.error("Niche %r niet in queries.yaml", niche)
         return []
@@ -246,11 +262,12 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
             queries = queries_per_source.get(source_name) or []
             if not queries:
                 continue
+            extra = extra_kwargs_for_source(source_name, defaults_cfg)
             source_yield = 0  # posts deze run via deze source (na seen-filter)
             for q in queries:
                 t0 = time.monotonic()
                 try:
-                    posts = fetch(q, limit=args.limit, location=None, session=polite)
+                    posts = fetch(q, limit=args.limit, location=None, session=polite, **extra)
                 except Exception as e:
                     log.warning("Source %s crashte op q=%r: %s", source_name, q, e)
                     posts = []

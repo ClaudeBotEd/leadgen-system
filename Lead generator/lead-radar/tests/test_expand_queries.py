@@ -1,16 +1,21 @@
-"""Regression tests voor expand_queries — voorkomt silent zero-yield als
-een source in REGISTRY zit maar geen queries-mapping krijgt.
+"""Regression tests voor dispatch-mappings tussen queries.yaml en sources.
 
-De originele bug: '2dehands' zat in ALL_SOURCES + REGISTRY, maar
-expand_queries() returnde een dict zónder '2dehands' key.  Dispatch-loop
-deed dan `queries_per_source.get(source_name) or []` -> [] -> source
-werd nooit aangeroepen.  Geen exception, geen leads, geen feedback.
+Twee silent-gap patronen worden hier afgedwongen:
+
+1. expand_queries() — als een source in REGISTRY zit moet hij óók queries
+   krijgen. Originele bug: '2dehands' had geen mapping → silent skip.
+
+2. extra_kwargs_for_source() — sommige sources verwachten configuratie
+   uit `defaults` in queries.yaml (bv. reddit krijgt subreddits-lijst).
+   Bug: defaults.reddit_subreddits werd nooit doorgegeven aan
+   reddit.fetch() → r/Klussers, r/Offertes, r/heatpumps stilletjes
+   genegeerd, source viel terug op hardcoded DEFAULT_SUBS in reddit.py.
 """
 from __future__ import annotations
 
 import pytest
 
-from run_consumer import expand_queries
+from run_consumer import expand_queries, extra_kwargs_for_source
 from consumer.sources import ALL_SOURCES
 
 
@@ -65,3 +70,30 @@ def test_expand_queries_all_sources_get_nonempty_lists(niche_cfg: dict) -> None:
     for source in ALL_SOURCES:
         qs = result.get(source) or []
         assert qs, f"Source {source!r} kreeg lege query-list bij volledige niche-config"
+
+
+# ─── extra_kwargs_for_source — source-specific dispatch kwargs ───────────────
+
+
+def test_reddit_uses_defaults_subreddits() -> None:
+    """defaults.reddit_subreddits MOET doorgegeven worden aan reddit.fetch."""
+    defaults = {"reddit_subreddits": ["thenetherlands", "Vlaanderen", "heatpumps"]}
+    assert extra_kwargs_for_source("reddit", defaults) == {
+        "subreddits": ["thenetherlands", "Vlaanderen", "heatpumps"]
+    }
+
+
+def test_reddit_no_defaults_returns_empty_so_fetch_uses_its_own_defaults() -> None:
+    """Bij ontbrekende of lege subs-config geen kwarg → reddit.fetch valt
+    terug op DEFAULT_SUBS in reddit.py (graceful)."""
+    assert extra_kwargs_for_source("reddit", {}) == {}
+    assert extra_kwargs_for_source("reddit", {"reddit_subreddits": []}) == {}
+    assert extra_kwargs_for_source("reddit", {"reddit_subreddits": None}) == {}
+
+
+@pytest.mark.parametrize("source", ["tweakers", "bouwinfo", "google", "marktplaats", "2dehands"])
+def test_non_reddit_sources_get_no_extra_kwargs(source: str) -> None:
+    """Alleen reddit consumeert reddit_subreddits — andere sources mogen
+    er niet door verstoord raken (TypeError op onbekende kwarg)."""
+    defaults = {"reddit_subreddits": ["x", "y"]}
+    assert extra_kwargs_for_source(source, defaults) == {}

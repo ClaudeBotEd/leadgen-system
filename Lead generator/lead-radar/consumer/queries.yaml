@@ -4,23 +4,33 @@
 
 defaults:
   reddit_subreddits:
+    # NL — landelijk
     - thenetherlands
     - Netherlands
-    - belgium
-    - belgium2
     - dutch
+    # NL — steden
     - amsterdam
     - rotterdam
     - utrecht
     - eindhoven
     - groningen
+    - DenHaag
+    # BE — landelijk
+    - belgium
+    - belgium2
+    - Vlaanderen
+    - Brussels
+    # BE — steden
     - antwerpen
     - gent
+    - Leuven
+    # NL/BE — DIY / installatie / lead-getuigenis
     - DIYNL
     - duurzaam
     - Klussers
     - Offertes
     - tweakers
+    # EN — niche (klein NL/BE-aandeel maar wel intent-rich)
     - hvac
     - heatpumps
   cities_nl:
