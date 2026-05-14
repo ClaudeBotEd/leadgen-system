@@ -33,6 +33,14 @@ DEFAULT_TIMEOUT_S = 12
 # parents[0]=processor/, parents[1]=consumer/, parents[2]=lead-radar/
 DEFAULT_CACHE_DIR = (Path(__file__).resolve().parents[2] / ".cache" / "llm_verifier")
 
+# Per-run budget cap.  LEAD_RADAR_LLM_BUDGET_EUR env var = max EUR-spend per
+# Python-proces (= per cron-run).  Reset bij start van een nieuwe loop via
+# reset_run_counters().  ~€0.001/call bij Haiku is ruwe schatting; exacte
+# tokens variëren, dus dit is een soft cap die runaway-loops afvangt, niet
+# een precieze accountant.
+_COST_PER_CALL_EUR = 0.001
+_run_api_calls_made = 0
+
 
 SYSTEM_PROMPT = """Je beoordeelt Nederlandse forumposts op koop-intentie voor installatie-diensten (warmtepomp, airco, zonnepanelen, cv-ketel, renovatie).
 
@@ -161,6 +169,32 @@ def _build_user_prompt(*, title: str, text: str, city: str | None,
     return "\n\n".join(parts)
 
 
+def _budget_exhausted() -> bool:
+    """True als de per-run budget cap is bereikt; False als geen cap is gezet
+    of de env var ongeldig is (defensief: nooit crashen op config-fout)."""
+    cap_str = os.environ.get("LEAD_RADAR_LLM_BUDGET_EUR")
+    if not cap_str:
+        return False
+    try:
+        cap_eur = float(cap_str)
+    except ValueError:
+        log.warning(
+            "LEAD_RADAR_LLM_BUDGET_EUR=%r is geen geldig getal; cap genegeerd",
+            cap_str,
+        )
+        return False
+    spent_eur = _run_api_calls_made * _COST_PER_CALL_EUR
+    return spent_eur >= cap_eur
+
+
+def reset_run_counters() -> None:
+    """Reset per-run counters.  Roep aan bij start van een nieuwe pipeline-run
+    als je de cap per-run wilt resetten (anders blijft het cumulatief binnen
+    hetzelfde Python-proces)."""
+    global _run_api_calls_made
+    _run_api_calls_made = 0
+
+
 def should_verify(score: int, *, min_score: int = DEFAULT_MIN_SCORE,
                   max_score: int = DEFAULT_MAX_SCORE) -> bool:
     """True als deze score in de borderline-zone valt."""
@@ -205,6 +239,11 @@ def verify_post(
         if cached:
             return LlmVerdict(**cached)
 
+    # Budget cap: na cache-check, vóór API call.  Cached hits kosten niets en
+    # tellen niet mee — alleen daadwerkelijke API-calls.
+    if _budget_exhausted():
+        return _skipped("budget_exhausted", model=model)
+
     try:
         client = Anthropic(api_key=api_key, timeout=timeout_s)
         resp = client.messages.create(
@@ -219,6 +258,9 @@ def verify_post(
     except Exception as e:
         log.warning("LLM verifier API call failed: %s", e)
         return _skipped(f"api_error:{type(e).__name__}", model=model)
+
+    global _run_api_calls_made
+    _run_api_calls_made += 1
 
     raw_text = ""
     try:
@@ -299,4 +341,5 @@ __all__ = [
     "DEFAULT_MIN_SCORE", "DEFAULT_MAX_SCORE", "DEFAULT_MODEL",
     "LlmVerdict",
     "should_verify", "verify_post", "combine_score",
+    "reset_run_counters",
 ]

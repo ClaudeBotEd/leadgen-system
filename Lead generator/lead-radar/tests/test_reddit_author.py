@@ -94,6 +94,7 @@ def test_not_recurring_when_no_renovation_subs() -> None:
 
 
 def test_account_age_estimated_from_earliest_child() -> None:
+    """Fallback-pad: geen about.json data, gebruik oudste zichtbare post."""
     payload = _synthetic_payload(
         _child(created_ago_s=86400 * 30),
         _child(created_ago_s=86400 * 60),
@@ -101,6 +102,30 @@ def test_account_age_estimated_from_earliest_child() -> None:
     p = _parse_user_payload("alice", payload)
     assert p.account_age_days is not None
     assert 58 <= p.account_age_days <= 62
+
+
+def test_account_age_uses_about_created_utc_when_present() -> None:
+    """Met about.json data: echte account-leeftijd, niet schatting uit posts.
+
+    Bug 723: oude code schatte account_age uit earliest visible post — een
+    5-jaar oud account dat 1 maand actief is werd 30 dagen oud genoemd,
+    wat user-classificatie scheef trok."""
+    payload = _synthetic_payload(
+        _child(created_ago_s=86400 * 10),  # laatste activiteit 10 dagen oud
+    )
+    payload["_about_created_utc"] = time.time() - (86400 * 365 * 5)
+    p = _parse_user_payload("alice", payload)
+    assert p.account_age_days is not None
+    assert 1820 <= p.account_age_days <= 1830  # ~5 jaar = 1825d
+
+
+def test_account_age_invalid_about_falls_back_to_earliest_child() -> None:
+    """Ongeldige _about_created_utc → defensieve fallback naar earliest child."""
+    payload = _synthetic_payload(_child(created_ago_s=86400 * 30))
+    payload["_about_created_utc"] = "not-a-number"
+    p = _parse_user_payload("alice", payload)
+    assert p.account_age_days is not None
+    assert 28 <= p.account_age_days <= 32
 
 
 def test_enrich_with_fetch_fn(tmp_path: Path) -> None:

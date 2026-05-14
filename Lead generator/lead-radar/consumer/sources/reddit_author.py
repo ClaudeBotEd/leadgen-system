@@ -99,22 +99,42 @@ def _cache_save(path: Path, profile: AuthorProfile) -> None:
 
 
 def _fetch_reddit_user(author: str, timeout_s: int) -> dict | None:
-    """Fetcht publieke Reddit-user JSON.  None bij fout/404."""
-    url = f"https://www.reddit.com/user/{author}/.json?limit=50"
+    """Fetcht publieke Reddit-user JSON + about.json.  None bij fout/404.
+
+    Combineert listing-data (laatste 50 posts/comments) en about.json
+    (data.created_utc = echte account-creation timestamp).  About-fetch
+    is best-effort: bij fout valt _parse_user_payload terug op de oudste
+    zichtbare post als account-leeftijd-schatting.
+    """
+    headers = {"User-Agent": USER_AGENT}
+    listing_url = f"https://www.reddit.com/user/{author}/.json?limit=50"
     try:
-        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout_s)
+        listing_resp = requests.get(listing_url, headers=headers, timeout=timeout_s)
     except requests.RequestException as e:
-        log.debug("reddit user fetch failed: %s", e)
+        log.debug("reddit listing fetch failed: %s", e)
         return None
-    if resp.status_code == 404:
+    if listing_resp.status_code == 404:
         return None
-    if resp.status_code != 200:
-        log.debug("reddit user non-200: %d", resp.status_code)
+    if listing_resp.status_code != 200:
+        log.debug("reddit listing non-200: %d", listing_resp.status_code)
         return None
     try:
-        return resp.json()
+        payload = listing_resp.json()
     except ValueError:
         return None
+
+    about_url = f"https://www.reddit.com/user/{author}/about.json"
+    try:
+        about_resp = requests.get(about_url, headers=headers, timeout=timeout_s)
+        if about_resp.status_code == 200:
+            about_data = (about_resp.json().get("data") or {})
+            ts = about_data.get("created_utc")
+            if isinstance(ts, (int, float)):
+                payload["_about_created_utc"] = ts
+    except (requests.RequestException, ValueError) as e:
+        log.debug("reddit about fetch failed (non-fatal): %s", e)
+
+    return payload
 
 
 def _parse_user_payload(author: str, payload: dict) -> AuthorProfile:
@@ -144,10 +164,16 @@ def _parse_user_payload(author: str, payload: dict) -> AuthorProfile:
         if isinstance(ts, (int, float)):
             earliest_created = ts if earliest_created is None else min(earliest_created, ts)
 
+    # Echte account-leeftijd uit /about.json indien beschikbaar; anders
+    # fallback naar oudste zichtbare post (was de oude default — schatting
+    # die een 5-jaar oud account dat net 1 maand actief is, als 30 dagen
+    # oud bestempelde).
     age_days: int | None = None
-    if earliest_created is not None:
-        age_seconds = time.time() - earliest_created
-        age_days = max(0, int(age_seconds / 86400))
+    about_created = payload.get("_about_created_utc")
+    if isinstance(about_created, (int, float)):
+        age_days = max(0, int((time.time() - about_created) / 86400))
+    elif earliest_created is not None:
+        age_days = max(0, int((time.time() - earliest_created) / 86400))
 
     is_recurring = (submissions + comments) >= 5 and len(subs_hit) >= 1
 

@@ -16,6 +16,7 @@ from consumer.processor.llm_verifier import (
     _parse_response,
     _post_hash,
     combine_score,
+    reset_run_counters,
     should_verify,
     verify_post,
 )
@@ -201,3 +202,59 @@ def test_parse_response_returns_none_on_no_json() -> None:
     """Geen JSON in tekst → None."""
     assert _parse_response("Sorry, I cannot answer that.") is None
     assert _parse_response("") is None
+
+
+# --- Budget cap (issue 721) -------------------------------------------------
+
+
+def test_verify_post_skipped_when_budget_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """LEAD_RADAR_LLM_BUDGET_EUR=0 → skipt zonder API call, geen kosten."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key-for-budget-test")
+    monkeypatch.setenv("LEAD_RADAR_LLM_BUDGET_EUR", "0")
+    reset_run_counters()
+    verdict = verify_post(
+        title="t", text="x", city=None, niche="cv",
+        regex_score=50, regex_breakdown={},
+        cache_dir=tmp_path,
+    )
+    assert verdict.available is False
+    assert verdict.skipped_reason == "budget_exhausted"
+
+
+def test_verify_post_no_budget_var_proceeds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Geen env var → geen cap; API-call wordt geprobeerd (faalt op fake key
+    of network, dat is OK — we testen dat budget_exhausted niet triggert)."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key-for-budget-test")
+    monkeypatch.delenv("LEAD_RADAR_LLM_BUDGET_EUR", raising=False)
+    reset_run_counters()
+    verdict = verify_post(
+        title="t", text="x", city=None, niche="cv",
+        regex_score=50, regex_breakdown={},
+        cache_dir=tmp_path,
+    )
+    assert verdict.skipped_reason != "budget_exhausted"
+
+
+def test_verify_post_invalid_budget_var_treated_as_no_cap(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Ongeldige value → log warning, behandelen als geen cap (defensief)."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key-for-budget-test")
+    monkeypatch.setenv("LEAD_RADAR_LLM_BUDGET_EUR", "not-a-number")
+    reset_run_counters()
+    verdict = verify_post(
+        title="t", text="x", city=None, niche="cv",
+        regex_score=50, regex_breakdown={},
+        cache_dir=tmp_path,
+    )
+    assert verdict.skipped_reason != "budget_exhausted"
+
+
+def test_reset_run_counters_is_callable() -> None:
+    """reset_run_counters() moet callable zijn zonder args, geen exceptions."""
+    reset_run_counters()
+    reset_run_counters()  # idempotent

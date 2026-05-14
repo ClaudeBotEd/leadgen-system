@@ -368,8 +368,7 @@ def sync_to_sheets(
         str(credentials_path) if credentials_path else None
     )
 
-    print(f"Opening spreadsheet ID: {sid}", flush=True)
-    print(f"Credentials path: {creds_path}", flush=True)
+    log.info("opening spreadsheet id=%s credentials=%s", sid, creds_path)
     client = _open_client(creds_path)
     try:
         ss = client.open_by_key(sid)
