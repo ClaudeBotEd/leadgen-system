@@ -149,11 +149,31 @@ LEAD_RADAR_LOG_FORMAT=json python3 run_consumer.py --niche cv --verbose
 ## 8. Tests draaien
 
 ```bash
-pytest tests/ -q                          # alles (329 tests)
+pytest tests/ -q                          # alles (~380 tests)
 pytest tests/test_scorer.py -v             # alleen scorer
 pytest tests/ -m "llm"                     # alleen live LLM (heeft API key nodig)
 pytest tests/ -m "not llm and not network" # offline-only (CI mode)
 ```
+
+## 8a. Production safety
+
+```bash
+# Dry-run: pipeline runt, maar geen Sheets sync en geen Telegram alerts.
+# CSV/JSON exports gebeuren wel, dus operator kan output inspecteren
+# zonder iets richting prod te pushen.
+python3 run_consumer.py --daily --dry-run
+
+# Kosten-vrije validatie (geen Sheets, geen Telegram, geen LLM):
+python3 run_consumer.py --daily --dry-run --no-llm
+
+# Soft cap op LLM-spend per run (cached hits tellen niet mee):
+export LEAD_RADAR_LLM_BUDGET_EUR=0.50      # ~500 calls bij Haiku
+python3 run_consumer.py --daily
+```
+
+De daily-run sluit af met een regel die het aantal API-calls, geschatte
+kosten en cache-hit-rate toont — geen Anthropic dashboard nodig voor
+spend-monitoring.
 
 ## 9. Troubleshooting
 
