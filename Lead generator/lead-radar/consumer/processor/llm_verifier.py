@@ -40,6 +40,8 @@ DEFAULT_CACHE_DIR = (Path(__file__).resolve().parents[2] / ".cache" / "llm_verif
 # een precieze accountant.
 _COST_PER_CALL_EUR = 0.001
 _run_api_calls_made = 0
+_run_cache_hits = 0
+_run_cache_misses = 0
 
 
 SYSTEM_PROMPT = """Je beoordeelt Nederlandse forumposts op koop-intentie voor installatie-diensten (warmtepomp, airco, zonnepanelen, cv-ketel, renovatie).
@@ -201,11 +203,25 @@ def _budget_exhausted() -> bool:
 
 
 def reset_run_counters() -> None:
-    """Reset per-run counters.  Roep aan bij start van een nieuwe pipeline-run
-    als je de cap per-run wilt resetten (anders blijft het cumulatief binnen
-    hetzelfde Python-proces)."""
-    global _run_api_calls_made
+    """Reset per-run counters (budget cap + cache stats).  Roep aan bij start
+    van een nieuwe pipeline-run als je de cap per-run wilt resetten (anders
+    blijft het cumulatief binnen hetzelfde Python-proces)."""
+    global _run_api_calls_made, _run_cache_hits, _run_cache_misses
     _run_api_calls_made = 0
+    _run_cache_hits = 0
+    _run_cache_misses = 0
+
+
+def get_run_stats() -> dict[str, int]:
+    """Snapshot van per-run counters voor observability.  Caller logt
+    deze waardes in de eindsamenvatting zodat operator cache-effectiviteit
+    en API-spend kan zien zonder Anthropic dashboard te openen."""
+    return {
+        "api_calls": _run_api_calls_made,
+        "cache_hits": _run_cache_hits,
+        "cache_misses": _run_cache_misses,
+        "estimated_cost_eur": round(_run_api_calls_made * _COST_PER_CALL_EUR, 4),
+    }
 
 
 def should_verify(score: int, *, min_score: int = DEFAULT_MIN_SCORE,
@@ -247,10 +263,13 @@ def verify_post(
     )
 
     cache_key = _post_hash(user_prompt, model)
+    global _run_cache_hits, _run_cache_misses
     if cache_dir is not None:
         cached = _cache_load(cache_dir, cache_key)
         if cached:
+            _run_cache_hits += 1
             return LlmVerdict(**cached)
+        _run_cache_misses += 1
 
     # Budget cap: na cache-check, vóór API call.  Cached hits kosten niets en
     # tellen niet mee — alleen daadwerkelijke API-calls.
@@ -354,5 +373,5 @@ __all__ = [
     "DEFAULT_MIN_SCORE", "DEFAULT_MAX_SCORE", "DEFAULT_MODEL",
     "LlmVerdict",
     "should_verify", "verify_post", "combine_score",
-    "reset_run_counters",
+    "reset_run_counters", "get_run_stats",
 ]

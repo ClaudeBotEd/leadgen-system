@@ -16,6 +16,7 @@ from consumer.processor.llm_verifier import (
     _parse_response,
     _post_hash,
     combine_score,
+    get_run_stats,
     reset_run_counters,
     should_verify,
     verify_post,
@@ -258,6 +259,47 @@ def test_reset_run_counters_is_callable() -> None:
     """reset_run_counters() moet callable zijn zonder args, geen exceptions."""
     reset_run_counters()
     reset_run_counters()  # idempotent
+
+
+def test_get_run_stats_returns_zero_after_reset() -> None:
+    """Stats moeten 0 zijn direct na reset_run_counters()."""
+    reset_run_counters()
+    stats = get_run_stats()
+    assert stats["api_calls"] == 0
+    assert stats["cache_hits"] == 0
+    assert stats["cache_misses"] == 0
+
+
+def test_cache_hit_increments_counter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Een cache-hit moet cache_hits ophogen, niet cache_misses."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key-for-cache-test")
+    reset_run_counters()
+
+    # Seed cache met een voorberekende verdict
+    prompt = _build_user_prompt(
+        title="t", text="x", city=None, niche="cv",
+        regex_score=50, regex_breakdown={},
+    )
+    key = _post_hash(prompt, "claude-haiku-4-5-20251001")
+    cached = {
+        "available": True, "kind": "lead", "confidence": 0.9,
+        "refined_score": 80, "is_real_lead": True,
+        "reason": "uit cache", "model": "claude-haiku-4-5-20251001",
+        "skipped_reason": None,
+    }
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / f"{key}.json").write_text(json.dumps(cached), encoding="utf-8")
+
+    verify_post(
+        title="t", text="x", city=None, niche="cv",
+        regex_score=50, regex_breakdown={},
+        cache_dir=tmp_path,
+    )
+    stats = get_run_stats()
+    assert stats["cache_hits"] == 1
+    assert stats["cache_misses"] == 0
 
 
 def test_post_hash_changes_when_system_prompt_changes(

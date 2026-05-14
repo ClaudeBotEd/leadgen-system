@@ -12,6 +12,20 @@ lead-radar/.venv/
 lead-radar/__pycache__/
 lead-radar/**/__pycache__/
 
+# Secrets — defense in depth (voorkomt 'git add .' ongelukken)
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.yaml
+secrets.json
+
+# Lokale caches (LLM verifier, author enrich, ruff)
+lead-radar/.cache/
+lead-radar/.ruff_cache/
+.ruff_cache/
+
 # CRM-Light — user data (committen wel handig voor backup, maar niet als template)
 crm-light/data/leads.csv
 crm-light/data/activities.csv

@@ -43,6 +43,10 @@ from consumer.processor import (  # noqa: E402
     smart_summary,
     verify_post,
 )
+from consumer.processor.llm_verifier import (  # noqa: E402
+    get_run_stats,
+    reset_run_counters,
+)
 from consumer.output import (  # noqa: E402
     export_leads,
     send_lead_alert,
@@ -236,6 +240,7 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
             queries = queries_per_source.get(source_name) or []
             if not queries:
                 continue
+            source_yield = 0  # posts deze run via deze source (na seen-filter)
             for q in queries:
                 t0 = time.monotonic()
                 try:
@@ -248,6 +253,16 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
                     if seen and seen.has(p.fingerprint()):
                         continue
                     raw_total.append(p)
+                    source_yield += 1
+            # Zero-yield detection: vangt silent breakage van een source af.
+            # Bv. wanneer een site HTML herstructureert en de scraper alle
+            # parsers laat falen zonder exception, of een API-key vervalt.
+            if source_yield == 0:
+                log.warning(
+                    "[%s] 0 posts uit %d queries — source mogelijk gebroken "
+                    "(check HTML structuur, API keys, of rate-limit)",
+                    source_name, len(queries),
+                )
 
         in_memory_seen: set[str] = set()
         skipped_promo = skipped_low = skipped_old = 0
@@ -428,6 +443,11 @@ def run_daily(args: argparse.Namespace) -> int:
     args.max_age_days = args.max_age_days if args.max_age_days > 0 else DAILY_MAX_AGE_DAYS
     args.sheets = True
 
+    # Reset per-run counters zodat budget cap en cache stats per daily-run
+    # zijn, niet cumulatief over meerdere run_daily invocaties in hetzelfde
+    # Python-proces (relevant bij testing / langlopende daemon).
+    reset_run_counters()
+
     print()
     print("=" * 70)
     _ts_nl = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d %H:%M")
@@ -475,6 +495,17 @@ def run_daily(args: argparse.Namespace) -> int:
               f"ALL +{sheets_total['all_added']}  "
               f"OPP +{sheets_total['opp_added']}")
         print(f"  Open  : {sheets_total['spreadsheet_url']}")
+    # LLM cost + cache effectiviteit — operator ziet daily spend en kan
+    # cache-tuning beslissen zonder Anthropic dashboard te openen.
+    llm_stats = get_run_stats()
+    total_lookups = llm_stats["cache_hits"] + llm_stats["cache_misses"]
+    hit_rate = (llm_stats["cache_hits"] / total_lookups * 100) if total_lookups else 0.0
+    print(
+        f"  LLM   : {llm_stats['api_calls']} API calls  "
+        f"~€{llm_stats['estimated_cost_eur']:.4f}  "
+        f"cache_hits={llm_stats['cache_hits']}/{total_lookups} "
+        f"({hit_rate:.0f}%)"
+    )
     print("=" * 70)
     return 0
 
