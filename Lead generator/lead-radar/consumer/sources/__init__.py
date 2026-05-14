@@ -9,6 +9,7 @@ from typing import Callable
 from . import reddit as _reddit
 from . import tweakers as _tweakers
 from . import bouwinfo as _bouwinfo
+from . import bouwinfo_forum as _bouwinfo_forum
 from . import google as _google
 from . import marktplaats as _marktplaats
 from . import tweedehands as _tweedehands
@@ -18,6 +19,7 @@ REGISTRY: dict[str, Callable] = {
     "reddit": _reddit.fetch,
     "tweakers": _tweakers.fetch,
     "bouwinfo": _bouwinfo.fetch,
+    "bouwinfo_forum": _bouwinfo_forum.fetch,
     "google": _google.fetch,
     "marktplaats": _marktplaats.fetch,
     "2dehands": _tweedehands.fetch,

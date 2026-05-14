@@ -227,10 +227,12 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
                     out.append(q)
         return out
 
+    bouwinfo_cats = niche_cfg.get("bouwinfo_categories") or []
     return {
         "reddit": loc_subst(text_qs),
         "tweakers": text_qs,
         "bouwinfo": text_qs,
+        "bouwinfo_forum": bouwinfo_cats,
         "google": loc_subst(google_qs) if google_qs else loc_subst(text_qs),
         "marktplaats": market_qs or text_qs,
         "2dehands": market_qs or text_qs,

@@ -21,7 +21,7 @@ from consumer.sources import ALL_SOURCES
 
 @pytest.fixture
 def niche_cfg() -> dict:
-    """Minimale niche-config met alle 3 query-buckets non-leeg."""
+    """Minimale niche-config met alle query-buckets non-leeg."""
     return {
         "keywords_required": ["warmtepomp"],
         "queries_text": [
@@ -35,6 +35,10 @@ def niche_cfg() -> dict:
         "marktplaats_queries": [
             "warmtepomp installateur gezocht",
             "warmtepomp monteur gevraagd",
+        ],
+        "bouwinfo_categories": [
+            "/categories/technieken/verwarming-en-koeling/warmtepompen",
+            "/categories/technieken/verwarming-en-koeling",
         ],
     }
 

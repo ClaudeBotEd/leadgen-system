@@ -152,6 +152,10 @@ niches:
       - "warmtepomp specialist gezocht"
       - "hybride warmtepomp installateur"
       - "warmtepomp opdrachtgever zoekt"
+    bouwinfo_categories:
+      - /categories/technieken/verwarming-en-koeling/warmtepompen
+      - /categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming
+      - /categories/technieken/verwarming-en-koeling
       - "wie kan warmtepomp"
       - "warmtepomp plaatsen prijs"
       - "warmtepomp installateur antwerpen"
@@ -254,6 +258,9 @@ niches:
       - "airco installateur antwerpen"
       - "airco installateur gent"
       - "airco installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/verwarming-en-koeling
+      - /categories/technieken/ventilatie
 
   zonnepanelen:
     keywords_required:
@@ -351,6 +358,9 @@ niches:
       - "zonnepanelen installateur antwerpen"
       - "zonnepanelen installateur gent"
       - "zonnepanelen installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/elektriciteit/zonne-energie
+      - /categories/technieken/elektriciteit
 
   cv:
     keywords_required:
@@ -450,6 +460,9 @@ niches:
       - "cv installateur antwerpen"
       - "cv installateur gent"
       - "cv installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/verwarming-en-koeling
+      - /categories/technieken/sanitair
 
   renovatie:
     keywords_required:
@@ -548,3 +561,5 @@ niches:
       - "aannemer renovatie antwerpen"
       - "aannemer renovatie gent"
       - "aannemer renovatie amsterdam"
+    bouwinfo_categories:
+      - /categories/ruwbouw/isolatie
