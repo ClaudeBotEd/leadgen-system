@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from run_consumer import expand_queries, extra_kwargs_for_source
+from run_consumer import expand_queries, extra_kwargs_for_source, parse_locations
 from consumer.sources import ALL_SOURCES
 
 
@@ -97,3 +97,34 @@ def test_non_reddit_sources_get_no_extra_kwargs(source: str) -> None:
     er niet door verstoord raken (TypeError op onbekende kwarg)."""
     defaults = {"reddit_subreddits": ["x", "y"]}
     assert extra_kwargs_for_source(source, defaults) == {}
+
+
+# ─── parse_locations — multi-location support voor --daily ───────────────────
+
+
+def test_parse_locations_comma_separated_string() -> None:
+    """--locations 'nederland,vlaanderen' wordt 2-element lijst."""
+    assert parse_locations("nederland,vlaanderen") == ["nederland", "vlaanderen"]
+
+
+def test_parse_locations_strips_whitespace_and_empty_entries() -> None:
+    """Tolerant voor user-typed input: spaties, dubbele komma's."""
+    assert parse_locations(" amsterdam ,  rotterdam ,, brussel ") == [
+        "amsterdam", "rotterdam", "brussel"
+    ]
+
+
+def test_parse_locations_none_uses_fallback() -> None:
+    """Als --locations leeg is maar --location wel gezet, gebruik die."""
+    assert parse_locations(None, fallback="brussel") == ["brussel"]
+
+
+def test_parse_locations_no_value_no_fallback_defaults_to_nederland() -> None:
+    """Beide leeg → daily mode default: nederland."""
+    assert parse_locations(None) == ["nederland"]
+    assert parse_locations("") == ["nederland"]
+
+
+def test_parse_locations_single_value_no_comma() -> None:
+    """--locations 'vlaanderen' (geen komma) is geldige single-elem lijst."""
+    assert parse_locations("vlaanderen") == ["vlaanderen"]

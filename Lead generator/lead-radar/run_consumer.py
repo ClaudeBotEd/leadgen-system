@@ -94,7 +94,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--niche", default=None,
                    help="Niche (warmtepomp/airco/zonnepanelen/cv/renovatie). Vereist tenzij --daily.")
     p.add_argument("--location", default=None,
-                   help="Locatie (bv 'nederland', 'amsterdam'). Optioneel.")
+                   help="Locatie (bv 'nederland', 'amsterdam'). Optioneel. "
+                        "Voor multi-locatie daily-runs: gebruik --locations.")
+    p.add_argument("--locations", default=None,
+                   help="Komma-lijst locaties voor --daily mode "
+                        "(bv 'nederland,vlaanderen,amsterdam'). "
+                        "Default: --location of 'nederland'. "
+                        "Vermenigvuldigt query-volume per locatie — "
+                        "let op rate-limits + LLM-budget.")
     p.add_argument("--limit", type=int, default=50,
                    help="Max raw posts per source-query (default 50)")
     p.add_argument("--sources", default="",
@@ -153,6 +160,25 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+def parse_locations(value: str | None, fallback: str | None = None) -> list[str]:
+    """Parse komma-string naar lijst van locaties voor multi-location daily-run.
+
+    Tolerant voor user-input:
+    - Spaties rond elk item worden gestript
+    - Lege segmenten (dubbele komma's, trailing comma's) genegeerd
+
+    Fallback-order: value > fallback > 'nederland'.  Daily mode mag nooit
+    een lege lijst krijgen — dan zou run_daily 0 iteraties doen.
+    """
+    if value:
+        items = [s.strip() for s in value.split(",") if s.strip()]
+        if items:
+            return items
+    if fallback:
+        return [fallback]
+    return ["nederland"]
+
+
 def extra_kwargs_for_source(source_name: str, defaults: dict) -> dict:
     """Source-specific kwargs uit queries.yaml `defaults`-section.
 
@@ -208,8 +234,18 @@ def _is_recent(created_at: str | None, cutoff_utc: datetime | None) -> bool:
         return True
 
 
-def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
-    """Run pipeline voor 1 niche en returnt de Lead-list."""
+def run_one_niche(
+    args: argparse.Namespace,
+    niche: str,
+    *,
+    location_override: str | None = None,
+) -> list[Lead]:
+    """Run pipeline voor 1 niche en returnt de Lead-list.
+
+    location_override: optioneel; als gezet override args.location voor
+    deze run.  Gebruikt door run_daily() om over meerdere locaties te
+    itereren zonder args te muteren.
+    """
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
     defaults_cfg = cfg.get("defaults") or {}
@@ -225,9 +261,10 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
         log.error("Onbekende sources: %s", invalid)
         return []
 
-    queries_per_source = expand_queries(niche_cfg, args.location, args.max_queries)
+    location = location_override if location_override is not None else args.location
+    queries_per_source = expand_queries(niche_cfg, location, args.max_queries)
     log.info("=== %s @ %s | sources=%s limit=%d min_score=%d max_age_days=%d ===",
-             niche, args.location, requested, args.limit, args.min_score, args.max_age_days)
+             niche, location, requested, args.limit, args.min_score, args.max_age_days)
 
     seen = SeenStore(Path(args.outdir) / "seen_hashes.json") if not args.no_dedup else None
     if seen:
@@ -489,16 +526,23 @@ def run_daily(args: argparse.Namespace) -> int:
     available = list((cfg.get("niches") or {}).keys())
     niches_to_run = [n for n in DAILY_NICHES if n in available]
 
+    locations = parse_locations(getattr(args, "locations", None), fallback=args.location)
+    if len(locations) > 1:
+        log.info("Daily multi-location run: %s", ", ".join(locations))
+
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
     for niche in niches_to_run:
-        leads = run_one_niche(args, niche)
+        niche_leads: list[Lead] = []
+        for loc in locations:
+            leads = run_one_niche(args, niche, location_override=loc)
+            niche_leads.extend(leads)
         sheets_result = None
-        if leads and not getattr(args, "dry_run", False):
+        if niche_leads and not getattr(args, "dry_run", False):
             try:
                 sheets_result = sync_to_sheets(
-                    leads,
+                    niche_leads,
                     spreadsheet_id=args.spreadsheet_id,
                     credentials_path=args.credentials,
                 )
@@ -508,8 +552,8 @@ def run_daily(args: argparse.Namespace) -> int:
                 sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
             except Exception as e:
                 log.error("Sheets sync (%s) faalde: %s", niche, e)
-        _print_summary(niche, leads, sheets_result)
-        grand_total.extend(leads)
+        _print_summary(niche, niche_leads, sheets_result)
+        grand_total.extend(niche_leads)
 
     hot = sum(1 for lead in grand_total if lead.score >= 80)
     warm = sum(1 for lead in grand_total if 70 <= lead.score < 80)
