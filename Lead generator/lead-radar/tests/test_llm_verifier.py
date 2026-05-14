@@ -9,8 +9,6 @@ import pytest
 
 from consumer.processor.llm_verifier import (
     DEFAULT_CACHE_DIR,
-    DEFAULT_MAX_SCORE,
-    DEFAULT_MIN_SCORE,
     LlmVerdict,
     _build_user_prompt,
     _parse_response,

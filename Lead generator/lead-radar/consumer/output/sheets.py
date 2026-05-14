@@ -33,8 +33,10 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from .. import Lead
@@ -76,6 +78,50 @@ OPP_THRESHOLD = 60   # 60-69  -> 'skip' (zichtbaar in OPPORTUNITIES)
 # < 60: niet exporteren
 
 DEFAULT_WORKFLOW_STATUS = "new"
+
+# Retryable HTTP statuscodes uit Google Sheets API.  429 = quota, 5xx =
+# transient backend issues.  4xx anders (auth, schema, permissies) zijn
+# permanente fouten — direct doorgooien, retry helpt niet.
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
+_RETRY_MAX_ATTEMPTS = 3
+
+
+def _with_retry(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Exponential-backoff retry voor gspread API calls.
+
+    Retry op 429 (quota) en 5xx (transient backend).  Auth- en schema-
+    fouten (4xx anders) crashen direct, want retry helpt daar niet.
+    Backoff: 1s, 2s, 4s.
+
+    Zonder retry: een enkele 429 of 503 tijdens Sheets-sync deed alle
+    leads van die batch verloren gaan, zelfs als de volgende seconde
+    de API weer beschikbaar was.
+    """
+    try:
+        import gspread.exceptions as gs_exc  # noqa: F401
+    except ImportError:
+        gs_exc = None  # type: ignore[assignment]
+
+    last_err: Exception | None = None
+    for attempt in range(_RETRY_MAX_ATTEMPTS):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            status = 0
+            if gs_exc is not None and isinstance(e, gs_exc.APIError):
+                resp = getattr(e, "response", None)
+                status = getattr(resp, "status_code", 0) or 0
+            if status not in _RETRYABLE_STATUS_CODES:
+                raise
+            last_err = e
+            delay = 2 ** attempt  # 1, 2, 4
+            log.warning(
+                "Sheets API %d (poging %d/%d, retry in %ds): %s",
+                status, attempt + 1, _RETRY_MAX_ATTEMPTS, delay, e,
+            )
+            time.sleep(delay)
+    assert last_err is not None
+    raise last_err
 
 
 def status_from_score(score: int) -> str:
@@ -324,7 +370,7 @@ def _update_existing_cells(ws, row_idx: int, lead: Lead) -> None:
         batch.append({"range": f"{letter}{row_idx}", "values": [[value]]})
     if batch:
         try:
-            ws.batch_update(batch, value_input_option="USER_ENTERED")
+            _with_retry(ws.batch_update, batch, value_input_option="USER_ENTERED")
         except Exception as e:
             log.warning("Update bestaande rij %d faalde: %s", row_idx, e)
 
@@ -392,22 +438,22 @@ def sync_to_sheets(
     cross_tab = set(idx_all.keys()) | set(idx_hot.keys()) | set(idx_opp.keys())
 
     # Filter <60 weg + sorteer
-    qualified = [l for l in leads if l.score >= OPP_THRESHOLD]
-    qualified.sort(key=lambda l: l.score, reverse=True)
+    qualified = [lead for lead in leads if lead.score >= OPP_THRESHOLD]
+    qualified.sort(key=lambda lead: lead.score, reverse=True)
 
     new_all_rows: list[list] = []
     new_hot_rows: list[list] = []
     new_opp_rows: list[list] = []
     updated_count = 0
 
-    for l in qualified:
-        url_key = (l.url or "").strip()
+    for lead in qualified:
+        url_key = (lead.url or "").strip()
         if not url_key:
             continue
 
         target = (
-            HOT_TAB if l.score >= HOT_THRESHOLD
-            else ALL_TAB if l.score >= WARM_THRESHOLD
+            HOT_TAB if lead.score >= HOT_THRESHOLD
+            else ALL_TAB if lead.score >= WARM_THRESHOLD
             else OPP_TAB
         )
         target_idx = (
@@ -424,8 +470,8 @@ def sync_to_sheets(
         # 1) Same-tab match → eventueel score+bericht updaten, geen duplicaat
         if url_key in target_idx:
             row_i, old_score = target_idx[url_key]
-            if l.score > old_score:
-                _update_existing_cells(target_ws, row_i, l)
+            if lead.score > old_score:
+                _update_existing_cells(target_ws, row_i, lead)
                 updated_count += 1
             continue
 
@@ -435,7 +481,7 @@ def sync_to_sheets(
             continue
 
         # 3) Echte nieuwe lead
-        row = lead_to_row(l)
+        row = lead_to_row(lead)
         if target == HOT_TAB:
             new_hot_rows.append(row)
             # HOT-leads horen ook in ALL als ALL nog niet bekend (zodat
@@ -450,13 +496,13 @@ def sync_to_sheets(
         cross_tab.add(url_key)
 
     if new_all_rows:
-        all_ws.append_rows(new_all_rows, value_input_option="USER_ENTERED")
+        _with_retry(all_ws.append_rows, new_all_rows, value_input_option="USER_ENTERED")
         log.info("Sheets: +%d leads in '%s'", len(new_all_rows), ALL_TAB)
     if new_hot_rows:
-        hot_ws.append_rows(new_hot_rows, value_input_option="USER_ENTERED")
+        _with_retry(hot_ws.append_rows, new_hot_rows, value_input_option="USER_ENTERED")
         log.info("Sheets: +%d leads in '%s'", len(new_hot_rows), HOT_TAB)
     if new_opp_rows:
-        opp_ws.append_rows(new_opp_rows, value_input_option="USER_ENTERED")
+        _with_retry(opp_ws.append_rows, new_opp_rows, value_input_option="USER_ENTERED")
         log.info("Sheets: +%d leads in '%s'", len(new_opp_rows), OPP_TAB)
     if updated_count:
         log.info("Sheets: %d bestaande leads geupdate (hogere score)", updated_count)

@@ -410,9 +410,9 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
 
 
 def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) -> None:
-    hot = sum(1 for l in leads if l.score >= 80)
-    warm = sum(1 for l in leads if 70 <= l.score < 80)
-    opp = sum(1 for l in leads if 60 <= l.score < 70)
+    hot = sum(1 for lead in leads if lead.score >= 80)
+    warm = sum(1 for lead in leads if 70 <= lead.score < 80)
+    opp = sum(1 for lead in leads if 60 <= lead.score < 70)
     print()
     print("─" * 70)
     print(f"  {niche:<14}  leads={len(leads):>3}   HOT={hot:>3}   WARM={warm:>3}   OPP={opp:>3}")
@@ -423,11 +423,11 @@ def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) ->
             f"OPP +{sheets_result.get('opp_added',0)}"
         )
     if leads:
-        top = sorted(leads, key=lambda l: l.score, reverse=True)[:3]
-        for l in top:
-            mark = "🔥" if l.score >= 80 else ("⚡" if l.score >= 70 else "·")
-            city = (l.city or "—")[:12]
-            print(f"   {mark} [{l.score:>3}] {city:<14} {l.title[:50]}")
+        top = sorted(leads, key=lambda lead: lead.score, reverse=True)[:3]
+        for lead in top:
+            mark = "🔥" if lead.score >= 80 else ("⚡" if lead.score >= 70 else "·")
+            city = (lead.city or "—")[:12]
+            print(f"   {mark} [{lead.score:>3}] {city:<14} {lead.title[:50]}")
 
 
 def run_daily(args: argparse.Namespace) -> int:
@@ -481,9 +481,9 @@ def run_daily(args: argparse.Namespace) -> int:
         _print_summary(niche, leads, sheets_result)
         grand_total.extend(leads)
 
-    hot = sum(1 for l in grand_total if l.score >= 80)
-    warm = sum(1 for l in grand_total if 70 <= l.score < 80)
-    opp = sum(1 for l in grand_total if 60 <= l.score < 70)
+    hot = sum(1 for lead in grand_total if lead.score >= 80)
+    warm = sum(1 for lead in grand_total if 70 <= lead.score < 80)
+    opp = sum(1 for lead in grand_total if 60 <= lead.score < 70)
     print()
     print("=" * 70)
     print(f"  TOTAAL leads (score>=60): {len(grand_total)}")

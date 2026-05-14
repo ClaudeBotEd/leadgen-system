@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import random
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -47,9 +48,14 @@ class PoliteSession:
         if headers:
             self.session.headers.update(headers)
         self._last_call: float = 0.0
+        # Lock om _last_call atomair te lezen/schrijven.  Single-threaded
+        # gebruik blijft kostloos (lock is uncontended); voorkomt sleep-skip
+        # of dubbele requests als sources ooit parallel runnen.
+        self._lock = threading.Lock()
 
     def _sleep_polite(self):
-        elapsed = time.monotonic() - self._last_call
+        with self._lock:
+            elapsed = time.monotonic() - self._last_call
         target = self.cfg.request_delay + random.uniform(-self.cfg.jitter, self.cfg.jitter)
         target = max(0.0, target)
         if elapsed < target:
@@ -64,7 +70,8 @@ class PoliteSession:
                 if accept_json:
                     headers["Accept"] = "application/json"
                 resp = self.session.get(url, params=params, timeout=self.cfg.timeout, headers=headers)
-                self._last_call = time.monotonic()
+                with self._lock:
+                    self._last_call = time.monotonic()
                 if resp.status_code == 200:
                     return resp
                 if resp.status_code in (429, 502, 503, 504):

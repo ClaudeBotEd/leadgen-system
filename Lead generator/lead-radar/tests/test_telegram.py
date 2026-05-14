@@ -8,7 +8,6 @@ import pytest
 from consumer import Lead
 from consumer.output.telegram import (
     DEFAULT_HOT_THRESHOLD,
-    TelegramResult,
     _escape_md_v2,
     _format_lead,
     send_lead_alert,

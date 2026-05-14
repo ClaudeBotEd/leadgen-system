@@ -44,7 +44,7 @@ def export_leads(leads: list[Lead], *, niche: str, outdir: Path | str | None = N
     base = Path(outdir) if outdir else Path(__file__).resolve().parents[2] / "data" / "leads" / "consumer"
     base.mkdir(parents=True, exist_ok=True)
 
-    leads_sorted = sorted(leads, key=lambda l: l.score, reverse=True)
+    leads_sorted = sorted(leads, key=lambda lead: lead.score, reverse=True)
     date = _today()
     csv_path = base / f"leads_{niche}_{date}.csv"
     json_path = base / f"leads_{niche}_{date}.json"
@@ -65,7 +65,7 @@ def export_leads(leads: list[Lead], *, niche: str, outdir: Path | str | None = N
     if also_json:
         try:
             json_path.write_text(
-                json.dumps([l.to_dict() for l in leads_sorted], ensure_ascii=False, indent=2),
+                json.dumps([lead.to_dict() for lead in leads_sorted], ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
             log.info("JSON geschreven: %s", json_path)
