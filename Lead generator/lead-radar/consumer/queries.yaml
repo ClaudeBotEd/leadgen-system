@@ -166,6 +166,13 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    reddit_new_subs:
+      # High-intent subs voor warmtepomp — pakt ALLE recente posts, geen keyword-filter
+      - Klussers
+      - Offertes
+      - duurzaam
+      - heatpumps
+      - hvac
     tweedehands_queries:
       # BE-specifiek: vlaamse spreektaal + BE-premies + BE-steden
       - "warmtepomp installateur antwerpen"
@@ -291,6 +298,9 @@ niches:
       - /categories/technieken/ventilatie
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    reddit_new_subs:
+      - Klussers
+      - Offertes
     tweedehands_queries:
       # BE-specifiek
       - "airco installateur antwerpen"
@@ -409,6 +419,10 @@ niches:
       - /categories/technieken/elektriciteit
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - duurzaam
     tweedehands_queries:
       # BE-specifiek
       - "zonnepanelen installateur antwerpen"
@@ -531,6 +545,9 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    reddit_new_subs:
+      - Klussers
+      - Offertes
     tweedehands_queries:
       # BE-specifiek
       - "cv ketel installateur antwerpen"
@@ -648,6 +665,10 @@ niches:
       - /Forum/forum/keuken.3/
       - /Forum/forum/dak-en-schoorsteen.4/
       - /Forum/forum/gevels-en-gevelbekleding.34/
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - DIYNL
     tweedehands_queries:
       # BE-specifiek
       - "renovatiepremie vlaanderen aannemer"

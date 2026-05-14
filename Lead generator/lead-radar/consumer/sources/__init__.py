@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Callable
 
 from . import reddit as _reddit
+from . import reddit_new as _reddit_new
 from . import tweakers as _tweakers
 from . import bouwinfo as _bouwinfo
 from . import bouwinfo_forum as _bouwinfo_forum
@@ -18,6 +19,7 @@ from . import facebook as _facebook
 
 REGISTRY: dict[str, Callable] = {
     "reddit": _reddit.fetch,
+    "reddit_new": _reddit_new.fetch,
     "tweakers": _tweakers.fetch,
     "bouwinfo": _bouwinfo.fetch,
     "bouwinfo_forum": _bouwinfo_forum.fetch,

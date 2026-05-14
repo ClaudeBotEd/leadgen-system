@@ -239,8 +239,12 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
 
     bouwinfo_cats = niche_cfg.get("bouwinfo_categories") or []
     klusidee_subs = niche_cfg.get("klusidee_subforums") or []
+    reddit_new_subs = niche_cfg.get("reddit_new_subs") or []
     return {
         "reddit": loc_subst(text_qs),
+        # reddit_new pakt /r/<sub>/new.json — query is een subreddit-naam,
+        # niet een keyword.  Voor high-intent subs (Klussers/Offertes/DIYNL).
+        "reddit_new": reddit_new_subs,
         "tweakers": text_qs,
         "bouwinfo": text_qs,
         "bouwinfo_forum": bouwinfo_cats,
