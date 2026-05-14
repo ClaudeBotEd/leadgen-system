@@ -1,4 +1,4 @@
-"""Output — exporter naar CSV + JSON, en sync naar Google Sheets."""
+"""Output — exporter naar CSV + JSON, sync naar Google Sheets, push naar Telegram."""
 from __future__ import annotations
 
 from .exporter import export_leads
@@ -8,6 +8,11 @@ from .sheets import (
     action_from_status,
     action_from_score,
 )
+from .telegram import (
+    send_lead_alert,
+    ping_bot as ping_telegram_bot,
+    TelegramResult,
+)
 
 __all__ = [
     "export_leads",
@@ -15,4 +20,7 @@ __all__ = [
     "status_from_score",
     "action_from_status",
     "action_from_score",
+    "send_lead_alert",
+    "ping_telegram_bot",
+    "TelegramResult",
 ]

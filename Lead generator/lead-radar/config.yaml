@@ -1,6 +1,32 @@
 # Lead Radar Configuration
 # Pas aan naar wens. Default values zijn veilig en respectvol qua rate limiting.
 
+# ─── Quality lagen (v2 consumer pipeline — run_consumer.py) ────────────────
+# Documentatie van defaults. Override via CLI flags op run_consumer.py:
+#   --no-llm           skip Claude verifier
+#   --no-telegram      skip Telegram alerts
+#   --no-fuzzy-dedup   skip MinHash dedup
+#   --no-hardblock     skip aggregator/spam filter
+#   --no-author-enrich skip Reddit author history check
+quality:
+  hardblock: true            # drop aggregator/spam/OEM voor scoring
+  fuzzy_dedup: true          # MinHash-style dedup over titel+text
+  fuzzy_threshold: 0.70      # Jaccard ≥ dit = duplicaat
+  author_enrich: true        # Reddit user history check
+  time_decay: true           # oudere posts krijgen lagere score
+
+llm_verifier:
+  enabled: true              # Claude Haiku second-opinion
+  min_score: 40              # alleen scores in [min,max] krijgen verify
+  max_score: 75
+  model: "claude-haiku-4-5-20251001"
+  timeout_s: 12
+  cache_dir: ".cache/llm_verifier"
+
+telegram:
+  enabled: true              # push HOT leads naar je telefoon
+  hot_threshold: 80          # min score voor alert
+
 scraper:
   # Pauze tussen requests in seconden (respectvol)
   request_delay: 2.0

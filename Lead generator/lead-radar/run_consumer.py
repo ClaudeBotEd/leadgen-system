@@ -29,14 +29,26 @@ sys.path.insert(0, str(HERE))
 from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import REGISTRY, ALL_SOURCES, analyze_manual_posts  # noqa: E402
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
+from consumer.sources.reddit_author import enrich_author  # noqa: E402
 from consumer.processor import (  # noqa: E402
+    TextSignatureStore,
+    check_hardblock,
     clean_post,
+    combine_score,
+    generate_message,
     is_potential_lead,
     score_post,
+    should_verify,
     smart_summary,
+    verify_post,
 )
-from consumer.output import export_leads, sync_to_sheets  # noqa: E402
+from consumer.output import (  # noqa: E402
+    export_leads,
+    send_lead_alert,
+    sync_to_sheets,
+)
 from consumer.utils import PoliteSession, HttpConfig, SeenStore  # noqa: E402
+from consumer.logging_setup import setup_logging  # noqa: E402
 
 HOT_ALERT_THRESHOLD = 80
 
@@ -54,13 +66,8 @@ DAILY_MIN_SCORE = 60    # >=60 voor OPPORTUNITIES tab; sheets.py filtert <60 weg
 DAILY_MAX_AGE_DAYS = 7
 
 
-def setup_logging(verbose: bool) -> None:
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-    )
+def _setup_logging(verbose: bool) -> str:
+    return setup_logging(verbose=verbose)
 
 
 def load_config(path: Path) -> dict:
@@ -106,6 +113,26 @@ def parse_args() -> argparse.Namespace:
                    help="Spreadsheet ID. Default: env LEAD_RADAR_SPREADSHEET_ID")
     p.add_argument("--credentials", default=None,
                    help="Pad naar Google service-account JSON")
+
+    # Quality kwaliteits-lagen
+    p.add_argument("--no-hardblock", action="store_true",
+                   help="Skip aggregator/spam hard-block filter (default: aan)")
+    p.add_argument("--no-fuzzy-dedup", action="store_true",
+                   help="Skip MinHash-style fuzzy dedup (default: aan)")
+    p.add_argument("--dedup-threshold", type=float, default=0.70,
+                   help="Jaccard threshold voor fuzzy dedup (default 0.70)")
+    p.add_argument("--no-llm", action="store_true",
+                   help="Skip Claude LLM-verifier op borderline scores")
+    p.add_argument("--llm-min-score", type=int, default=40,
+                   help="Min score voor LLM-verification (default 40)")
+    p.add_argument("--llm-max-score", type=int, default=75,
+                   help="Max score voor LLM-verification (default 75)")
+    p.add_argument("--no-author-enrich", action="store_true",
+                   help="Skip Reddit author-history check")
+    p.add_argument("--no-telegram", action="store_true",
+                   help="Skip Telegram alerts voor HOT leads")
+    p.add_argument("--telegram-threshold", type=int, default=80,
+                   help="Min score voor Telegram alert (default 80)")
 
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
@@ -178,6 +205,19 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
     if seen:
         log.info("Dedup store: %d eerder geziene posts", len(seen))
 
+    fuzzy_store: TextSignatureStore | None = None
+    if not args.no_fuzzy_dedup:
+        fuzzy_store = TextSignatureStore(
+            path=Path(args.outdir) / "text_signatures.json",
+            threshold=args.dedup_threshold,
+        )
+        log.info("Fuzzy dedup-store: %d eerder gehashte posts (threshold=%.2f)",
+                 len(fuzzy_store), args.dedup_threshold)
+
+    author_cache_dir: Path | None = None
+    if not args.no_author_enrich:
+        author_cache_dir = Path(args.outdir) / ".author_cache"
+
     cutoff = (datetime.now(timezone.utc) - timedelta(days=args.max_age_days)) if args.max_age_days > 0 else None
 
     raw_total: list[RawPost] = []
@@ -204,6 +244,8 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
     in_memory_seen: set[str] = set()
     leads: list[Lead] = []
     skipped_promo = skipped_low = skipped_old = 0
+    skipped_hardblock = skipped_fuzzy_dup = 0
+    llm_calls = author_calls = 0
 
     for raw in raw_total:
         fp = raw.fingerprint()
@@ -215,18 +257,63 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
             skipped_old += 1
             continue
 
+        if not args.no_hardblock:
+            hb = check_hardblock(raw)
+            if hb.blocked:
+                skipped_hardblock += 1
+                log.debug("hard-block %s: %s", raw.url, hb.reason)
+                continue
+
         cleaned = clean_post(raw)
         if not is_potential_lead(cleaned["full"]):
             skipped_promo += 1
             continue
+
+        if fuzzy_store is not None:
+            dup = fuzzy_store.find_duplicate(cleaned["full"])
+            if dup is not None:
+                skipped_fuzzy_dup += 1
+                log.debug("fuzzy-dup %s ~ %s (sim=%.2f)", fp, dup[0], dup[1])
+                continue
+
         score, breakdown = score_post(
             cleaned,
             niche_keywords=keywords_required,
             created_at=raw.created_at,
         )
+
+        if (not args.no_llm) and should_verify(
+            score, min_score=args.llm_min_score, max_score=args.llm_max_score,
+        ):
+            verdict = verify_post(
+                title=cleaned["title"], text=cleaned["text"],
+                city=cleaned["city"], niche=niche,
+                regex_score=score, regex_breakdown=breakdown,
+            )
+            if verdict.available:
+                llm_calls += 1
+                new_score = combine_score(score, verdict)
+                breakdown["llm_verdict"] = (
+                    f"{verdict.kind}/{verdict.confidence:.2f}"
+                )
+                if new_score != score:
+                    breakdown["llm_adjustment"] = new_score - score
+                score = new_score
+
+        if (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
+            profile = enrich_author(raw.author, cache_dir=author_cache_dir)
+            if profile.available:
+                author_calls += 1
+                penalty = profile.signal_penalty
+                if penalty:
+                    score = max(0, score + penalty)
+                    breakdown["author_penalty"] = penalty
+                    breakdown["author_recurring"] = 1
+
         if score < args.min_score:
             skipped_low += 1
             continue
+
         lead = Lead(
             id=raw.id,
             source=raw.source,
@@ -245,6 +332,9 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
         leads.append(lead)
         if seen:
             seen.add(fp)
+        if fuzzy_store is not None:
+            fuzzy_store.add(fp, cleaned["full"])
+
         if score >= HOT_ALERT_THRESHOLD:
             stad = (lead.city or "—").title()
             summary = smart_summary(
@@ -255,6 +345,24 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
             )
             print(f"\n🔥 HOT LEAD:\n   {stad} — {summary}\n", flush=True)
 
+            if not args.no_telegram and score >= args.telegram_threshold:
+                try:
+                    suggested = generate_message(
+                        niche=niche, city=lead.city,
+                        text=lead.text, title=lead.title,
+                    )
+                    result = send_lead_alert(
+                        lead, suggested_message=suggested,
+                        hot_threshold=args.telegram_threshold,
+                    )
+                    if result.sent:
+                        log.info("Telegram alert verstuurd (mid=%s)", result.message_id)
+                    elif result.skipped_reason not in {"below_threshold", "no_credentials"}:
+                        log.warning("Telegram skip/err: %s / %s",
+                                    result.skipped_reason, result.error)
+                except Exception as e:
+                    log.warning("Telegram alert faalde: %s", e)
+
     if args.facebook_file:
         fb_posts = load_posts_from_file(args.facebook_file)
         log.info("FB handmatig: %d posts", len(fb_posts))
@@ -264,9 +372,15 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
 
     if seen:
         seen.save()
+    if fuzzy_store is not None:
+        fuzzy_store.save()
 
-    log.info("[%s] raw=%d -> leads=%d (promo=%d, oud=%d, lowscore=%d)",
-             niche, len(raw_total), len(leads), skipped_promo, skipped_old, skipped_low)
+    log.info(
+        "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
+        "llm_calls=%d author_calls=%d)",
+        niche, len(raw_total), len(leads), skipped_promo, skipped_old,
+        skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
+    )
 
     export_leads(leads, niche=niche, outdir=args.outdir)
     return leads
@@ -371,7 +485,8 @@ def run_single(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    setup_logging(args.verbose)
+    run_id = _setup_logging(args.verbose)
+    log.info("Lead Radar start (run_id=%s, daily=%s)", run_id, bool(args.daily))
     try:
         if args.daily:
             return run_daily(args)

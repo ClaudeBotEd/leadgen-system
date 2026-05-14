@@ -27,3 +27,13 @@ rich>=13.0.0
 # Google Sheets sync (consumer/output/sheets.py)
 gspread>=6.0.0
 google-auth>=2.30.0
+
+# LLM-verifier — Claude second-opinion op borderline scores
+# Optioneel: zonder ANTHROPIC_API_KEY draait pipeline gewoon door (regex-only)
+anthropic>=0.40.0
+
+# Optioneel: error monitoring (auto-init via SENTRY_DSN env)
+sentry-sdk>=2.0.0
+
+# Optioneel: Reddit OAuth voor 10x rate-limit (toekomstig)
+praw>=7.7.0

@@ -14,6 +14,7 @@ from .hardblock import check_hardblock, is_blocked, BlockResult
 from .llm_verifier import (
     LlmVerdict, should_verify, verify_post, combine_score,
 )
+from .dedup import TextSignatureStore, shingles, jaccard
 
 __all__ = [
     "clean_post", "smart_summary", "has_urgency",
@@ -21,4 +22,5 @@ __all__ = [
     "is_potential_lead", "classify_post_kind", "score_post",
     "check_hardblock", "is_blocked", "BlockResult",
     "LlmVerdict", "should_verify", "verify_post", "combine_score",
+    "TextSignatureStore", "shingles", "jaccard",
 ]
