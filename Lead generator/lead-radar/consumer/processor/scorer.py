@@ -13,16 +13,20 @@ from __future__ import annotations
 import re
 
 # HARD urgency: spoed/asap/zsm — koopklaar, +35
+# "haast" stond hier eerder maar werd door "geen haast" als positief
+# urgentie-signaal gepakt. Te zwak/ambigu om hard urgency te zijn.
 _RE_URGENCY_HARD = re.compile(
-    r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|"
+    r"\b(z\.?s\.?m\.?|asap|spoed|dringend|"
     r"met spoed|snel mogelijk|spoed nodig|zo snel mogelijk)\b",
     re.IGNORECASE,
 )
 # SOFT urgency: deze maand / binnenkort / vandaag — meer ruimte, +20
 _RE_URGENCY_SOFT = re.compile(
     r"\b(deze week|deze maand|binnenkort|vandaag|morgen|volgende week|"
-    r"liefst snel|liefst nog deze|"
-    r"binnen \d+ weken|binnen \d+ dagen|deze winter|voor de winter)\b",
+    r"liefst snel|liefst nog deze|haast|"
+    r"binnen \d+ (?:weken|dagen|maanden)|"
+    r"binnen (?:een paar|een aantal|enkele|paar|wat) (?:weken|dagen|maanden)|"
+    r"deze winter|voor de winter)\b",
     re.IGNORECASE,
 )
 # Behouden voor backwards-compat (callers buiten dit module).
@@ -51,13 +55,22 @@ _RE_BUDGET = re.compile(
     r"\b\d{1,3}(?:[\.\,\s]\d{3})*\s?(?:k|euro|€))",
     re.IGNORECASE,
 )
-# Soft budget: kale "offerte"-woord telt alleen als er ook een
-# koop-werkwoord bij staat ("offerte nodig", "offerte gevraagd",
-# "offerte zoeken").  Pure "had een offerte"/"offerte gehad" valt
-# hieronder weg — dat dekt `_RE_OFFER_RECEIVED` al apart.
+# Soft budget: "offerte"-woord telt als er een koop-context omheen staat.
+# Pure "had een offerte"/"offerte gehad" valt hier níét onder — dat dekt
+# `_RE_OFFER_RECEIVED` al apart en geeft daar +20 bonus.
 _RE_BUDGET_OFFERTE = re.compile(
-    r"\b(?:offerte|offertes|aanbieding|aanbod)\s+"
-    r"(?:nodig|gevraagd|zoek\w*|wil\s|graag|opvragen|aanvragen)",
+    r"(?:"
+    # offerte gevolgd door buy-verb (direct of tot 2 woorden ertussen)
+    r"\b(?:offerte|offertes|aanbieding|aanbod|prijsopgave|kostenraming)\s+"
+    r"(?:\w+\s+){0,2}"
+    r"(?:nodig|gevraagd|zoek\w*|graag|opvragen|aanvragen|"
+    r"maken|maakt|krijgen|gewenst|wil)\b"
+    r"|"
+    # buy-verb gevolgd door offerte
+    r"\b(?:wie\s+(?:kan|maakt)|kan\s+iemand|wil|zoek\w*|graag)\s+"
+    r"(?:\w+\s+){0,3}"
+    r"(?:offerte|offertes|aanbieding|prijsopgave|kostenraming)"
+    r")",
     re.IGNORECASE,
 )
 
@@ -68,17 +81,21 @@ _RE_STRONG_BUY = re.compile(
     r"prijsopgave|kostenraming|wat kost het|wat zou kosten|"
     r"met spoed|spoed nodig|zsm starten|asap|dringend|"
     r"deze week|deze maand|binnen \d+ weken|binnen \d+ dagen|"
-    r"offerte nodig|offerte gevraagd)\b",
+    r"offerte nodig|offerte gevraagd|"
+    r"aan vervanging|moet vervangen|toe aan vervang\w*|"
+    r"wie kan offerte|wie maakt offerte|offerte maken)\b",
     re.IGNORECASE,
 )
 
 # -25 penalty: informatie/research/orientatie zonder echte aankoopsignalen
+# "vergelijk(en|ing)" + "review" verwijderd — "offertes vergelijken" en
+# "review van mijn offerte" zijn bottom-of-funnel, geen research.
 _RE_RESEARCH_ONLY = re.compile(
     r"\b(ervaring met|hoe werkt|overweeg|overwegen|aan het orienteren|"
     r"benieuwd naar|nieuwsgierig|informatie over|info over|"
     r"ben aan het orienteren|wil gaan onderzoeken|verschil tussen|"
     r"voor- en nadelen|wat is het verschil|nog niet zeker|"
-    r"vergelijk(en|ing)?|review|is .{1,40} de moeite|"
+    r"is .{1,40} de moeite|"
     r"wat raden jullie|welke kiezen|welk merk|welk model|"
     r"twijfel tussen|is .{1,40} het beste|advies welke|"
     r"hulp bij keuze|hulp keuze|tips voor keuze)\b",

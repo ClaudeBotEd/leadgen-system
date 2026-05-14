@@ -18,13 +18,20 @@ LEAD_SIGNALS = [
     r"\b(z\.?s\.?m\.?|asap|spoed|dringend|haast|deze week|deze maand|binnenkort|vandaag|morgen|volgende week|met spoed)\b",
 ]
 
-# RESEARCH_SIGNALS: "welke moet ik kiezen", "welk merk is het beste".
-# Posts die hier op matchen + geen strong_seek + geen broken-signal
-# worden geclassificeerd als 'info' (research), niet als 'lead'.
+# RESEARCH_SIGNALS: "welke moet ik kiezen", "welk merk is het beste",
+# "informatie gezocht", "aan het orienteren".
+# Posts die hier op matchen + geen broken-signal worden 'info' (research).
+# Dit overrult strong_seek omdat zinnen als "wat raden jullie" of "informatie
+# gezocht" óók strong_seek triggeren via "raden"/"gezocht".
 RESEARCH_SIGNALS = [
     r"\b(welke kiezen|welk merk|welk model|advies welke|hulp keuze|kiezen tussen|"
     r"twijfel tussen|welke is beter|welk(e)? is het beste|wat raden jullie|"
-    r"vergelijking|review van|is .{1,40} de moeite|is .{1,40} het beste)\b",
+    r"vergelijking|review van|is .{1,40} de moeite|is .{1,40} het beste|"
+    r"informatie gezocht|informatie zoek\w*|informatie over|info over|"
+    r"verschil tussen|voor[\s\-]en[\s\-]nadelen|wat is het verschil|"
+    r"aan het orient\w*|aan het oriënter\w*|ben aan het orient\w*|"
+    r"wil graag begrijpen|wil graag weten|wil weten wat|"
+    r"benieuwd naar|nieuwsgierig naar|overweeg|overwegen)\b",
 ]
 
 PROMO_SIGNALS = [
@@ -77,10 +84,13 @@ _RE_STRONG_SEEK = re.compile(
 )
 
 # Definitief PROMO — overrullt strong_seek. Vacatures + bedrijfsadvertenties.
+# "wij zoeken" / "wij zijn op zoek" zijn opzettelijk NIET hier — die zinnen
+# komen ook voor in customer-leads ("wij zoeken een installateur ..."). Ze
+# blijven in PROMO_SIGNALS als soft hit zodat strong_seek ze kan overrulen.
 _RE_DEFINITIVE_PROMO = re.compile(
     r"\b(vacature|vacatures|in dienst|dienstverband|fulltime|parttime|"
     r"full[\s\-]?time|part[\s\-]?time|salaris|salariëring|loon|leuk team|"
-    r"aanmelden|wij zoeken|wij zijn op zoek|werken bij|"
+    r"aanmelden|werken bij|"
     r"\d{1,2}\s?%\s?korting|introductieprijs|aanbiedingsprijs|"
     r"erkende installateur|gecertificeerd|met garantie|al \d+ jaar)\b",
     re.IGNORECASE,
@@ -117,9 +127,11 @@ def classify_post_kind(text: str) -> str:
     if promo_hits >= 1 and not strong_seek:
         return "promo"
 
-    # Research/keuze-discussie. Zelfs als er 1 lead-signaal bij staat:
-    # alleen écht een lead als óók strong_seek OF broken-equipment.
-    if research_hits >= 1 and not strong_seek and not broken:
+    # Research/keuze-discussie. Wint van strong_seek omdat zinnen als
+    # "wat raden jullie" of "informatie gezocht" óók strong_seek triggeren.
+    # Alleen een broken-equipment-signaal kan een research-post nog naar
+    # LEAD trekken (bv "cv kapot, welke vervanger raden jullie").
+    if research_hits >= 1 and not broken:
         return "info"
 
     if info_hits >= 1 and lead_hits == 0 and not strong_seek:
