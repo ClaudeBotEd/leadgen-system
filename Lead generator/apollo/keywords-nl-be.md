@@ -5,6 +5,7 @@ Apollo's Industry-classificatie is US-georienteerd. Voor NL/BE-prospects komen v
 ## 🔗 Context
 
 - Onderdeel van [[apollo/index]]
+- Gerelateerd: [[email-sequences/index]], [[crm/index]]
 
 ## Combinaties per niche
 

@@ -5,7 +5,7 @@ Volledig overzicht van alle custom properties die n8n schrijft en het sales-team
 ## 🔗 Context
 
 - Onderdeel van [[crm/index]]
-- Gerelateerd: [[apollo/index]]
+- Gerelateerd: [[apollo/index]], [[n8n/index]], [[landingspagina/index]]
 
 ## Tabel
 

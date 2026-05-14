@@ -9,6 +9,7 @@ Gebaseerd op `rapport-ai-lead-gen-nl-be.md` (marktonderzoek) en de week 1 dagpla
 ## 🔗 Context
 
 - Onderdeel van [[MVP-START-HERE]]
+- Gerelateerd: [[lead-radar/index]], [[crm/index]], [[apollo/index]]
 
 ## TWEE PADEN — kies wat past
 

@@ -5,6 +5,7 @@ Volledige setup van consumer pipeline v2 — van zero naar HOT leads in je Teleg
 ## 🔗 Context
 
 - Onderdeel van [[lead-radar/index]]
+- Gerelateerd: [[automation/index]], [[crm-light/index]]
 
 ## 1. Python + dependencies
 

@@ -5,7 +5,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[lead-radar/index]]
-- Gerelateerd: [[automation/index]]
+- Gerelateerd: [[automation/index]], [[crm-light/index]], [[outreach/index]]
 
 ## Wat het doet
 

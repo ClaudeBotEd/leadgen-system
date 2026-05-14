@@ -10,6 +10,7 @@ Geen automatische outreach. Alleen discovery → filteren → scoring → CSV/JS
 ## 🔗 Context
 
 - Onderdeel van [[lead-radar/index]]
+- Gerelateerd: [[outreach/index]], [[crm-light/index]]
 
 ## Bronnen
 

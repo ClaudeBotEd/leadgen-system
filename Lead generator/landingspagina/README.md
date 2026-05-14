@@ -3,7 +3,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[landingspagina/index]]
-- Gerelateerd: [[n8n/index]]
+- Gerelateerd: [[n8n/index]], [[crm/index]], [[email-sequences/index]]
 
 ## Wat zit er in deze map
 

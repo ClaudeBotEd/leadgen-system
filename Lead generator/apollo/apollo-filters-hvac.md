@@ -5,6 +5,7 @@ Vier filter-sets, een per niche. Elke set is letterlijk in te vullen in de Apoll
 ## 🔗 Context
 
 - Onderdeel van [[apollo/index]]
+- Gerelateerd: [[email-sequences/index]], [[crm/index]]
 
 ## Algemene aanpak
 

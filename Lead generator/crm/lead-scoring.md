@@ -5,7 +5,7 @@ Eenvoudige 0-10 schaal voor `lead_quality_score` custom property. Hand in te vul
 ## 🔗 Context
 
 - Onderdeel van [[crm/index]]
-- Gerelateerd: [[apollo/index]]
+- Gerelateerd: [[apollo/index]], [[email-sequences/index]]
 
 ## Doel
 

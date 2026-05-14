@@ -5,7 +5,7 @@ Per Sectie 7 van het rapport (Week 1-2): "Warmup starten — minimaal 14 dagen w
 ## 🔗 Context
 
 - Onderdeel van [[dns/index]]
-- Gerelateerd: [[email-sequences/index]]
+- Gerelateerd: [[email-sequences/index]], [[apollo/index]]
 
 ## Wat is warmup?
 

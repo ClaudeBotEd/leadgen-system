@@ -3,6 +3,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[dns/index]]
+- Gerelateerd: [[email-sequences/index]], [[apollo/index]], [[n8n/index]]
 
 ## Wat zit er in deze map
 

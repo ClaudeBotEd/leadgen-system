@@ -5,7 +5,7 @@ Concrete stappen om een lijst op te bouwen, te schonen en te exporteren naar Ins
 ## 🔗 Context
 
 - Onderdeel van [[apollo/index]]
-- Gerelateerd: [[crm/index]]
+- Gerelateerd: [[crm/index]], [[email-sequences/index]], [[dns/index]]
 
 ## Stap 1 — Saved search opbouwen (10 minuten)
 

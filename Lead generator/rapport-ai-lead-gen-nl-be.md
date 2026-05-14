@@ -9,7 +9,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[apollo/index]]
-- Gerelateerd: [[crm/index]], [[dns/index]]
+- Gerelateerd: [[crm/index]], [[dns/index]], [[email-sequences/index]]
 
 ## Tabel 1 — Concurrentieanalyse NL/BE Lead Generation Agencies
 

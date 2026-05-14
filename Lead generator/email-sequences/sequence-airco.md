@@ -9,6 +9,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[email-sequences/index]]
+- Gerelateerd: [[apollo/index]], [[dns/index]]
 
 ## Email 1 — Waardepropositie (dag 0)
 

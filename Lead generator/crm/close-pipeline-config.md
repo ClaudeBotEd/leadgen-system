@@ -13,6 +13,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[crm/index]]
+- Gerelateerd: [[apollo/index]], [[email-sequences/index]]
 
 ## Stap 1 — Account aanmaken
 

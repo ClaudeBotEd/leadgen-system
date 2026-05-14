@@ -5,6 +5,7 @@ Voor elk outreach-domein moet je 3 records configureren: SPF, DKIM en DMARC. Zon
 ## 🔗 Context
 
 - Onderdeel van [[dns/index]]
+- Gerelateerd: [[email-sequences/index]], [[apollo/index]]
 
 ## Achtergrond — wat doen deze records?
 

@@ -5,7 +5,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[outreach/index]]
-- Gerelateerd: [[email-sequences/index]]
+- Gerelateerd: [[email-sequences/index]], [[crm-light/index]], [[lead-radar/index]]
 
 ## Quickstart
 

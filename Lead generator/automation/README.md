@@ -5,7 +5,7 @@
 ## 🔗 Context
 
 - Onderdeel van [[automation/index]]
-- Gerelateerd: [[lead-radar/index]]
+- Gerelateerd: [[lead-radar/index]], [[crm-light/index]], [[outreach/index]]
 
 ## Quickstart
 
