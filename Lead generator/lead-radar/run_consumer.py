@@ -214,6 +214,7 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
     text_qs = (niche_cfg.get("queries_text") or [])[:max_queries]
     google_qs = (niche_cfg.get("google_queries") or [])[:max_queries]
     market_qs = (niche_cfg.get("marktplaats_queries") or [])[:max_queries]
+    tweedehands_qs = (niche_cfg.get("tweedehands_queries") or [])[:max_queries]
 
     def loc_subst(qs: list[str]) -> list[str]:
         out = []
@@ -235,7 +236,9 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
         "bouwinfo_forum": bouwinfo_cats,
         "google": loc_subst(google_qs) if google_qs else loc_subst(text_qs),
         "marktplaats": market_qs or text_qs,
-        "2dehands": market_qs or text_qs,
+        # 2dehands krijgt BE-specifieke set als die er is; anders fallback op
+        # marktplaats_queries (NL-spreektaal werkt deels ook op 2dehands).
+        "2dehands": tweedehands_qs or market_qs or text_qs,
     }
 
 

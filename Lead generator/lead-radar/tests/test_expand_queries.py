@@ -57,15 +57,36 @@ def test_expand_queries_covers_every_registered_source(niche_cfg: dict) -> None:
     )
 
 
-def test_expand_queries_2dehands_uses_marktplaats_queries(niche_cfg: dict) -> None:
-    """2dehands is de BE-zuster van marktplaats — moet dezelfde queries krijgen."""
+def test_expand_queries_2dehands_falls_back_to_marktplaats(niche_cfg: dict) -> None:
+    """Bij ontbreken van tweedehands_queries: 2dehands gebruikt marktplaats_queries.
+    Backward-compat — voorheen was er nooit een aparte tweedehands_queries field."""
+    # niche_cfg fixture heeft GEEN tweedehands_queries → fallback verwacht
     result = expand_queries(niche_cfg, location="antwerpen", max_queries=50)
-    assert "2dehands" in result, "2dehands ontbreekt in expand_queries-output"
-    assert result["2dehands"], "2dehands kreeg lege queries — zou marktplaats_queries moeten gebruiken"
+    assert "2dehands" in result
+    assert result["2dehands"], "2dehands kreeg lege queries"
     assert result["2dehands"] == result["marktplaats"], (
-        "2dehands en marktplaats zijn dezelfde classifieds-engine; "
-        "moeten exact dezelfde queries krijgen."
+        "Zonder tweedehands_queries moet 2dehands marktplaats_queries gebruiken"
     )
+
+
+def test_expand_queries_2dehands_uses_dedicated_be_queries() -> None:
+    """Met tweedehands_queries gezet: 2dehands gebruikt die, NIET marktplaats.
+    Zo kunnen we BE-spreektaal (premie, vlaamse fraseringen) los aansturen."""
+    niche_cfg = {
+        "queries_text": ["warmtepomp installateur"],
+        "marktplaats_queries": ["warmtepomp installateur gezocht"],
+        "tweedehands_queries": [
+            "warmtepomp installateur antwerpen",
+            "warmtepomp premie vlaanderen",
+        ],
+    }
+    result = expand_queries(niche_cfg, location="gent", max_queries=50)
+    assert result["2dehands"] == [
+        "warmtepomp installateur antwerpen",
+        "warmtepomp premie vlaanderen",
+    ]
+    # Marktplaats blijft NL-set houden
+    assert result["marktplaats"] == ["warmtepomp installateur gezocht"]
 
 
 def test_expand_queries_all_sources_get_nonempty_lists(niche_cfg: dict) -> None:

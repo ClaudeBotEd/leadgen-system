@@ -163,6 +163,18 @@ niches:
       - /categories/technieken/verwarming-en-koeling/warmtepompen
       - /categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming
       - /categories/technieken/verwarming-en-koeling
+    tweedehands_queries:
+      # BE-specifiek: vlaamse spreektaal + BE-premies + BE-steden
+      - "warmtepomp installateur antwerpen"
+      - "warmtepomp installateur gent"
+      - "warmtepomp installateur brussel"
+      - "warmtepomp installateur leuven"
+      - "warmtepomp installateur hasselt"
+      - "warmtepomp aanleg gezocht"
+      - "warmtepomp premie vlaanderen"
+      - "warmtepomp Mijn VerbouwPremie"
+      - "warmtepomp specialist vraag"
+      - "hybride warmtepomp BE"
       - "wie kan warmtepomp"
       - "warmtepomp plaatsen prijs"
       - "warmtepomp installateur antwerpen"
@@ -274,6 +286,16 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/verwarming-en-koeling
       - /categories/technieken/ventilatie
+    tweedehands_queries:
+      # BE-specifiek
+      - "airco installateur antwerpen"
+      - "airco installateur gent"
+      - "airco installateur brussel"
+      - "airco installateur leuven"
+      - "airco plaatsen vlaanderen"
+      - "split airco montage BE"
+      - "airco premie BE"
+      - "cassette airco installateur antwerpen"
 
   zonnepanelen:
     keywords_required:
@@ -380,6 +402,17 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/elektriciteit/zonne-energie
       - /categories/technieken/elektriciteit
+    tweedehands_queries:
+      # BE-specifiek
+      - "zonnepanelen installateur antwerpen"
+      - "zonnepanelen installateur gent"
+      - "zonnepanelen installateur brussel"
+      - "zonnepanelen installateur leuven"
+      - "zonnepanelen Fluvius keuring"
+      - "zonnepanelen premie vlaanderen"
+      - "PV systeem installateur BE"
+      - "thuisbatterij installateur antwerpen"
+      - "omvormer installateur BE"
 
   cv:
     keywords_required:
@@ -488,6 +521,16 @@ niches:
     bouwinfo_categories:
       - /categories/technieken/verwarming-en-koeling
       - /categories/technieken/sanitair
+    tweedehands_queries:
+      # BE-specifiek
+      - "cv ketel installateur antwerpen"
+      - "cv ketel installateur gent"
+      - "cv ketel installateur brussel"
+      - "cv ketel vervangen vlaanderen"
+      - "verwarmingsmonteur BE gezocht"
+      - "cv ketel premie vlaanderen"
+      - "ketel storing monteur antwerpen"
+      - "gasketel installateur BE"
 
   renovatie:
     keywords_required:
@@ -588,3 +631,14 @@ niches:
       - "aannemer renovatie amsterdam"
     bouwinfo_categories:
       - /categories/ruwbouw/isolatie
+    tweedehands_queries:
+      # BE-specifiek
+      - "renovatiepremie vlaanderen aannemer"
+      - "Mijn VerbouwPremie aannemer"
+      - "aannemer renovatie antwerpen"
+      - "aannemer renovatie gent"
+      - "aannemer renovatie brussel"
+      - "aannemer renovatie leuven"
+      - "vakman renovatie BE gezocht"
+      - "klusbedrijf vlaanderen gezocht"
+      - "isolatiepremie aannemer vlaanderen"
