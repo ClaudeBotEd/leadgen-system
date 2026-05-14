@@ -39,6 +39,11 @@ BLACKLIST_LOCAL_PARTS = {
     "no-reply", "noreply", "donotreply", "do-not-reply",
     "postmaster", "mailer-daemon", "abuse",
     "example", "test", "demo", "user",
+    # Role-based addresses die niet relevant zijn voor SMB outreach
+    "shareholder", "shareholders", "investor", "investors",
+    "press", "media", "pr", "ir",
+    "legal", "compliance", "privacy", "dpo",
+    "careers", "career", "jobs", "recruitment", "hr",
 }
 
 # Local-part prefixen die wijzen op asset / URL fragment, geen echte email
@@ -102,12 +107,17 @@ def extract_emails(text: str) -> list[str]:
     if not text:
         return []
 
+    # Decode HTML entities (&gt;, &#64;, &amp;) en JS-escapes (>) zodat
+    # entity-omhulde emails niet als 'u003ewendy@...' worden opgevangen.
+    decoded = html.unescape(text)
+    decoded = re.sub(r"\\u00[0-9a-fA-F]{2}", " ", decoded)
+
     found: set[str] = set()
 
-    for match in EMAIL_RE.findall(text):
+    for match in EMAIL_RE.findall(decoded):
         found.add(match.lower())
 
-    for local, domain, tld in OBFUSCATED_RE.findall(text):
+    for local, domain, tld in OBFUSCATED_RE.findall(decoded):
         candidate = f"{local}@{domain}.{tld}".lower()
         if EMAIL_RE.fullmatch(candidate):
             found.add(candidate)
@@ -118,6 +128,8 @@ def extract_emails(text: str) -> list[str]:
 def is_usable_email(email: str) -> bool:
     """True als email syntactisch valide en niet op blacklist staat."""
     email = email.lower().strip()
+    # Strip quotes / apostrophes / brackets die uit HTML-attributen of CSV-quoting komen
+    email = email.strip("'\"`<>()[]{} \t\r\n,;:")
     if not EMAIL_RE.fullmatch(email):
         return False
 

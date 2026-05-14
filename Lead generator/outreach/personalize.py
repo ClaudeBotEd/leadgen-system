@@ -83,10 +83,17 @@ def render_field(field: str, lead: dict, extra: dict | None = None) -> str:
         return str(extra[field])
 
     if field == "first_name":
-        contact = lead.get("contact_name", "")
-        if contact:
-            return contact.split()[0]
+        contact = (lead.get("contact_name") or "").strip()
+        parts = contact.split() if contact else []
+        if parts and parts[0].lower() not in ("unknown", "onbekend", "n/a", "na"):
+            return parts[0]
         return "daar"
+
+    if field == "city":
+        city = (lead.get("city") or "").strip().strip(",")
+        if city and city.lower() not in ("unknown", "onbekend", "n/a", "na"):
+            return city
+        return "de regio"
 
     if field == "domain_short":
         domain = lead.get("domain", "")
