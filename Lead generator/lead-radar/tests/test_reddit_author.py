@@ -174,3 +174,34 @@ def test_profile_signal_penalty_only_when_recurring() -> None:
     assert p.signal_penalty == 0
     p.is_recurring_asker = True
     assert p.signal_penalty == -20
+
+
+def test_fetch_url_encodes_author_with_special_chars(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Author-namen moeten URL-safe geëncodeerd worden, anders kan een
+    malicious naam als 'alice/../admin' of een naam met query-chars de URL-
+    structuur breken (SSRF / path-injection)."""
+    from consumer.sources import reddit_author as ra
+
+    captured: list[str] = []
+
+    class FakeResp:
+        status_code = 404
+        def json(self):  # noqa: D401, ANN201
+            return {}
+
+    def fake_get(url, **kwargs):  # noqa: ANN001, ANN201
+        captured.append(url)
+        return FakeResp()
+
+    monkeypatch.setattr(ra.requests, "get", fake_get)
+    result = ra._fetch_reddit_user("alice/../admin", timeout_s=5)
+    assert result is None  # 404 path
+    assert captured, "expected at least one GET request"
+    # /'s in author moeten als %2F geëncodeerd zijn — anders zou Reddit
+    # de '..' segmenten als path-traversal kunnen interpreteren.
+    assert "alice%2F..%2Fadmin" in captured[0], (
+        f"author not URL-encoded; got {captured[0]!r}"
+    )
+    assert "/user/alice/../admin/" not in captured[0]

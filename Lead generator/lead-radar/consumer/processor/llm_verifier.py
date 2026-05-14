@@ -68,6 +68,14 @@ refined_score-richtlijnen (0-100):
 Output ALLEEN het JSON-object, geen extra tekst."""
 
 
+# Fingerprint van SYSTEM_PROMPT — wordt meegehasht in de cache-key zodat
+# een wijziging in de prompt automatisch alle gecachte verdicts invalideert.
+# Bij module-load berekend zodat één wijziging in de string genoeg is.
+_SYSTEM_PROMPT_FINGERPRINT = hashlib.sha256(
+    SYSTEM_PROMPT.encode("utf-8"),
+).hexdigest()[:8]
+
+
 @dataclass
 class LlmVerdict:
     available: bool
@@ -91,7 +99,12 @@ def _skipped(reason: str, model: str = DEFAULT_MODEL) -> LlmVerdict:
 
 
 def _post_hash(text: str, model: str) -> str:
-    return hashlib.sha256(f"{model}|{text}".encode("utf-8")).hexdigest()[:24]
+    # SYSTEM_PROMPT-fingerprint zit in de cache-key zodat een wijziging in
+    # de prompt automatisch de cache invalideert.  Anders blijven oude
+    # verdicts geserveerd worden van de vorige prompt-versie en heeft een
+    # prompt-update geen effect tot iemand handmatig .cache/ leegmaakt.
+    raw = f"{_SYSTEM_PROMPT_FINGERPRINT}|{model}|{text}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
 
 def _cache_load(cache_dir: Path, key: str) -> dict | None:

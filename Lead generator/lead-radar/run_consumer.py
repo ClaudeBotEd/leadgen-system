@@ -224,167 +224,173 @@ def run_one_niche(args: argparse.Namespace, niche: str) -> list[Lead]:
 
     raw_total: list[RawPost] = []
     polite = PoliteSession(HttpConfig(request_delay=2.0))
-
-    for source_name in requested:
-        fetch = REGISTRY[source_name]
-        queries = queries_per_source.get(source_name) or []
-        if not queries:
-            continue
-        for q in queries:
-            t0 = time.monotonic()
-            try:
-                posts = fetch(q, limit=args.limit, location=None, session=polite)
-            except Exception as e:
-                log.warning("Source %s crashte op q=%r: %s", source_name, q, e)
-                posts = []
-            log.info("[%s] q=%r -> %d posts in %.1fs", source_name, q, len(posts), time.monotonic() - t0)
-            for p in posts:
-                if seen and seen.has(p.fingerprint()):
-                    continue
-                raw_total.append(p)
-
-    in_memory_seen: set[str] = set()
     leads: list[Lead] = []
-    skipped_promo = skipped_low = skipped_old = 0
-    skipped_hardblock = skipped_fuzzy_dup = 0
-    llm_calls = author_calls = 0
 
-    for raw in raw_total:
-        fp = raw.fingerprint()
-        if fp in in_memory_seen:
-            continue
-        in_memory_seen.add(fp)
-
-        if not _is_recent(raw.created_at, cutoff):
-            skipped_old += 1
-            continue
-
-        if not args.no_hardblock:
-            hb = check_hardblock(raw)
-            if hb.blocked:
-                skipped_hardblock += 1
-                log.debug("hard-block %s: %s", raw.url, hb.reason)
+    # try/finally borgt dat dedup-stores worden opgeslagen, ook bij
+    # KeyboardInterrupt of crash midden in de loop.  Zonder die garantie
+    # raken alle "al-geziene" posts uit deze run kwijt en re-processed
+    # de volgende run dezelfde URLs (= dubbele LLM-kosten + dupes in Sheets).
+    try:
+        for source_name in requested:
+            fetch = REGISTRY[source_name]
+            queries = queries_per_source.get(source_name) or []
+            if not queries:
                 continue
-
-        cleaned = clean_post(raw)
-        if not is_potential_lead(cleaned["full"]):
-            skipped_promo += 1
-            continue
-
-        if fuzzy_store is not None:
-            dup = fuzzy_store.find_duplicate(cleaned["full"])
-            if dup is not None:
-                skipped_fuzzy_dup += 1
-                log.debug("fuzzy-dup %s ~ %s (sim=%.2f)", fp, dup[0], dup[1])
-                continue
-
-        score, breakdown = score_post(
-            cleaned,
-            niche_keywords=keywords_required,
-            created_at=raw.created_at,
-        )
-
-        if (not args.no_llm) and should_verify(
-            score, min_score=args.llm_min_score, max_score=args.llm_max_score,
-        ):
-            verdict = verify_post(
-                title=cleaned["title"], text=cleaned["text"],
-                city=cleaned["city"], niche=niche,
-                regex_score=score, regex_breakdown=breakdown,
-            )
-            if verdict.available:
-                llm_calls += 1
-                new_score = combine_score(score, verdict)
-                breakdown["llm_verdict"] = (
-                    f"{verdict.kind}/{verdict.confidence:.2f}"
-                )
-                if new_score != score:
-                    breakdown["llm_adjustment"] = new_score - score
-                score = new_score
-
-        if (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
-            profile = enrich_author(raw.author, cache_dir=author_cache_dir)
-            if profile.available:
-                author_calls += 1
-                penalty = profile.signal_penalty
-                if penalty:
-                    score = max(0, score + penalty)
-                    breakdown["author_penalty"] = penalty
-                    breakdown["author_recurring"] = 1
-
-        if score < args.min_score:
-            skipped_low += 1
-            continue
-
-        lead = Lead(
-            id=raw.id,
-            source=raw.source,
-            title=cleaned["title"] or raw.title,
-            text=cleaned["text"],
-            summary=cleaned["summary"],
-            url=raw.url,
-            city=cleaned["city"],
-            score=score,
-            intent=intent_from_score(score),
-            breakdown=breakdown,
-            niche=niche,
-            author=raw.author,
-            created_at=raw.created_at,
-        )
-        leads.append(lead)
-        if seen:
-            seen.add(fp)
-        if fuzzy_store is not None:
-            fuzzy_store.add(fp, cleaned["full"])
-
-        if score >= HOT_ALERT_THRESHOLD:
-            stad = (lead.city or "—").title()
-            summary = smart_summary(
-                text=lead.text or "",
-                title=lead.title or "",
-                city=lead.city,
-                niche=niche,
-            )
-            print(f"\n🔥 HOT LEAD:\n   {stad} — {summary}\n", flush=True)
-
-            if not args.no_telegram and score >= args.telegram_threshold:
+            for q in queries:
+                t0 = time.monotonic()
                 try:
-                    suggested = generate_message(
-                        niche=niche, city=lead.city,
-                        text=lead.text, title=lead.title,
-                    )
-                    result = send_lead_alert(
-                        lead, suggested_message=suggested,
-                        hot_threshold=args.telegram_threshold,
-                    )
-                    if result.sent:
-                        log.info("Telegram alert verstuurd (mid=%s)", result.message_id)
-                    elif result.skipped_reason not in {"below_threshold", "no_credentials"}:
-                        log.warning("Telegram skip/err: %s / %s",
-                                    result.skipped_reason, result.error)
+                    posts = fetch(q, limit=args.limit, location=None, session=polite)
                 except Exception as e:
-                    log.warning("Telegram alert faalde: %s", e)
+                    log.warning("Source %s crashte op q=%r: %s", source_name, q, e)
+                    posts = []
+                log.info("[%s] q=%r -> %d posts in %.1fs", source_name, q, len(posts), time.monotonic() - t0)
+                for p in posts:
+                    if seen and seen.has(p.fingerprint()):
+                        continue
+                    raw_total.append(p)
 
-    if args.facebook_file:
-        fb_posts = load_posts_from_file(args.facebook_file)
-        log.info("FB handmatig: %d posts", len(fb_posts))
-        leads.extend(analyze_manual_posts(
-            fb_posts, niche=niche, niche_keywords=keywords_required, min_score=args.min_score,
-        ))
+        in_memory_seen: set[str] = set()
+        skipped_promo = skipped_low = skipped_old = 0
+        skipped_hardblock = skipped_fuzzy_dup = 0
+        llm_calls = author_calls = 0
 
-    if seen:
-        seen.save()
-    if fuzzy_store is not None:
-        fuzzy_store.save()
+        for raw in raw_total:
+            fp = raw.fingerprint()
+            if fp in in_memory_seen:
+                continue
+            in_memory_seen.add(fp)
 
-    log.info(
-        "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
-        "llm_calls=%d author_calls=%d)",
-        niche, len(raw_total), len(leads), skipped_promo, skipped_old,
-        skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
-    )
+            if not _is_recent(raw.created_at, cutoff):
+                skipped_old += 1
+                continue
 
-    export_leads(leads, niche=niche, outdir=args.outdir)
+            if not args.no_hardblock:
+                hb = check_hardblock(raw)
+                if hb.blocked:
+                    skipped_hardblock += 1
+                    log.debug("hard-block %s: %s", raw.url, hb.reason)
+                    continue
+
+            cleaned = clean_post(raw)
+            if not is_potential_lead(cleaned["full"]):
+                skipped_promo += 1
+                continue
+
+            if fuzzy_store is not None:
+                dup = fuzzy_store.find_duplicate(cleaned["full"])
+                if dup is not None:
+                    skipped_fuzzy_dup += 1
+                    log.debug("fuzzy-dup %s ~ %s (sim=%.2f)", fp, dup[0], dup[1])
+                    continue
+
+            score, breakdown = score_post(
+                cleaned,
+                niche_keywords=keywords_required,
+                created_at=raw.created_at,
+            )
+
+            if (not args.no_llm) and should_verify(
+                score, min_score=args.llm_min_score, max_score=args.llm_max_score,
+            ):
+                verdict = verify_post(
+                    title=cleaned["title"], text=cleaned["text"],
+                    city=cleaned["city"], niche=niche,
+                    regex_score=score, regex_breakdown=breakdown,
+                )
+                if verdict.available:
+                    llm_calls += 1
+                    new_score = combine_score(score, verdict)
+                    breakdown["llm_verdict"] = (
+                        f"{verdict.kind}/{verdict.confidence:.2f}"
+                    )
+                    if new_score != score:
+                        breakdown["llm_adjustment"] = new_score - score
+                    score = new_score
+
+            if (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
+                profile = enrich_author(raw.author, cache_dir=author_cache_dir)
+                if profile.available:
+                    author_calls += 1
+                    penalty = profile.signal_penalty
+                    if penalty:
+                        score = max(0, score + penalty)
+                        breakdown["author_penalty"] = penalty
+                        breakdown["author_recurring"] = 1
+
+            if score < args.min_score:
+                skipped_low += 1
+                continue
+
+            lead = Lead(
+                id=raw.id,
+                source=raw.source,
+                title=cleaned["title"] or raw.title,
+                text=cleaned["text"],
+                summary=cleaned["summary"],
+                url=raw.url,
+                city=cleaned["city"],
+                score=score,
+                intent=intent_from_score(score),
+                breakdown=breakdown,
+                niche=niche,
+                author=raw.author,
+                created_at=raw.created_at,
+            )
+            leads.append(lead)
+            if seen:
+                seen.add(fp)
+            if fuzzy_store is not None:
+                fuzzy_store.add(fp, cleaned["full"])
+
+            if score >= HOT_ALERT_THRESHOLD:
+                stad = (lead.city or "—").title()
+                summary = smart_summary(
+                    text=lead.text or "",
+                    title=lead.title or "",
+                    city=lead.city,
+                    niche=niche,
+                )
+                print(f"\n🔥 HOT LEAD:\n   {stad} — {summary}\n", flush=True)
+
+                if not args.no_telegram and score >= args.telegram_threshold:
+                    try:
+                        suggested = generate_message(
+                            niche=niche, city=lead.city,
+                            text=lead.text, title=lead.title,
+                        )
+                        result = send_lead_alert(
+                            lead, suggested_message=suggested,
+                            hot_threshold=args.telegram_threshold,
+                        )
+                        if result.sent:
+                            log.info("Telegram alert verstuurd (mid=%s)", result.message_id)
+                        elif result.skipped_reason not in {"below_threshold", "no_credentials"}:
+                            log.warning("Telegram skip/err: %s / %s",
+                                        result.skipped_reason, result.error)
+                    except Exception as e:
+                        log.warning("Telegram alert faalde: %s", e)
+
+        if args.facebook_file:
+            fb_posts = load_posts_from_file(args.facebook_file)
+            log.info("FB handmatig: %d posts", len(fb_posts))
+            leads.extend(analyze_manual_posts(
+                fb_posts, niche=niche, niche_keywords=keywords_required, min_score=args.min_score,
+            ))
+
+        log.info(
+            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
+            "llm_calls=%d author_calls=%d)",
+            niche, len(raw_total), len(leads), skipped_promo, skipped_old,
+            skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
+        )
+
+        export_leads(leads, niche=niche, outdir=args.outdir)
+    finally:
+        if seen is not None:
+            seen.save()
+        if fuzzy_store is not None:
+            fuzzy_store.save()
+
     return leads
 
 

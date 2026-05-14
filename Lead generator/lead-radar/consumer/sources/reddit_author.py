@@ -22,6 +22,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
@@ -107,7 +108,12 @@ def _fetch_reddit_user(author: str, timeout_s: int) -> dict | None:
     zichtbare post als account-leeftijd-schatting.
     """
     headers = {"User-Agent": USER_AGENT}
-    listing_url = f"https://www.reddit.com/user/{author}/.json?limit=50"
+    # URL-safe encoding: voorkomt dat een malicious of geëncodeerde author-
+    # naam (slash, query-chars, NUL, ..) de URL-structuur breekt.  Reddit-
+    # usernames zijn normaal alfanumeriek + '_' / '-', dus quote() is een
+    # no-op voor legitieme namen.
+    safe_author = quote(author, safe="")
+    listing_url = f"https://www.reddit.com/user/{safe_author}/.json?limit=50"
     try:
         listing_resp = requests.get(listing_url, headers=headers, timeout=timeout_s)
     except requests.RequestException as e:
@@ -123,7 +129,7 @@ def _fetch_reddit_user(author: str, timeout_s: int) -> dict | None:
     except ValueError:
         return None
 
-    about_url = f"https://www.reddit.com/user/{author}/about.json"
+    about_url = f"https://www.reddit.com/user/{safe_author}/about.json"
     try:
         about_resp = requests.get(about_url, headers=headers, timeout=timeout_s)
         if about_resp.status_code == 200:

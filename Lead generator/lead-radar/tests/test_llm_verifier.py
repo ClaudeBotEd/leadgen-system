@@ -258,3 +258,20 @@ def test_reset_run_counters_is_callable() -> None:
     """reset_run_counters() moet callable zijn zonder args, geen exceptions."""
     reset_run_counters()
     reset_run_counters()  # idempotent
+
+
+def test_post_hash_changes_when_system_prompt_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bug: als SYSTEM_PROMPT verandert (bv. om classificatie aan te
+    scherpen), bleef de cache-key hetzelfde — oude verdicts werden
+    geserveerd vanaf disk en de nieuwe prompt had geen effect totdat
+    cache handmatig leeggemaakt werd."""
+    from consumer.processor import llm_verifier
+
+    h_before = _post_hash("test text", "claude-haiku")
+    monkeypatch.setattr(llm_verifier, "_SYSTEM_PROMPT_FINGERPRINT", "deadbeef")
+    h_after = _post_hash("test text", "claude-haiku")
+    assert h_before != h_after, (
+        "Cache key moet veranderen als SYSTEM_PROMPT-fingerprint verandert"
+    )

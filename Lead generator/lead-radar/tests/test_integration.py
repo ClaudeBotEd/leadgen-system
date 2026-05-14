@@ -199,6 +199,71 @@ def test_pipeline_drops_fuzzy_duplicates(tmp_path: Path) -> None:
     assert res2.get("skip") == "fuzzy_dup", f"r2 moet dup zijn: {res2}"
 
 
+def test_run_one_niche_saves_dedup_state_on_keyboard_interrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Bug: bij KeyboardInterrupt midden in fetch raakte de seen-store
+    kwijt en re-processte de volgende run alle URLs opnieuw (dubbele
+    LLM-kosten).  Try/finally borgt dat seen.save() altijd uitgevoerd
+    wordt."""
+    import argparse
+    from consumer.utils import SeenStore
+    import run_consumer
+
+    outdir = tmp_path
+    seen_path = outdir / "seen_hashes.json"
+
+    pre_store = SeenStore(seen_path)
+    pre_store.add("dummy-fingerprint-pre")
+    pre_store.save()
+    assert seen_path.exists()
+
+    # Minimale config in tmp_path zodat load_config slaagt
+    cfg_path = tmp_path / "test_queries.yaml"
+    cfg_path.write_text(
+        "niches:\n"
+        "  cv:\n"
+        "    keywords_required: [cv]\n"
+        "    queries_text: [cv ketel kapot]\n",
+        encoding="utf-8",
+    )
+
+    def crashing_source(query, *, limit, location, session):  # noqa: ANN001, ANN201
+        raise KeyboardInterrupt("user pressed ctrl+c")
+
+    monkeypatch.setitem(run_consumer.REGISTRY, "reddit", crashing_source)
+
+    args = argparse.Namespace(
+        location="nederland",
+        limit=10,
+        max_queries=1,
+        sources="reddit",
+        outdir=str(outdir),
+        no_dedup=False,
+        no_fuzzy_dedup=True,
+        no_author_enrich=True,
+        no_hardblock=False,
+        no_llm=True,
+        no_telegram=True,
+        dedup_threshold=0.85,
+        min_score=60,
+        max_age_days=14,
+        llm_min_score=40,
+        llm_max_score=75,
+        telegram_threshold=80,
+        queries_file=str(cfg_path),
+        facebook_file=None,
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        run_consumer.run_one_niche(args, niche="cv")
+
+    post_store = SeenStore(seen_path)
+    assert post_store.has("dummy-fingerprint-pre"), (
+        "seen-store moet bewaard zijn ook bij KeyboardInterrupt"
+    )
+
+
 def test_pipeline_llm_verdict_modifies_borderline_score(tmp_path: Path) -> None:
     """combine_score is gewired: bij een borderline regex-score levert een
     'lead'-verdict een aangepaste finale score op."""
