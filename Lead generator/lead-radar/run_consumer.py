@@ -176,6 +176,7 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
         "bouwinfo": text_qs,
         "google": loc_subst(google_qs) if google_qs else loc_subst(text_qs),
         "marktplaats": market_qs or text_qs,
+        "2dehands": market_qs or text_qs,
     }
 
 
