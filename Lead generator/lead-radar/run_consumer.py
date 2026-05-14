@@ -116,7 +116,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--queries-file", default=str(DEFAULT_QUERIES_YAML))
     p.add_argument("--outdir", default=str(DEFAULT_OUTDIR))
     p.add_argument("--facebook-file", default=None,
-                   help="Optioneel pad naar tekstbestand met handmatige FB-posts")
+                   help="Optioneel pad naar tekstbestand met handmatige FB-posts "
+                        "(legacy alias voor --manual-file --manual-platform facebook)")
+    p.add_argument("--manual-file", default=None,
+                   help="Pad naar tekstbestand met handmatig gekopieerde posts "
+                        "van een high-risk platform (geen scraping). "
+                        "Posts gescheiden door lege regel of '---'.")
+    p.add_argument("--manual-platform", default="facebook",
+                   help="Platform-label voor --manual-file (bv 'facebook', "
+                        "'linkedin', 'instagram', 'tiktok', 'whatsapp', "
+                        "'telegram'). Geen whitelist. Default: facebook.")
     p.add_argument("--no-dedup", action="store_true",
                    help="Cross-run dedup uit (negeer seen_hashes.json)")
     p.add_argument("--max-queries", type=int, default=8,
@@ -470,7 +479,18 @@ def run_one_niche(
             fb_posts = load_posts_from_file(args.facebook_file)
             log.info("FB handmatig: %d posts", len(fb_posts))
             leads.extend(analyze_manual_posts(
-                fb_posts, niche=niche, niche_keywords=keywords_required, min_score=args.min_score,
+                fb_posts, platform="facebook", niche=niche,
+                niche_keywords=keywords_required, min_score=args.min_score,
+            ))
+
+        manual_file = getattr(args, "manual_file", None)
+        if manual_file:
+            manual_platform = getattr(args, "manual_platform", "facebook") or "facebook"
+            manual_posts = load_posts_from_file(manual_file)
+            log.info("Manual ingest (%s): %d posts", manual_platform, len(manual_posts))
+            leads.extend(analyze_manual_posts(
+                manual_posts, platform=manual_platform, niche=niche,
+                niche_keywords=keywords_required, min_score=args.min_score,
             ))
 
         log.info(

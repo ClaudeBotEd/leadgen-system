@@ -29,25 +29,31 @@ def _short_hash(s: str) -> str:
     return hashlib.sha1(s.encode("utf-8", errors="ignore")).hexdigest()[:12]
 
 
-def _to_raw(text: str, idx: int) -> RawPost:
+def _to_raw(text: str, idx: int, platform: str = "facebook") -> RawPost:
     text = text.strip()
-    rid = f"facebook:{_short_hash(text)}-{idx}"
+    rid = f"{platform}:{_short_hash(text)}-{idx}"
     return RawPost(
         id=rid,
-        source="facebook",
+        source=platform,
         url="(handmatig — geen URL)",
         title=text.split("\n", 1)[0][:120],
         text=text,
         author=None,
         created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        metadata={"manual_input": True},
+        metadata={"manual_input": True, "platform": platform},
     )
 
 
-def analyze_manual_posts(posts: list[str], *, niche: str = "manual",
+def analyze_manual_posts(posts: list[str], *, platform: str = "facebook",
+                         niche: str = "manual",
                          niche_keywords: list[str] | None = None,
                          min_score: int = 0) -> list[Lead]:
-    """Analyseer een lijst losse FB-posts en geef Lead-objecten terug.
+    """Analyseer een lijst losse handmatig-gekopieerde posts en geef Leads terug.
+
+    `platform`: source-label voor de leads (bv 'facebook', 'linkedin',
+    'instagram', 'tiktok', 'whatsapp', 'telegram').  Geen whitelist — operator
+    bepaalt het label.  Bepaalt RawPost.source en id-prefix.  Default
+    'facebook' voor backward compat.
 
     Geeft *alle* posts terug (geen automatische filter) zodat jij ziet
     welke wel/niet als lead scoorden.  `min_score` filtert optioneel weg.
@@ -56,7 +62,7 @@ def analyze_manual_posts(posts: list[str], *, niche: str = "manual",
     for idx, text in enumerate(posts):
         if not text or not text.strip():
             continue
-        raw = _to_raw(text, idx)
+        raw = _to_raw(text, idx, platform=platform)
         cleaned = clean_post(raw)
         kind = classify_post_kind(cleaned["full"])
         score, breakdown = score_post(cleaned, niche_keywords)
