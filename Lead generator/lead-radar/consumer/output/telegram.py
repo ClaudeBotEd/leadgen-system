@@ -50,6 +50,19 @@ def _escape_md_v2(text: str) -> str:
     return "".join(out)
 
 
+def _escape_md_v2_url(url: str) -> str:
+    """Escape \\ en ) binnen MarkdownV2 link-URL.
+
+    Telegram-spec: binnen (...) van [text](url) moeten ) en \\ ge-escaped
+    worden, anders sluit de eerste ) de link voortijdig → HTTP 400.
+
+    Backslash eerst (anders dubbel-escape op de \\ die we vóór ) zetten).
+    """
+    if not url:
+        return ""
+    return url.replace("\\", "\\\\").replace(")", "\\)")
+
+
 def _format_lead(lead: Lead, suggested_message: str | None = None) -> str:
     score = lead.score
     intent_emoji = "🔥" if score >= 80 else ("⚡" if score >= 70 else "·")
@@ -67,7 +80,7 @@ def _format_lead(lead: Lead, suggested_message: str | None = None) -> str:
     if suggested_message:
         lines += ["", "💬 _Voorstel:_ " + _escape_md_v2(suggested_message)]
     if lead.url:
-        lines += ["", f"[Open op {_escape_md_v2(lead.source)}]({lead.url})"]
+        lines += ["", f"[Open op {_escape_md_v2(lead.source)}]({_escape_md_v2_url(lead.url)})"]
     return "\n".join(lines)
 
 

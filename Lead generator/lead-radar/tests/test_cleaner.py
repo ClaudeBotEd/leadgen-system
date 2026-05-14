@@ -41,6 +41,24 @@ def test_detect_city_postcode_fallback() -> None:
     assert detect_city("BE postcode 2000") == "be-postcode"
 
 
+def test_detect_city_be_postcode_with_prefix() -> None:
+    """BE-2000, BE 2000, B-9000 — explicit Belgian postcode formats."""
+    assert detect_city("Stuur naar BE-2000") == "be-postcode"
+    assert detect_city("adres BE 9000") == "be-postcode"
+    assert detect_city("postcode is B-3000") == "be-postcode"
+
+
+def test_detect_city_rejects_bare_4digit_number() -> None:
+    """Een vrijstaand 4-cijferig getal (budget/wattage/jaar) mag GEEN
+    BE-postcode triggeren. Oude regex \\b[1-9]\\d{3}\\b vuurde op
+    'budget 5000 euro' → +20 locatie-bonus zonder echte locatie."""
+    assert detect_city("budget 5000 euro voor warmtepomp") is None
+    assert detect_city("3000 watt vermogen") is None
+    assert detect_city("1500 kWh verbruik per jaar") is None
+    assert detect_city("model uit 2023") is None
+    assert detect_city("woning van 1985") is None
+
+
 def test_detect_city_returns_none_when_no_match() -> None:
     assert detect_city("Geen stad in deze tekst") is None
     assert detect_city("") is None

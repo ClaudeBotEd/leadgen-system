@@ -92,13 +92,16 @@ _RE_STRONG_BUY = re.compile(
 # "vergelijk(en|ing)" + "review" verwijderd — "offertes vergelijken" en
 # "review van mijn offerte" zijn bottom-of-funnel, geen research.
 _RE_RESEARCH_ONLY = re.compile(
+    # 'is .{1,40} de moeite' en 'is .{1,40} het beste' verwijderd:
+    # vingen 'prijs is niet de moeite waard' / 'dit is niet het beste'
+    # als research, terwijl het lead-klachten zijn (-25 penalty op
+    # legitime leads). De overige patterns dekken echte research af.
     r"\b(ervaring met|hoe werkt|overweeg|overwegen|aan het orienteren|"
     r"benieuwd naar|nieuwsgierig|informatie over|info over|"
     r"ben aan het orienteren|wil gaan onderzoeken|verschil tussen|"
     r"voor- en nadelen|wat is het verschil|nog niet zeker|"
-    r"is .{1,40} de moeite|"
     r"wat raden jullie|welke kiezen|welk merk|welk model|"
-    r"twijfel tussen|is .{1,40} het beste|advies welke|"
+    r"twijfel tussen|advies welke|"
     r"hulp bij keuze|hulp keuze|tips voor keuze)\b",
     re.IGNORECASE,
 )
@@ -115,8 +118,10 @@ _RE_DISCUSSION = re.compile(
 # +30 bonus: stuk/defect apparatuur — hoogste urgentie ("cv kapot", "storing")
 # "Harde" signalen vuren op zichzelf; "zachte" signalen alleen samen met apparatuur.
 _RE_BROKEN_HARD = re.compile(
+    # Bare f\d{1,3} verwijderd: matchte 'F1 race', 'F12 toets', 'F-150 truck'.
+    # HVAC-codes hebben in praktijk altijd 'foutmelding'/'error code' prefix.
     r"\b(storing|lekkage|lekt water|"
-    r"foutmelding|error\s?code|f\d{1,3}|"
+    r"foutmelding|error\s?code|"
     r"geen warm water|geen verwarming|cv valt uit|"
     r"valt steeds uit|reset zichzelf)\b",
     re.IGNORECASE,

@@ -342,7 +342,13 @@ def sync_to_sheets(
     spreadsheet_id: str | None = None,
     credentials_path: str | Path | None = None,
 ) -> dict:
-    """Push leads naar Google Sheets.  Filtert intern op score >= 70.
+    """Push leads naar Google Sheets.
+
+    Verdeelt leads over 3 tabs:
+      HOT LEADS    : score >= 80   (CONTACT NU)
+      ALL LEADS    : score >= 70   (HOT + WARM)
+      OPPORTUNITIES: score 60-69   (WARM + CHECK)
+    Leads < 60 worden niet gesynced.
 
     Returns: {'all_added','hot_added','all_total','hot_total','spreadsheet_url'}.
     """

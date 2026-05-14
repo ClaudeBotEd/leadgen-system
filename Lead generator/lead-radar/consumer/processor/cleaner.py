@@ -39,7 +39,12 @@ BE_CITIES = {
 ALL_CITIES = NL_CITIES | BE_CITIES
 
 RE_POSTCODE_NL = re.compile(r"\b\d{4}\s?[A-Z]{2}\b", re.IGNORECASE)
-RE_POSTCODE_BE = re.compile(r"\b[1-9]\d{3}\b")
+# BE-postcode vereist context (BE-/postcode/B-) anders matcht elk 4-cijferig
+# getal (budget, wattage, jaar) → false-positive locatie-bonus.
+RE_POSTCODE_BE = re.compile(
+    r"\b(?:BE[\s\-]+|B-(?=\d)|postcode[:\s]+)([1-9]\d{3})\b",
+    re.IGNORECASE,
+)
 RE_URL = re.compile(r"https?://\S+")
 RE_WHITESPACE = re.compile(r"\s+")
 RE_HTML_TAG = re.compile(r"<[^>]+>")

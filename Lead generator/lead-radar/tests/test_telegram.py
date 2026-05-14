@@ -137,3 +137,40 @@ def test_ping_bot_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_threshold_constant() -> None:
     assert DEFAULT_HOT_THRESHOLD == 80
+
+
+def test_format_lead_escapes_close_paren_in_url() -> None:
+    """Telegram MarkdownV2 vereist \\) binnen URL-pad. Reddit-URLs bevatten
+    regelmatig haakjes (/r/community_(NL)/) — onge-escaped → HTTP 400."""
+    lead = Lead(
+        id="abc", source="reddit",
+        title="CV kapot", text="spoed", summary="spoed",
+        url="https://reddit.com/r/foo_(bar)/comments/abc",
+        city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+    )
+    out = _format_lead(lead)
+    assert "foo_(bar\\)/comments" in out, f"Expected escaped \\) in URL, got: {out!r}"
+
+
+def test_format_lead_url_without_parens_unchanged() -> None:
+    """URL zonder bijzondere tekens moet ongewijzigd doorgegeven worden."""
+    lead = Lead(
+        id="abc", source="reddit",
+        title="x", text="y", summary="y",
+        url="https://reddit.com/r/x/abc",
+        city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+    )
+    out = _format_lead(lead)
+    assert "(https://reddit.com/r/x/abc)" in out
+
+
+def test_format_lead_escapes_backslash_in_url() -> None:
+    """Backslash binnen URL moet ook ge-escaped worden (\\\\)."""
+    lead = Lead(
+        id="abc", source="reddit",
+        title="x", text="y", summary="y",
+        url="https://example.com/path\\with\\backslash",
+        city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+    )
+    out = _format_lead(lead)
+    assert "path\\\\with\\\\backslash" in out

@@ -82,7 +82,8 @@ def parse_args() -> argparse.Namespace:
 
     # Daily preset (alle niches in 1 command)
     p.add_argument("--daily", action="store_true",
-                   help="Daily preset: alle niches, score>=70, time filter 7d, sheets sync. Geen --niche nodig.")
+                   help="Daily preset: alle niches, score>=60 (OPPORTUNITIES; 70+→ALL LEADS, "
+                        "80+→HOT LEADS), time filter 7d, sheets sync. Geen --niche nodig.")
 
     # Niche-specifiek (of via --daily over alle niches)
     p.add_argument("--niche", default=None,
@@ -94,7 +95,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--sources", default="",
                    help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}")
     p.add_argument("--min-score", type=int, default=30,
-                   help="Minimum score om in output op te nemen (default 30; --daily dwingt 70)")
+                   help="Minimum score om in output op te nemen (default 30; --daily dwingt 60)")
     p.add_argument("--max-age-days", type=int, default=0,
                    help="Filter posts ouder dan N dagen weg (0 = uit; --daily dwingt 7)")
     p.add_argument("--queries-file", default=str(DEFAULT_QUERIES_YAML))
@@ -408,7 +409,11 @@ def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) ->
 
 
 def run_daily(args: argparse.Namespace) -> int:
-    """Run alle niches, alleen score>=70, push naar Sheets."""
+    """Run alle niches, push naar Sheets.
+
+    Min score = DAILY_MIN_SCORE (60). Sheets verdeelt verder:
+      HOT LEADS (>=80) | ALL LEADS (>=70) | OPPORTUNITIES (60-69).
+    """
     args.location = args.location or DAILY_LOCATION
     args.limit = args.limit if args.limit != 50 else DAILY_LIMIT
     args.max_queries = args.max_queries if args.max_queries != 8 else DAILY_MAX_QUERIES
