@@ -128,3 +128,30 @@ def test_parse_locations_no_value_no_fallback_defaults_to_nederland() -> None:
 def test_parse_locations_single_value_no_comma() -> None:
     """--locations 'vlaanderen' (geen komma) is geldige single-elem lijst."""
     assert parse_locations("vlaanderen") == ["vlaanderen"]
+
+
+# ─── parse_locations met presets (uit queries.yaml defaults) ─────────────────
+
+
+def test_parse_locations_preset_expands_to_full_list() -> None:
+    """--locations 'nl' → cities_nl uit defaults; geen letterlijke 'nl' query."""
+    presets = {"nl": ["amsterdam", "rotterdam", "utrecht"]}
+    assert parse_locations("nl", presets=presets) == ["amsterdam", "rotterdam", "utrecht"]
+
+
+def test_parse_locations_preset_is_case_insensitive() -> None:
+    """User mag --locations 'NL' of 'All' typen."""
+    presets = {"all": ["amsterdam", "antwerpen"]}
+    assert parse_locations("ALL", presets=presets) == ["amsterdam", "antwerpen"]
+    assert parse_locations("All", presets=presets) == ["amsterdam", "antwerpen"]
+
+
+def test_parse_locations_unknown_string_falls_through_to_literal() -> None:
+    """Onbekende waarde is geen preset → letterlijke komma-split (backward compat)."""
+    presets = {"nl": ["amsterdam"]}
+    assert parse_locations("vlaanderen,brussel", presets=presets) == ["vlaanderen", "brussel"]
+
+
+def test_parse_locations_no_presets_means_no_preset_expansion() -> None:
+    """Zonder presets-arg gedraagt zich exact als voorheen."""
+    assert parse_locations("nl") == ["nl"]  # letterlijk, geen expansie

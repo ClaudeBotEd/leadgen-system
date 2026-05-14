@@ -99,6 +99,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--locations", default=None,
                    help="Komma-lijst locaties voor --daily mode "
                         "(bv 'nederland,vlaanderen,amsterdam'). "
+                        "Presets uit queries.yaml defaults: "
+                        "'nl' (alle NL-steden), 'be' (alle BE-steden), "
+                        "'all' (NL+BE). "
                         "Default: --location of 'nederland'. "
                         "Vermenigvuldigt query-volume per locatie — "
                         "let op rate-limits + LLM-budget.")
@@ -160,17 +163,30 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def parse_locations(value: str | None, fallback: str | None = None) -> list[str]:
+def parse_locations(
+    value: str | None,
+    fallback: str | None = None,
+    *,
+    presets: dict[str, list[str]] | None = None,
+) -> list[str]:
     """Parse komma-string naar lijst van locaties voor multi-location daily-run.
 
     Tolerant voor user-input:
     - Spaties rond elk item worden gestript
     - Lege segmenten (dubbele komma's, trailing comma's) genegeerd
 
+    Presets (case-insensitive): bv {"nl": [..steden..], "be": [...], "all": [...]}.
+    Als `value` exact matcht met een preset-key, wordt de bijbehorende
+    lijst geretourneerd.  Anders valt het terug op letterlijke komma-split.
+
     Fallback-order: value > fallback > 'nederland'.  Daily mode mag nooit
     een lege lijst krijgen — dan zou run_daily 0 iteraties doen.
     """
     if value:
+        if presets:
+            preset_key = value.strip().lower()
+            if preset_key in presets and presets[preset_key]:
+                return list(presets[preset_key])
         items = [s.strip() for s in value.split(",") if s.strip()]
         if items:
             return items
@@ -526,9 +542,24 @@ def run_daily(args: argparse.Namespace) -> int:
     available = list((cfg.get("niches") or {}).keys())
     niches_to_run = [n for n in DAILY_NICHES if n in available]
 
-    locations = parse_locations(getattr(args, "locations", None), fallback=args.location)
+    defaults_cfg = cfg.get("defaults") or {}
+    presets: dict[str, list[str]] = {}
+    if defaults_cfg.get("cities_nl"):
+        presets["nl"] = list(defaults_cfg["cities_nl"])
+    if defaults_cfg.get("cities_be"):
+        presets["be"] = list(defaults_cfg["cities_be"])
+    if "nl" in presets and "be" in presets:
+        presets["all"] = presets["nl"] + presets["be"]
+
+    locations = parse_locations(
+        getattr(args, "locations", None),
+        fallback=args.location,
+        presets=presets,
+    )
     if len(locations) > 1:
-        log.info("Daily multi-location run: %s", ", ".join(locations))
+        log.info("Daily multi-location run: %d locaties (%s)",
+                 len(locations),
+                 ", ".join(locations) if len(locations) <= 6 else f"{', '.join(locations[:5])}, ...")
 
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
