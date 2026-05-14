@@ -1,5 +1,9 @@
 # CRM Pipeline — installatiebedrijven lead gen
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+
 ## Wat zit er in deze map
 
 | Bestand | Doel |

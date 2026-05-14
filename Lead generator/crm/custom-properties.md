@@ -2,6 +2,11 @@
 
 Volledig overzicht van alle custom properties die n8n schrijft en het sales-team handmatig bijwerkt. Maak ze EERST aan in HubSpot/Close voor je de eerste lead intake doet — anders weigert de API de write.
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+- Gerelateerd: [[apollo/index]]
+
 ## Tabel
 
 | Property naam (internal) | Label (display) | Type | Group | Geschreven door | Verplicht |

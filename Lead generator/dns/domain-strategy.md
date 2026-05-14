@@ -1,5 +1,9 @@
 # Domein-strategie
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+
 ## Hoeveel domeinen + mailboxen
 
 Per Sectie 7 van het rapport en industrie best-practices voor cold outreach:

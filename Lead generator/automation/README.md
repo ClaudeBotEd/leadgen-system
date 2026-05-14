@@ -2,6 +2,11 @@
 
 > Een commando voor een complete dagelijkse lead-gen run: scrape -> CRM import -> outreach batch -> dashboard.
 
+## 🔗 Context
+
+- Onderdeel van [[automation/index]]
+- Gerelateerd: [[lead-radar/index]]
+
 ## Quickstart
 
 ```bash

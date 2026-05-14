@@ -6,6 +6,10 @@
 
 ---
 
+## 🔗 Context
+
+- Onderdeel van [[email-sequences/index]]
+
 ## Email 1 — Waardepropositie (dag 0)
 
 **Subject A:** `Vraag aan {{company_name}}: aanvragen via internet`

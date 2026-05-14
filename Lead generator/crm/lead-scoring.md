@@ -2,6 +2,11 @@
 
 Eenvoudige 0-10 schaal voor `lead_quality_score` custom property. Hand in te vullen na intake-call (of automatisch via n8n als je dit later digitaliseert).
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+- Gerelateerd: [[apollo/index]]
+
 ## Doel
 
 Niet elke lead is gelijk. Een 9 verdient binnen 4 uur opvolging, een 3 mag 48u wachten. Score helpt je prioriteren als volume groeit.

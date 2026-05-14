@@ -7,6 +7,10 @@ nu actief op zoek zijn naar een installateur of offerte voor:
 
 Geen automatische outreach. Alleen discovery → filteren → scoring → CSV/JSON.
 
+## 🔗 Context
+
+- Onderdeel van [[lead-radar/index]]
+
 ## Bronnen
 
 | Source | Methode | Auth |

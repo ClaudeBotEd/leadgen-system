@@ -2,6 +2,10 @@
 
 Voor elk outreach-domein moet je 3 records configureren: SPF, DKIM en DMARC. Zonder alle drie correct ingesteld zal cold email direct in spam belanden, ongeacht hoe goed je content is.
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+
 ## Achtergrond — wat doen deze records?
 
 | Record | Doel | Verplicht voor outreach? |

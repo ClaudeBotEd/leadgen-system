@@ -6,6 +6,10 @@ Gebaseerd op `rapport-ai-lead-gen-nl-be.md` (marktonderzoek) en de week 1 dagpla
 
 ---
 
+## 🔗 Context
+
+- Onderdeel van [[MVP-START-HERE]]
+
 ## TWEE PADEN — kies wat past
 
 ### Pad A — GRATIS MVP (start vandaag, geen kosten)

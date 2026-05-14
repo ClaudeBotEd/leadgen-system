@@ -6,6 +6,10 @@
 
 ---
 
+## 🔗 Context
+
+- Onderdeel van [[email-sequences/index]]
+
 ## Email 1 — Waardepropositie (dag 0)
 
 **Subject A:** `Aanvragen buiten zomerpiek — invulling Q1/Q4`

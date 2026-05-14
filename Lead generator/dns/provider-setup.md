@@ -2,6 +2,10 @@
 
 Drie volledige walkthroughs. Kies er 1 — niet alle drie tegelijk.
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+
 ## Beslissingsmatrix
 
 | Criterium | Google Workspace | Microsoft 365 | Maildoso |

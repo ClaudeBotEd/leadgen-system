@@ -2,6 +2,10 @@
 
 Vier filter-sets, een per niche. Elke set is letterlijk in te vullen in de Apollo "People Search" UI. Bewaar elke set als "Saved Search" voor later hergebruik.
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+
 ## Algemene aanpak
 
 1. Apollo UI -> linksboven **Search** -> tab **People** (NIET Companies)

@@ -2,6 +2,10 @@
 
 Apollo's Industry-classificatie is US-georienteerd. Voor NL/BE-prospects komen veel installatiebedrijven niet of fout in de juiste industry. Daarom zijn keywords vaak doorslaggevender dan industry-filters.
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+
 ## Combinaties per niche
 
 ### Warmtepompen

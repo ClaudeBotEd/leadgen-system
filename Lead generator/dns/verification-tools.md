@@ -1,5 +1,9 @@
 # Verification tools — DNS, deliverability, reputation
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+
 ## Tools per use-case
 
 ### DNS records check

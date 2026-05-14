@@ -1,5 +1,9 @@
 # DNS records & email-domein setup
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+
 ## Wat zit er in deze map
 
 | Bestand | Doel |

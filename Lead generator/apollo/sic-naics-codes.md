@@ -2,6 +2,10 @@
 
 Apollo gebruikt onder de motorkap NAICS-codes (US-standaard) gekoppeld aan industry-namen. KvK gebruikt NL SBI-codes. Dit overzicht koppelt ze.
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+
 ## Belangrijkste codes
 
 | Sector | NAICS (US) | SIC (US, ouder) | NL SBI 2008 | Apollo Industry naam |

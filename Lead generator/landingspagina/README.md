@@ -1,5 +1,10 @@
 # Landingspagina — installatiebedrijven lead gen agency
 
+## 🔗 Context
+
+- Onderdeel van [[landingspagina/index]]
+- Gerelateerd: [[n8n/index]]
+
 ## Wat zit er in deze map
 
 | Bestand | Doel |

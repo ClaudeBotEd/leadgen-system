@@ -2,6 +2,10 @@
 
 Volledige setup van consumer pipeline v2 — van zero naar HOT leads in je Telegram.
 
+## 🔗 Context
+
+- Onderdeel van [[lead-radar/index]]
+
 ## 1. Python + dependencies
 
 ```bash

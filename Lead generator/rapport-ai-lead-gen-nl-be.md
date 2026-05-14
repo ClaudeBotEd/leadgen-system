@@ -6,6 +6,11 @@
 
 ---
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+- Gerelateerd: [[crm/index]], [[dns/index]]
+
 ## Tabel 1 — Concurrentieanalyse NL/BE Lead Generation Agencies
 
 Minimaal 15 agencies vereist. 22 gevonden en geverifieerd door hun websites daadwerkelijk te openen. 14 in Nederland, 8 in België.

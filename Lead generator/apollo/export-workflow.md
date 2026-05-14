@@ -2,6 +2,11 @@
 
 Concrete stappen om een lijst op te bouwen, te schonen en te exporteren naar Instantly + HubSpot. Eind-tot-eind tijd: ~30 minuten per niche van 500 leads.
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+- Gerelateerd: [[crm/index]]
+
 ## Stap 1 — Saved search opbouwen (10 minuten)
 
 1. Apollo -> Search -> People (NIET Companies)

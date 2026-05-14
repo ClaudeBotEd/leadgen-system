@@ -10,6 +10,10 @@
 - Startup: $59/mo, 3 users, 50.000 leads, automations
 - Professional: $109/user/mo, sequences, sales automation, predictive dialer
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+
 ## Stap 1 — Account aanmaken
 
 1. https://www.close.com/pricing

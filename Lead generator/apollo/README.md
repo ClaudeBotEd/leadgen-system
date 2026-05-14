@@ -1,5 +1,9 @@
 # Apollo.io — filter-instructies en workflow
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+
 ## Wat zit er in deze map
 
 | Bestand | Doel |

@@ -1,5 +1,10 @@
 # Email Sequences — HVAC/Installatie NL/BE
 
+## 🔗 Context
+
+- Onderdeel van [[email-sequences/index]]
+- Gerelateerd: [[dns/index]]
+
 ## Wat zit er in deze map
 
 Vier 3-email sequences voor cold outreach naar installatiebedrijven:

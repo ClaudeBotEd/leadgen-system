@@ -2,6 +2,11 @@
 
 Per Sectie 7 van het rapport (Week 1-2): "Warmup starten — minimaal 14 dagen warmup voor je eerste campagne stuurt."
 
+## 🔗 Context
+
+- Onderdeel van [[dns/index]]
+- Gerelateerd: [[email-sequences/index]]
+
 ## Wat is warmup?
 
 Een nieuwe email-mailbox heeft 0 reputation bij Gmail/Outlook. Als je direct 100 cold emails stuurt, ga je in spam. Warmup bouwt geleidelijk reputation op door:

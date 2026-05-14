@@ -1,5 +1,10 @@
 # n8n — workflow orchestration
 
+## 🔗 Context
+
+- Onderdeel van [[n8n/index]]
+- Gerelateerd: [[landingspagina/index]]
+
 ## Wat zit er in deze map
 
 | Bestand | Doel |

@@ -3,6 +3,10 @@
 **Tijd:** 45-60 minuten eerste keer.
 **Vereist:** een HubSpot Free account (https://www.hubspot.com/products/get-started-free).
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+
 ## Stap 1 — Maak een Private App aan voor API toegang
 
 n8n praat met HubSpot via een Private App access token, niet via OAuth.

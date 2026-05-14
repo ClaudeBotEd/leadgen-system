@@ -2,6 +2,11 @@
 
 > Combineer een leads CSV met een template -> klare berichten in `outbox/`. Geen automatische verzending. Je verstuurt zelf vanuit eigen Gmail/Outlook.
 
+## 🔗 Context
+
+- Onderdeel van [[outreach/index]]
+- Gerelateerd: [[email-sequences/index]]
+
 ## Quickstart
 
 ```bash

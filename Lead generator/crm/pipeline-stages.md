@@ -2,6 +2,10 @@
 
 Geldig voor zowel HubSpot (Lead Status enum) als Close (Lead Statuses).
 
+## 🔗 Context
+
+- Onderdeel van [[crm/index]]
+
 ## Visuele flow
 
 ```

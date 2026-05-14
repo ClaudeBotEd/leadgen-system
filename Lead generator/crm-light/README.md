@@ -2,6 +2,11 @@
 
 > Volledig CSV-based CRM. Geen accounts, geen database, geen API. Alle data lokaal in `data/leads.csv` en `data/activities.csv`.
 
+## 🔗 Context
+
+- Onderdeel van [[crm-light/index]]
+- Gerelateerd: [[lead-radar/index]]
+
 ## Wanneer wel / niet
 
 **Gebruik dit als:**

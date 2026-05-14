@@ -2,6 +2,11 @@
 
 Op basis van rapport Tabel 4 (Juridisch kader NL/BE/EU) — alle bronnen verifieerbaar via maxius.nl, leadbarometer.be en gba/aanbeveling 01/2025.
 
+## 🔗 Context
+
+- Onderdeel van [[apollo/index]]
+- Gerelateerd: [[dns/index]]
+
 ## Pre-flight per export — verplicht doorlopen
 
 Voor elke campagne, vink AF:

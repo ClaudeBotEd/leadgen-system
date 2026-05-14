@@ -2,6 +2,11 @@
 
 > Vindt installatiebedrijven (warmtepomp, airco, zonnepanelen, HVAC) via DuckDuckGo en publieke bronnen — geen API keys, geen accounts, geen betaalde tools.
 
+## 🔗 Context
+
+- Onderdeel van [[lead-radar/index]]
+- Gerelateerd: [[automation/index]]
+
 ## Wat het doet
 
 ```
