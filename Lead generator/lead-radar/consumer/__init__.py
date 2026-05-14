@@ -8,7 +8,31 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 import hashlib
+
+
+def _canonicalize_url(url: str) -> str:
+    """Normalize URL voor dedup-fingerprint.
+
+    - Lowercase scheme + host
+    - Strip query-string (utm_*, ?sort=, etc. = view-modifiers, niet content)
+    - Strip fragment (#comment-xyz wijst naar pagina-sectie, niet andere post)
+    - Strip trailing slash (example.com/x ≡ example.com/x/)
+
+    Resultaat: twee URLs die naar dezelfde resource wijzen krijgen dezelfde
+    fingerprint, ook al verschillen ze in tracking-params of view-state.
+    """
+    if not url:
+        return ""
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return url.lower()
+    scheme = (parts.scheme or "").lower()
+    netloc = (parts.netloc or "").lower()
+    path = parts.path.rstrip("/") if parts.path else ""
+    return urlunsplit((scheme, netloc, path, "", ""))
 
 
 @dataclass
@@ -24,8 +48,12 @@ class RawPost:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def fingerprint(self) -> str:
-        """Stable hash voor dedup — combineert source + id + url."""
-        key = f"{self.source}|{self.id}|{self.url}".lower()
+        """Stable hash voor dedup — source + id + canonical url.
+
+        Canonicalization strips query/fragment/trailing-slash zodat dezelfde
+        post met andere view-params (?sort=, utm_*) niet dubbel-tellen.
+        """
+        key = f"{self.source}|{self.id}|{_canonicalize_url(self.url)}".lower()
         return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
 
 
