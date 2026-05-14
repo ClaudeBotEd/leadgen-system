@@ -199,6 +199,54 @@ def test_pipeline_drops_fuzzy_duplicates(tmp_path: Path) -> None:
     assert res2.get("skip") == "fuzzy_dup", f"r2 moet dup zijn: {res2}"
 
 
+def test_dry_run_skips_sheets_sync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+) -> None:
+    """--dry-run moet sync_to_sheets() niet aanroepen, ook al zijn er leads."""
+    import argparse
+    import run_consumer
+
+    cfg_path = tmp_path / "test_queries.yaml"
+    cfg_path.write_text(
+        "niches:\n"
+        "  cv:\n"
+        "    keywords_required: [cv]\n"
+        "    queries_text: [cv ketel kapot]\n",
+        encoding="utf-8",
+    )
+
+    def empty_source(query, *, limit, location, session):  # noqa: ANN001, ANN201
+        return []
+
+    monkeypatch.setitem(run_consumer.REGISTRY, "reddit", empty_source)
+    sync_calls: list = []
+
+    def fake_sync(*args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN201
+        sync_calls.append((args, kwargs))
+        return {"all_added": 0, "hot_added": 0, "opp_added": 0,
+                "spreadsheet_url": ""}
+
+    monkeypatch.setattr(run_consumer, "sync_to_sheets", fake_sync)
+
+    args = argparse.Namespace(
+        location="nederland", limit=10, max_queries=1,
+        sources="reddit", outdir=str(tmp_path),
+        no_dedup=True, no_fuzzy_dedup=True, no_author_enrich=True,
+        no_hardblock=True, no_llm=True, no_telegram=True,
+        dedup_threshold=0.85, min_score=60, max_age_days=14,
+        llm_min_score=40, llm_max_score=75, telegram_threshold=80,
+        queries_file=str(cfg_path), facebook_file=None,
+        spreadsheet_id="dummy", credentials=None,
+        niche="cv", sheets=False,
+        dry_run=True,
+    )
+
+    run_consumer.run_daily(args)
+    assert sync_calls == [], (
+        f"dry_run mocht geen Sheets sync triggeren; got {len(sync_calls)} call(s)"
+    )
+
+
 def test_run_one_niche_saves_dedup_state_on_keyboard_interrupt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

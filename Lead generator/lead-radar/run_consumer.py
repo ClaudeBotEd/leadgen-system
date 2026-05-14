@@ -140,6 +140,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--telegram-threshold", type=int, default=80,
                    help="Min score voor Telegram alert (default 80)")
 
+    p.add_argument("--dry-run", action="store_true",
+                   help="Run pipeline maar push NIETS naar externe systemen "
+                        "(geen Sheets sync, geen Telegram alerts). "
+                        "CSV/JSON exports gebeuren wel. Combineer met "
+                        "--no-llm voor kosten-vrije test.")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
@@ -443,6 +448,12 @@ def run_daily(args: argparse.Namespace) -> int:
     args.max_age_days = args.max_age_days if args.max_age_days > 0 else DAILY_MAX_AGE_DAYS
     args.sheets = True
 
+    # Dry-run: skip externe writes (Sheets + Telegram).  Pipeline runt
+    # gewoon door, CSV/JSON exports vinden plaats, zodat operator de
+    # output kan inspecteren zonder iets richting prod te pushen.
+    if getattr(args, "dry_run", False):
+        args.no_telegram = True
+
     # Reset per-run counters zodat budget cap en cache stats per daily-run
     # zijn, niet cumulatief over meerdere run_daily invocaties in hetzelfde
     # Python-proces (relevant bij testing / langlopende daemon).
@@ -451,7 +462,8 @@ def run_daily(args: argparse.Namespace) -> int:
     print()
     print("=" * 70)
     _ts_nl = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d %H:%M")
-    print(f"  CONSUMER LEAD RADAR  —  DAILY  ({_ts_nl})")
+    dry_tag = "  [DRY-RUN]" if getattr(args, "dry_run", False) else ""
+    print(f"  CONSUMER LEAD RADAR  —  DAILY  ({_ts_nl}){dry_tag}")
     print(f"  location={args.location}  limit={args.limit}  min_score>={args.min_score}  max_age={args.max_age_days}d")
     print("=" * 70)
 
@@ -465,7 +477,7 @@ def run_daily(args: argparse.Namespace) -> int:
     for niche in niches_to_run:
         leads = run_one_niche(args, niche)
         sheets_result = None
-        if leads:
+        if leads and not getattr(args, "dry_run", False):
             try:
                 sheets_result = sync_to_sheets(
                     leads,
@@ -511,9 +523,12 @@ def run_daily(args: argparse.Namespace) -> int:
 
 
 def run_single(args: argparse.Namespace) -> int:
+    if getattr(args, "dry_run", False):
+        args.no_telegram = True
+        log.info("DRY-RUN: Sheets sync + Telegram alerts uitgezet")
     leads = run_one_niche(args, args.niche)
     sheets_result = None
-    if args.sheets and leads:
+    if args.sheets and leads and not getattr(args, "dry_run", False):
         try:
             sheets_result = sync_to_sheets(
                 leads,
