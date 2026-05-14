@@ -22,6 +22,12 @@ log = logging.getLogger("consumer.sources.tweakers")
 BASE = "https://gathering.tweakers.net"
 SEARCH_URL = f"{BASE}/forum/find"
 
+# Hoe diep we per query crawlen.  Tweakers's interne search filtert
+# matig — diepere pages bevatten oudere threads die de keyword nog
+# steeds matchen via client-side filter (_parse_search query_terms).
+# 5 = vergroting van 3 (default vóór 2026-05-14 expansie).
+MAX_SEARCH_PAGES = 5
+
 
 def _extract_thread_id(href: str) -> str | None:
     if not href:
@@ -105,7 +111,7 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
     # Splits query in betekenisvolle terms voor client-side filter
     terms = [t for t in re.findall(r"[A-Za-z]{4,}", q) if t.lower() not in {"nederland", "belgie", "belgium"}]
     out: list[RawPost] = []
-    for page in range(1, 4):
+    for page in range(1, MAX_SEARCH_PAGES + 1):
         if len(out) >= limit:
             break
         params = {"keywords": q, "page": page}

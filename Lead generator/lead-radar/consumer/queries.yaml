@@ -89,6 +89,13 @@ niches:
       - "monteur warmtepomp gezocht"
       - "vakman warmtepomp"
       - "warmtepomp vervangen cv"
+      # Product-specifieke fraseringen (tweakers-publiek praat in merken)
+      - "daikin altherma installateur"
+      - "panasonic warmtepomp ervaringen"
+      - "mitsubishi ecodan keuze advies"
+      - "atlantic warmtepomp setup hulp"
+      - "nibe warmtepomp installatie"
+      - "monoblock warmtepomp aansluiting"
     google_queries:
       - 'site:reddit.com warmtepomp installateur {location}'
       - 'site:reddit.com warmtepomp offerte {location}'
@@ -191,6 +198,12 @@ niches:
       - "airconditioning installateur"
       - "airco huis"
       - "airco slaapkamer plaatsen"
+      # Product-specifieke fraseringen (tweakers-publiek praat in merken)
+      - "daikin split airco ervaring"
+      - "mitsubishi airco installateur"
+      - "panasonic airco montage"
+      - "lg artcool airco advies"
+      - "samsung wind-free airco"
     google_queries:
       - 'site:reddit.com airco installateur {location}'
       - 'site:reddit.com airco offerte {location}'
@@ -291,6 +304,12 @@ niches:
       - "zonnepanelen huis"
       - "zonnepanelen schuin dak"
       - "zonnepanelen plat dak"
+      # Product-specifieke fraseringen (tweakers-publiek praat in merken)
+      - "growatt omvormer aansluiten"
+      - "sunny boy omvormer probleem"
+      - "huawei omvormer setup"
+      - "tesla powerwall installatie"
+      - "victron multiplus advies"
     google_queries:
       - 'site:reddit.com zonnepanelen installateur {location}'
       - 'site:reddit.com zonnepanelen offerte {location}'
@@ -393,6 +412,12 @@ niches:
       - "centrale verwarming kapot"
       - "ketel onderhoud monteur"
       - "ketel uitvallen installateur"
+      # Product-specifieke fraseringen (tweakers-publiek praat in merken)
+      - "vaillant ecotec storingscode"
+      - "intergas inox kombi advies"
+      - "atag ketel modulerend"
+      - "remeha tzerra installateur"
+      - "nefit easy thermostaat"
     google_queries:
       - 'site:reddit.com cv ketel installateur {location}'
       - 'site:reddit.com cv ketel offerte {location}'
