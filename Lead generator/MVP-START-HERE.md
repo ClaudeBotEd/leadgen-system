@@ -198,19 +198,19 @@ Lees de README.md per module:
 
 Gratis MVP (Pad A) — start hier:
 
-- [[lead-radar]] — leads scrapen uit publieke bronnen
-- [[crm-light]] — CSV-CRM met terminal dashboard
-- [[outreach]] — template-personalisatie engine
-- [[automation]] — end-to-end pipeline runner
+- [[lead-radar/index]] — leads scrapen uit publieke bronnen
+- [[crm-light/index]] — CSV-CRM met terminal dashboard
+- [[outreach/index]] — template-personalisatie engine
+- [[automation/index]] — end-to-end pipeline runner
 
 Opschalen / betaalde stack (Pad B):
 
-- [[apollo]] — prospect data op schaal
-- [[crm]] — HubSpot Free / Close Solo
-- [[email-sequences]] — Instantly/Smartlead sequences
-- [[landingspagina]] — lead capture form
-- [[dns]] — cold-email infrastructuur (SPF/DKIM/DMARC)
-- [[n8n]] — workflow automation (self-host of cloud)
+- [[apollo/index]] — prospect data op schaal
+- [[crm/index]] — HubSpot Free / Close Solo
+- [[email-sequences/index]] — Instantly/Smartlead sequences
+- [[landingspagina/index]] — lead capture form
+- [[dns/index]] — cold-email infrastructuur (SPF/DKIM/DMARC)
+- [[n8n/index]] — workflow automation (self-host of cloud)
 
 Achtergrond:
 

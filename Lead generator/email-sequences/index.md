@@ -12,8 +12,8 @@
 
 ## 🔗 Related
 
-- [[apollo]] — Apollo-exports voeden Instantly met deze sequences
-- [[dns]] — warme domeinen + DKIM/SPF/DMARC vereist voor verzending
-- [[crm]] — replies + bounce-events landen in CRM
-- [[outreach]] — Python-personalisatie als gratis MVP-tegenhanger
-- [[n8n]] — kan automatische follow-ups orchestreren buiten Instantly
+- [[apollo/index]] — Apollo-exports voeden Instantly met deze sequences
+- [[dns/index]] — warme domeinen + DKIM/SPF/DMARC vereist voor verzending
+- [[crm/index]] — replies + bounce-events landen in CRM
+- [[outreach/index]] — Python-personalisatie als gratis MVP-tegenhanger
+- [[n8n/index]] — kan automatische follow-ups orchestreren buiten Instantly
