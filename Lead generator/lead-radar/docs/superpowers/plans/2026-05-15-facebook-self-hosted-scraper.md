@@ -1833,7 +1833,7 @@ import random
 from pathlib import Path
 
 from playwright.async_api import BrowserContext, Page, async_playwright
-from tf_playwright_stealth import stealth_async
+from playwright_stealth import stealth_async  # pip pkg is tf-playwright-stealth, module is playwright_stealth
 
 from .accounts import Account
 from .proxy import HTTPProxy, NoProxy
