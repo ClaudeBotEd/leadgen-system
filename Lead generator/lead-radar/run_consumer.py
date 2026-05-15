@@ -36,6 +36,7 @@ from consumer.sources import (  # noqa: E402
     reset_source_health, mark_source_yield, is_source_dead,
 )
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
+from consumer.sources.facebook.queue import drain as drain_fb_queue  # noqa: E402
 from consumer.sources.reddit_author import enrich_author  # noqa: E402
 from consumer.processor import (  # noqa: E402
     TextSignatureStore,
@@ -326,6 +327,7 @@ def run_one_niche(
     *,
     location_override: str | None = None,
     sources_override: list[str] | None = None,
+    fb_extra_posts: list[RawPost] | None = None,
 ) -> list[Lead]:
     """Run pipeline voor 1 niche en returnt de Lead-list.
 
@@ -337,6 +339,13 @@ def run_one_niche(
     sources gedraaid worden (i.p.v. args.sources).  Gebruikt door
     run_daily() voor location-aware/national split — nationale sources
     draaien 1× per niche, locatie-afhankelijke 1× per niche-loc.
+
+    fb_extra_posts: optioneel; pre-drained RawPost-lijst uit
+    ``data/fb_queue/`` (van de standalone FB scraper runner).  Gefilterd
+    op ``metadata.niche == niche`` zodat alleen de relevante posts mee
+    door dedup/hardblock/score gaan.  Drain gebeurt 1× per CLI-run in
+    main(), zodat bij --daily met N niches de queue niet N× wordt
+    leeggehaald (`drain` verplaatst files naar processed/).
     """
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
@@ -430,6 +439,17 @@ def run_one_niche(
                     "(check HTML structuur, API keys, of rate-limit)",
                     source_name, len(queries),
                 )
+
+        # Merge FB-scraper queue posts (pre-drained in main()) — filter op niche
+        # zodat warmtepomp-posts niet meelopen in een airco-niche-run.  Posts
+        # zonder `metadata.niche` worden niet gematched; de FB-runner zet die
+        # tag altijd via TargetSpec.niche.
+        if fb_extra_posts:
+            matched = [p for p in fb_extra_posts if p.metadata.get("niche") == niche]
+            if matched:
+                log.info("FB queue: %d posts voor niche=%s mergen naar raw_total",
+                         len(matched), niche)
+                raw_total.extend(matched)
 
         in_memory_seen: set[str] = set()
         skipped_promo = skipped_low = skipped_old = 0
@@ -608,6 +628,21 @@ def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) ->
             print(f"   {mark} [{lead.score:>3}] {city:<14} {lead.title[:50]}")
 
 
+def _drain_fb_queue_once(outdir: str | Path) -> list[RawPost]:
+    """Drain ``data/fb_queue/`` exactly once per CLI invocation.
+
+    Helper voor run_daily/run_single zodat de drain niet N× per niche-loc
+    combo gebeurt (drain verplaatst files naar processed/, dus alleen de
+    eerste call zou posts zien).  De returned lijst wordt vervolgens per
+    niche gefilterd via `RawPost.metadata["niche"]`.
+    """
+    fb_queue_dir = HERE / "data" / "fb_queue"
+    drained = list(drain_fb_queue(fb_queue_dir))
+    if drained:
+        log.info("FB queue drained: %d posts uit %s", len(drained), fb_queue_dir)
+    return drained
+
+
 def run_daily(args: argparse.Namespace) -> int:
     """Run alle niches, push naar Sheets.
 
@@ -709,6 +744,11 @@ def run_daily(args: argparse.Namespace) -> int:
     budget_seconds = max(0.0, getattr(args, "max_runtime_minutes", 0.0) or 0.0) * 60.0
     run_start = _monotonic()
 
+    # Drain FB scraper queue 1× per CLI-run.  Resultaat gefilterd per niche
+    # binnen run_one_niche.  Drain verplaatst files naar processed/, dus deze
+    # call moet vóór de niche-loop staan en NIET binnen run_one_niche.
+    fb_extra_posts = _drain_fb_queue_once(args.outdir)
+
     for niche_idx, niche in enumerate(niches_to_run):
         if budget_seconds > 0:
             elapsed = _monotonic() - run_start
@@ -721,6 +761,12 @@ def run_daily(args: argparse.Namespace) -> int:
                 )
                 break
         niche_leads: list[Lead] = []
+        # FB-queue posts mogen maar 1× door de niche-loop heen.  We binden
+        # ze aan de eerste run_one_niche-call die we voor deze niche doen
+        # (national als die er is, anders eerste loc-aware call).  Daarna
+        # nullen we de variabele zodat volgende sub-calls niet dezelfde
+        # FB-posts re-processen.
+        fb_for_niche: list[RawPost] | None = fb_extra_posts
         # Nationale sources: 1× per niche (locatie genegeerd door source-impl,
         # zie consumer/sources/__init__.py NATIONAL_SOURCES toelichting).
         if national_subset:
@@ -728,8 +774,10 @@ def run_daily(args: argparse.Namespace) -> int:
                 args, niche,
                 location_override=locations[0],
                 sources_override=national_subset,
+                fb_extra_posts=fb_for_niche,
             )
             niche_leads.extend(leads)
+            fb_for_niche = None  # already consumed
         # Locatie-afhankelijke sources: 1× per locatie.
         if loc_aware_subset:
             for loc in locations:
@@ -737,8 +785,10 @@ def run_daily(args: argparse.Namespace) -> int:
                     args, niche,
                     location_override=loc,
                     sources_override=loc_aware_subset,
+                    fb_extra_posts=fb_for_niche,
                 )
                 niche_leads.extend(leads)
+                fb_for_niche = None  # only first call gets FB posts
         sheets_result = None
         if niche_leads and not getattr(args, "dry_run", False):
             try:
@@ -802,7 +852,9 @@ def run_single(args: argparse.Namespace) -> int:
     if getattr(args, "dry_run", False):
         args.no_telegram = True
         log.info("DRY-RUN: Sheets sync + Telegram alerts uitgezet")
-    leads = run_one_niche(args, args.niche)
+    # Drain FB scraper queue 1× per CLI-run; gefilterd op niche in run_one_niche.
+    fb_extra_posts = _drain_fb_queue_once(args.outdir)
+    leads = run_one_niche(args, args.niche, fb_extra_posts=fb_extra_posts)
     sheets_result = None
     if args.sheets and leads and not getattr(args, "dry_run", False):
         try:
