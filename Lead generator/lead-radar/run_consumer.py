@@ -736,6 +736,19 @@ def run_daily(args: argparse.Namespace) -> int:
                 log.error("Sheets sync (%s) faalde: %s", niche, e)
         _print_summary(niche, niche_leads, sheets_result)
         grand_total.extend(niche_leads)
+        # Progress-heartbeat: per voltooide niche logt elapsed + running ETA
+        # zodat operator kan inschatten hoe lang de rest duurt.  Voorkomt
+        # "loopt het nog?"-twijfel bij urenlange daily-runs.
+        completed = niche_idx + 1
+        total_niches = len(niches_to_run)
+        elapsed = _monotonic() - run_start
+        avg_per_niche = elapsed / completed if completed else 0.0
+        remaining = total_niches - completed
+        eta = avg_per_niche * remaining
+        log.info(
+            "[progress] %d/%d done | niche=%s | elapsed=%ds | eta=%ds",
+            completed, total_niches, niche, int(elapsed), int(eta),
+        )
 
     hot = sum(1 for lead in grand_total if lead.score >= 80)
     warm = sum(1 for lead in grand_total if 70 <= lead.score < 80)
