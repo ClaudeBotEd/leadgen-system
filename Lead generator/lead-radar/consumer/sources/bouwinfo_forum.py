@@ -32,7 +32,10 @@ log = logging.getLogger("consumer.sources.bouwinfo_forum")
 
 BASE = "https://www.bouwinfo.be"
 SOURCE_NAME = "bouwinfo"  # zelfde namespace als search-source voor dedup
-THREAD_PATH_RE = re.compile(r"^/bouwforum/threads/(\d+)")
+# Match zowel relatieve (`/bouwforum/threads/123`) als absolute
+# (`https://www.bouwinfo.be/bouwforum/threads/123`) hrefs.  Bouwinfo
+# rendert sinds ~mei-2026 alleen absolute URLs in category-pages.
+THREAD_PATH_RE = re.compile(r"(?:https?://[^/]+)?/bouwforum/threads/(\d+)")
 
 
 def _parse_category_page(html: str) -> list[RawPost]:

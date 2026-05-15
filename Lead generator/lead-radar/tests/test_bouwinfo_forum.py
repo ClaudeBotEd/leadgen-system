@@ -87,3 +87,26 @@ def test_fetch_skips_unrecognized_query() -> None:
     crash, geen onbedoelde requests."""
     posts = fetch("warmtepomp installateur gezocht", limit=5)
     assert posts == []
+
+
+# ─── Regressie: absolute thread URLs (Bouwinfo mei-2026 layout) ─────────
+
+
+ABSOLUTE_URL_HTML = """
+<html><body>
+  <a href="https://www.bouwinfo.be/bouwforum/threads/416681">Plaatsing airco's in slaapkamer</a>
+  <a href="https://www.bouwinfo.be/bouwforum/threads/416649">Vervanging gasketel</a>
+  <a href="https://www.bouwinfo.be/bouwforum/threads/416641/latest">daikin altherma regeling temperatuur</a>
+</body></html>
+"""
+
+
+def test_parse_category_handles_absolute_thread_urls() -> None:
+    """Bouwinfo rendert sinds mei-2026 absolute URLs in category pages.
+    Parser moest oorspronkelijk relatieve hrefs (anchored regex .match);
+    nu accepteert hij ook https-prefix dankzij flexible regex."""
+    posts = _parse_category_page(ABSOLUTE_URL_HTML)
+    ids = [p.id for p in posts]
+    assert "bouwinfo:416681" in ids
+    assert "bouwinfo:416649" in ids
+    assert "bouwinfo:416641" in ids
