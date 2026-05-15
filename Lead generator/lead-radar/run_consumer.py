@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import sys
 import time
 from datetime import datetime, timezone, timedelta
@@ -214,6 +215,25 @@ def parse_locations(
     if fallback:
         return [fallback]
     return ["nederland"]
+
+
+def scale_max_queries_for_locations(base: int, n_locations: int) -> int:
+    """Reduceer max_queries-per-source bij multi-location daily-runs.
+
+    Bij --locations all (23 locs) × max_queries=12 krijg je 276 query-
+    permutaties per source per niche.  Location-suffix levert al variatie,
+    dus query-diversiteit kan omlaag zonder coverage te verliezen.
+
+    Formule: max(3, base // ceil(sqrt(n))).  Sqrt-gradient is minder
+    aggressief dan lineair: 5 locs → 1/3 reductie; 100 locs → 1/10.
+    Bodem 3 voorkomt dat we volledig terugvallen op de eerste query.
+    Gecapt op `base` zodat lage user-input nooit OMHOOG scaled.
+    """
+    if n_locations <= 1:
+        return base
+    divisor = math.ceil(math.sqrt(n_locations))
+    scaled = max(3, base // divisor)
+    return min(base, scaled)
 
 
 def extra_kwargs_for_source(source_name: str, defaults: dict) -> dict:
@@ -614,6 +634,14 @@ def run_daily(args: argparse.Namespace) -> int:
         log.info("Daily multi-location run: %d locaties (%s)",
                  len(locations),
                  ", ".join(locations) if len(locations) <= 6 else f"{', '.join(locations[:5])}, ...")
+        # Auto-scale query-variatie omlaag: locatie levert zelf al variatie.
+        scaled_max = scale_max_queries_for_locations(args.max_queries, len(locations))
+        if scaled_max != args.max_queries:
+            log.info(
+                "Auto-scale max_queries: %d → %d (sqrt-reductie voor %d locaties)",
+                args.max_queries, scaled_max, len(locations),
+            )
+            args.max_queries = scaled_max
 
     # Location-aware dispatch split: nationale forums hebben geen geo-filter,
     # dus per niche 1× draaien.  Location-aware sources (reddit search, google,
