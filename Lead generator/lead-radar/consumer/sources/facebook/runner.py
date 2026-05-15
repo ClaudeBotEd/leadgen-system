@@ -1,4 +1,4 @@
-"""FB scraper CLI -- login | scrape | health.
+"""FB scraper CLI -- login | scrape | health | onboard.
 
 Operator entry point.  Run with ``python -m consumer.sources.facebook.runner``.
 
@@ -10,10 +10,12 @@ Subcommands:
 
 * ``scrape --niche {all|warmtepomp|airco|...}`` -- runs configured surfaces
   for the niche and writes a JSONL queue file under ``data/fb_queue/``.
-  (Implemented in T12.)
 
 * ``health`` -- prints per-account status (state / last run / quota).
-  (Implemented in T18.)
+
+* ``onboard --account-id <id>`` -- interactieve wizard: walks operator
+  through isolation-warning, environment check, targets-YAML validation,
+  and prints a custom crontab snippet.  Non-blocking on partial setups.
 """
 from __future__ import annotations
 
@@ -27,6 +29,7 @@ from pathlib import Path
 from .core.accounts import Account, AccountPool, AccountState, NoActiveAccount
 from .core.detector import ChallengeState, detect_state
 from .core.session import PlaywrightSession, new_stealth_page
+from .onboard import check_environment, generate_crontab, validate_targets_yaml
 
 log = logging.getLogger("consumer.sources.facebook.runner")
 
@@ -218,6 +221,84 @@ async def _cmd_scrape(niche_arg: str, account_id: str) -> int:
     return 0
 
 
+_ISOLATION_WARNING = """\
+⚠ OPERATOR ISOLATION CHECK ⚠
+
+FB linkt burner-accounts aan jouw persoonlijke account via device-graph
+(IP + browser-fingerprint + gedrag).  Dat geeft twee risico's:
+
+  1. Jouw persoonlijke FB krijgt 'verdachte activiteit' prompts.
+  2. De burner krijgt sneller een ban.
+
+Voldoe je aan minstens ÉÉN van:
+  - aparte machine (laptop / Mac Mini / RPi / VPS, ~€5/m)
+  - browserprofiel dat NOOIT met je echte FB ingelogd is
+  - VPN met split-tunneling, alleen voor dit script
+
+Aangeraden voor productie: alle drie gecombineerd.
+"""
+
+
+def _cmd_onboard(account_id: str, *, non_interactive: bool = False,
+                 hours: tuple[int, ...] = (8, 12, 17, 21)) -> int:
+    """Interactive wizard die de operator door de FB-onboarding loodst.
+
+    Stap 1: isolation-waarschuwing + bevestiging
+    Stap 2: environment check (playwright, targets, state-dir)
+    Stap 3: targets-YAML validatie
+    Stap 4: crontab snippet print
+    Stap 5: warmup + monitor reminders
+    Stap 6: hint voor login + scrape commando's
+
+    `non_interactive=True` slaat alle prompts over (gebruikt bv. door tests
+    en CI smoke-runs).  Returns 0 bij succes, 1 bij user-abort,
+    2 bij blokkerende env-issues.
+    """
+    print(_ISOLATION_WARNING)
+    if not non_interactive:
+        ans = input("Voldoe je aan de isolation-vereisten? (y/N): ").strip().lower()
+        if ans not in ("y", "yes", "j", "ja"):
+            print("Onboarding aborted -- los isolation eerst op, dan rerun.")
+            return 1
+
+    print()
+    print("=== Stap 2/5: Environment check ===")
+    issues = check_environment(REPO_ROOT, state_dir=STATE_DIR, targets_path=TARGETS_PATH)
+    if issues:
+        print("Issues gevonden:")
+        for it in issues:
+            print(f"  - {it}")
+        print("Je kunt verder gaan, maar fix deze vóór je daadwerkelijk scraped.")
+    else:
+        print("✓ Alles aanwezig.")
+
+    print()
+    print("=== Stap 3/5: Targets YAML validatie ===")
+    ok, t_issues = validate_targets_yaml(TARGETS_PATH)
+    if ok:
+        print(f"✓ {TARGETS_PATH} valideert en heeft tenminste 1 target per gebruikte niche.")
+    else:
+        print("Issues:")
+        for it in t_issues:
+            print(f"  - {it}")
+        print(f"Edit: {TARGETS_PATH}")
+
+    print()
+    print("=== Stap 4/5: Crontab snippet (kopieer naar `crontab -e`) ===")
+    print()
+    print(generate_crontab(REPO_ROOT, sys.executable, account_id=account_id, hours=hours))
+
+    print("=== Stap 5/5: Reminders ===")
+    print(f"  • Login (handmatig, eenmalig): python3 -m consumer.sources.facebook.runner login --account-id {account_id}")
+    print(f"  • Warmup: browse 2-4 weken handmatig op het burner-profiel vóór automation aan gaat")
+    print(f"  • Test scrape: python3 -m consumer.sources.facebook.runner scrape --niche warmtepomp --account-id {account_id}")
+    print(f"  • Monitor: python3 -m consumer.sources.facebook.runner health")
+    print(f"  • macOS: cron wekt geen slapende laptop -- gebruik launchd of caffeinate")
+    print()
+    print("✓ Onboarding wizard complete.")
+    return 0
+
+
 def _cmd_health() -> int:
     import json as _json
     if not STATE_DIR.exists():
@@ -252,6 +333,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_scrape.add_argument("--account-id", default="main")
 
     sub.add_parser("health", help="Show per-account health")
+
+    p_onboard = sub.add_parser("onboard",
+                               help="Interactive operator-onboarding wizard")
+    p_onboard.add_argument("--account-id", default="main")
+    p_onboard.add_argument("--non-interactive", action="store_true",
+                           help="Skip prompts (CI/smoke use)")
     return p
 
 
@@ -264,6 +351,8 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_scrape(args.niche, args.account_id))
     if args.cmd == "health":
         return _cmd_health()
+    if args.cmd == "onboard":
+        return _cmd_onboard(args.account_id, non_interactive=args.non_interactive)
     return 1
 
 
