@@ -124,6 +124,36 @@ VENDOR_TITLE_PATTERNS: tuple[re.Pattern, ...] = (
     re.compile(r"\btotaalbouw\b", re.IGNORECASE),
     # Vendor brand-pattern: "X Bouwgroep / Bouwbedrijf / Klusbedrijf"
     re.compile(r"\b(bouwgroep|bouwbedrijf|klusbedrijf)\b", re.IGNORECASE),
+    # === Vendor leaks waargenomen 2026-05-15 daily-run ===
+    # Vendor rhetorical question: "Is u(w) [device] kapot/stuk/defect/lekt/verstopt?"
+    # Een consumer schrijft "mijn cv ketel is kapot", nooit "is u ketel kapot" (u-vorm naar klant).
+    re.compile(
+        r"\bis\s+u(w)?\s+[\w\s\-]{1,30}\b(kapot|stuk|defect|lekt|lekkage|verstopt)\b",
+        re.IGNORECASE,
+    ),
+    # Emoji + vendor role marketing: 🔥 ⭐ ✅ 💯 🚨 ⚡ vlak bij installateur/monteur/etc.
+    # Consumer gebruikt soms 🙏 of 😅, niet de marketing-emoji's bij vendor-rollen.
+    re.compile(
+        r"[\U0001F525⭐✅\U0001F4AF\U0001F6A8⚡]\s*\w*\s*"
+        r"(installateur|monteur|vakman|aannemer|elektricien|loodgieter|"
+        r"stukadoor|tegelzetter|timmerman|hovenier|metselaar|dakdekker|schilder|cv\-?monteur)\b",
+        re.IGNORECASE,
+    ),
+    # Emoji AFTER role (Installateur🔥) — zelfde patroon andere kant op
+    re.compile(
+        r"\b(installateur|monteur|vakman|aannemer|elektricien|loodgieter|"
+        r"stukadoor|tegelzetter|timmerman|hovenier|metselaar|dakdekker|schilder|cv\-?monteur)"
+        r"[\U0001F525⭐✅\U0001F4AF\U0001F6A8⚡]",
+        re.IGNORECASE,
+    ),
+    # Vendor CTA: "[role] nodig? bericht/reactie/mail/whatsapp/reageer/contact"
+    # Consumer schrijft "installateur nodig in Amsterdam", NOOIT met "bericht/reactie" CTA-word.
+    re.compile(
+        r"\b(loodgieter|monteur|installateur|aannemer|vakman|elektricien|"
+        r"stukadoor|hovenier|cv\-?monteur)\s+nodig\s*[,?!]?\s*"
+        r"(bericht|reactie|sturen|mail|whatsapp|reageer|contact|bel)\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -276,7 +306,12 @@ def check_hardblock(post: RawPost) -> BlockResult:
     if mp_hit:
         return BlockResult(True, mp_reason)
 
-    offering_hit, offering_reason = _check_vendor_offering_body(post.text or "")
+    # _check_vendor_offering_body kijkt naar title+text omdat vendor-jargon
+    # ("monteur beschikbaar in Rotterdam", "wij verzorgen") ook in TITLE
+    # voorkomt bij marktplaats-listings, niet alleen in body.
+    offering_hit, offering_reason = _check_vendor_offering_body(
+        f"{post.title or ''} {post.text or ''}"
+    )
     if offering_hit:
         return BlockResult(True, offering_reason)
 

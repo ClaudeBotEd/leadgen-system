@@ -266,3 +266,70 @@ def test_consumer_body_not_blocked_by_offering_filter(body_text: str) -> None:
     assert not result.blocked, (
         f"Consumer body onterecht geblocked: {body_text!r} (reason={result.reason})"
     )
+
+
+# === Vendor leaks waargenomen 2026-05-15 daily-run ===
+# Vier vendors scoorden 50-100 (HOT) in productieoutput omdat ze patterns
+# gebruikten die niet door bestaande hardblock-rules werden gevangen.
+@pytest.mark.parametrize("title", [
+    # Vendor rhetorical question: "Is u [device] kapot/stuk/defect?"
+    "Cv instalatie monteur spoed Is u cv ketel kapot",
+    "Is uw ketel kapot? Bel ons direct",
+    "Loodgieter nodig? Is uw afvoer verstopt?",
+    # Emoji + vendor role marketing (🔥 / ⭐ / ✅)
+    "Installateur🔥 installateur nodig in haaksbergen",
+    "🔥 Vakman renovatie ✅ scherpe prijs",
+    "⭐ Erkend cv-monteur beschikbaar ⭐",
+    # Vendor CTA: "[role] nodig, bericht/reactie/mail"
+    "Lekkage? Loodgieter nodig, bericht!",
+    "Cv ketel kapot? Monteur nodig, bericht ons",
+    "Aannemer nodig? Reactie via WhatsApp",
+])
+def test_vendor_leak_patterns_blocked(title: str) -> None:
+    """Vendor titels die op 2026-05-15 door hardblock glipten."""
+    post = RawPost(
+        id="x", source="marktplaats",
+        url="https://www.marktplaats.nl/v/test",
+        title=title, text="",
+    )
+    result = check_hardblock(post)
+    assert result.blocked, f"Vendor-leak titel niet geblocked: {title!r}"
+
+
+@pytest.mark.parametrize("title", [
+    # Vendor self-offering in TITLE (body patterns moeten ook title checken)
+    "CV monteur – installatie, radiator en lekkage Cv monteur beschikbaar in rotterdam",
+    "Loodgieter beschikbaar in regio Amsterdam voor spoedklussen",
+    "Wij verzorgen complete badkamerrenovaties voor scherpe prijs",
+])
+def test_vendor_offering_in_title_blocked(title: str) -> None:
+    """Vendor-offering patterns in TITEL (niet alleen body) moeten geblocked."""
+    post = RawPost(
+        id="x", source="marktplaats",
+        url="https://www.marktplaats.nl/v/test",
+        title=title, text="",
+    )
+    result = check_hardblock(post)
+    assert result.blocked, f"Vendor-offering in titel niet geblocked: {title!r}"
+
+
+@pytest.mark.parametrize("title", [
+    # Consumer "is X kapot?" naar zichzelf-publiek toe (forum context)
+    "Mijn cv ketel is kapot, wie kan helpen?",
+    "CV ketel kapot — wat moet ik doen?",
+    # Consumer noemt installateur "nodig" zonder bericht-CTA
+    "Installateur nodig in Amsterdam voor warmtepomp",
+    # Emoji in consumer post — moet niet automatisch blokkeren
+    "🙏 Hulp gezocht: warmtepomp advies",
+])
+def test_vendor_leak_patterns_no_false_positives(title: str) -> None:
+    """De nieuwe vendor-leak patterns mogen consumer-vragen niet raken."""
+    post = RawPost(
+        id="x", source="reddit",
+        url="https://reddit.com/r/Klussen/comments/abc/",
+        title=title, text="",
+    )
+    result = check_hardblock(post)
+    assert not result.blocked, (
+        f"Consumer-titel onterecht geblocked: {title!r} (reason={result.reason})"
+    )
