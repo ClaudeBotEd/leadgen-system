@@ -162,6 +162,77 @@ def _check_marktplaats_vendor(post: "RawPost") -> tuple[bool, str | None]:
     return False, None
 
 
+# === Vendor-offering body patterns ===
+# Dispositieve vendor-signalen in body-text (source-agnostisch).  Een
+# consumer die hulp zoekt schrijft NOOIT "wij zijn gespecialiseerd",
+# "staat voor u klaar", "bij mij aan het juiste adres", "beschikbaar in
+# regio".  Dit zijn vendor-jargon-catchphrases die elke installateur/
+# aannemer/loodgieter in z'n advertentie zet — onafhankelijk van platform.
+#
+# Body-only (niet title): titel-patronen leven in VENDOR_TITLE_PATTERNS.
+# Combinatie title+body geeft de breedste vendor-vangnet.
+VENDOR_OFFERING_BODY_PATTERNS: tuple[re.Pattern, ...] = (
+    # Vendor catchphrase: "aan het juiste adres"
+    re.compile(
+        r"\bbij\s+(mij|ons)\s+(bent\s+u\s+)?aan\s+het\s+juiste\s+adres\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bbent\s+u\s+aan\s+het\s+juiste\s+adres\b", re.IGNORECASE),
+    # Vendor availability: "staat (voor u) klaar"
+    re.compile(r"\bstaat\s+(voor\s+u\s+)?klaar\b", re.IGNORECASE),
+    re.compile(r"\bstaan\s+(voor\s+u\s+)?klaar\b", re.IGNORECASE),
+    # B2C pitch: "voor al uw [X]" (ook in body, niet alleen titel)
+    re.compile(r"\bvoor\s+al\s+uw\b", re.IGNORECASE),
+    # Vendor scope: "alle voorkomende (werkzaamheden|klussen)"
+    re.compile(
+        r"\balle\s+voorkomende\s+(werkzaamheden|klussen)\b", re.IGNORECASE,
+    ),
+    # Vendor service area: "(beschikbaar|werkzaam) in (de )?(regio|omgeving|stad)"
+    re.compile(
+        r"\b(beschikbaar|werkzaam)\s+in\s+(de\s+)?(regio|omgeving|stad)\b",
+        re.IGNORECASE,
+    ),
+    # Vendor self-description: "[role] beschikbaar" — nooit consumer-taal.
+    # Een consumer schrijft "ik zoek een monteur", niet "monteur beschikbaar".
+    re.compile(
+        r"\b(cv\-?monteur|monteur|installateur|aannemer|loodgieter|vakman|"
+        r"elektricien|stukadoor|tegelzetter|timmerman|hovenier|metselaar|"
+        r"dakdekker|schilder|technicus)\s+beschikbaar\b",
+        re.IGNORECASE,
+    ),
+    # Vendor possessive: "mijn advertentie"
+    re.compile(r"\bmijn\s+advertentie\b", re.IGNORECASE),
+    # Vendor possessive: "onze (klanten|prijzen|tarieven|diensten|werkwijze)"
+    re.compile(
+        r"\bonze\s+(klanten|prijzen|tarieven|diensten|werkwijze|specialiteit|"
+        r"vakmensen)\b",
+        re.IGNORECASE,
+    ),
+    # Corporate self-id: "wij zijn (gespecialiseerd|uw|een [bedrijfsvorm])"
+    re.compile(
+        r"\bwij\s+zijn\s+(gespecialiseerd|uw|de\s+specialisten?|een\s+"
+        r"(installatiebedrijf|loodgietersbedrijf|aannemersbedrijf|"
+        r"klusbedrijf|bouwbedrijf|installateur))\b",
+        re.IGNORECASE,
+    ),
+    # First-person plural offering: "wij (bieden|verzorgen|verrichten|doen|voeren ... uit)"
+    re.compile(
+        r"\bwij\s+(bieden|verzorgen|verrichten|doen|leveren)\b", re.IGNORECASE,
+    ),
+    re.compile(r"\bwij\s+voeren\b", re.IGNORECASE),
+)
+
+
+def _check_vendor_offering_body(text: str) -> tuple[bool, str | None]:
+    """Detecteer vendor-jargon in body-text — dispositief signaal."""
+    if not text:
+        return False, None
+    for pat in VENDOR_OFFERING_BODY_PATTERNS:
+        if pat.search(text):
+            return True, f"vendor_offering:{pat.pattern[:50]}"
+    return False, None
+
+
 @dataclass(frozen=True)
 class BlockResult:
     blocked: bool
@@ -204,6 +275,10 @@ def check_hardblock(post: RawPost) -> BlockResult:
     if mp_hit:
         return BlockResult(True, mp_reason)
 
+    offering_hit, offering_reason = _check_vendor_offering_body(post.text or "")
+    if offering_hit:
+        return BlockResult(True, offering_reason)
+
     return BlockResult(False, None)
 
 
@@ -219,6 +294,7 @@ __all__ = [
     "MARKTPLAATS_SOURCES",
     "MARKTPLAATS_VENDOR_PATH_RE",
     "MARKTPLAATS_PROMO_TAG_RE",
+    "VENDOR_OFFERING_BODY_PATTERNS",
     "BlockResult",
     "check_hardblock",
     "is_blocked",

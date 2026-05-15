@@ -194,3 +194,70 @@ def test_marktplaats_signals_not_blocked_other_sources(url: str, source: str, te
         f"Onterecht geblocked op marktplaats-signaal: source={source} url={url} "
         f"text={text!r} (reason={result.reason})"
     )
+
+
+# === Vendor-offering body patterns (waargenomen 2026-05-15 cv-niche) ===
+# 4 vendor-leads in cv-niche scoorden 60-100 ondanks dat ze niet in
+# /diensten-en-vakmensen/ pad staan en geen promo-tag in body hebben.
+# Wat hen wel verraadt: classiek vendor-jargon in body-text.
+# Body-only check (source-agnostisch) — vendor language is universeel.
+@pytest.mark.parametrize("body_text", [
+    # Row 5 cv CSV: "Cv monteur beschikbaar in rotterdam en omgeving"
+    "Cv monteur beschikbaar in rotterdam en omgeving. Werkzaamheden: cv installatie.",
+    "Vakman werkzaam in regio Den Haag, bel voor afspraak.",
+    # Row 14 cv CSV: "Beste lezer, leuk dat u op mijn advertentie terecht bent gekomen"
+    "Beste lezer, leuk dat u op mijn advertentie terecht bent gekomen!",
+    # Row 16 cv CSV: "bent u bij mij aan het juiste adres"
+    "Met ervaring in het plaatsen, bent u bij mij aan het juiste adres.",
+    "Bij ons bent u aan het juiste adres voor al uw klussen.",
+    # Row 21 cv CSV: "S.j.s technicus staat voor u klaar"
+    "S.j.s technicus staat voor u klaar voor onderhoud aan uw cv.",
+    "Wij staan voor u klaar dag en nacht.",
+    # Vendor corporate self-id
+    "Wij zijn gespecialiseerd in cv-ketels en warmtepompen.",
+    "Wij zijn uw installatiebedrijf in regio Amsterdam.",
+    # Vendor catchphrases
+    "Wij verzorgen al uw installatiewerk van A tot Z.",
+    "Wij bieden complete renovaties tegen scherpe prijs.",
+    "Onze diensten omvatten cv-installatie en onderhoud.",
+    "Onze klanten waarderen onze betrouwbaarheid.",
+    # Vendor scope
+    "Voor alle voorkomende werkzaamheden in en om uw huis.",
+    "Wij doen alle voorkomende klussen netjes en betaalbaar.",
+])
+def test_vendor_offering_body_blocked(body_text: str) -> None:
+    """Vendor-offering body-language is altijd vendor — geen consumer."""
+    post = RawPost(
+        id="x", source="marktplaats",
+        url="https://www.marktplaats.nl/v/doe-het-zelf-en-verbouw/verwarming-en-radiatoren/x",
+        title="CV onderhoud advertentie", text=body_text,
+    )
+    result = check_hardblock(post)
+    assert result.blocked, f"Vendor-offering body niet geblocked: {body_text!r}"
+    assert result.reason and result.reason.startswith("vendor_offering:"), result.reason
+
+
+@pytest.mark.parametrize("body_text", [
+    # Row 9 renovatie CSV: legit consumer
+    "Gezocht betrouwbare vakman huis schilder voor de maand juli of augustus. "
+    "Kleine klus: paar wanden en wat lichte renovatie binnen.",
+    # Row 11 renovatie CSV: legit consumer
+    "Ik ben momenteel op zoek naar een aannemer voor de verbouwing van mijn badkamer. "
+    "Omgeving gouda/alphen ad rijn.",
+    # Consumer met installateur-vraag
+    "CV ketel kapot, wie kan helpen? Heb hulp nodig met installateur in Amsterdam.",
+    "Wij willen onze warmtepomp laten installeren. Heeft iemand een tip voor een goede vakman?",
+    # Consumer noemt 'ervaring' zonder vendor te zijn (research-penalty is apart)
+    "Iemand ervaring met Daikin warmtepomp? Wij overwegen er een te kopen.",
+])
+def test_consumer_body_not_blocked_by_offering_filter(body_text: str) -> None:
+    """Consumer bodies mogen niet door vendor-offering filter geraakt worden."""
+    post = RawPost(
+        id="x", source="reddit",
+        url="https://reddit.com/r/Klussen/comments/abc/",
+        title="Hulp gezocht", text=body_text,
+    )
+    result = check_hardblock(post)
+    assert not result.blocked, (
+        f"Consumer body onterecht geblocked: {body_text!r} (reason={result.reason})"
+    )
