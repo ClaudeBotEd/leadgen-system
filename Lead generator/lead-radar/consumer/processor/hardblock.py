@@ -71,6 +71,39 @@ HARD_PROMO_PATTERNS: tuple[re.Pattern, ...] = (
     ),
 )
 
+# Vendor-title patterns — service-aanbieders die zichzelf adverteren als
+# "24/7 spoed monteur" of met telefoonnummer in titel.  Deze patronen
+# komen niet voor in echte consumer-vragen ("CV ketel kapot, wie kan helpen?")
+# maar wel in marktplaats/2dehands listings van installateurs.
+#
+# Belangrijk: alleen op de TITEL toepassen, niet op text — consumers
+# kunnen "24/7 nodig" in body schrijven zonder vendor te zijn.
+VENDOR_TITLE_PATTERNS: tuple[re.Pattern, ...] = (
+    # 24/7 / 24-7 / 24x7 / 24/7 bereikbaar — vendor uptime claim
+    re.compile(r"\b24\s*[/x\-]\s*7\b", re.IGNORECASE),
+    # "snel ter plaats(e)" — vendor service-belofte
+    re.compile(r"\bsnel ter plaats(e)?\b", re.IGNORECASE),
+    # "spoedmonteur" / "spoed monteur" — meestal aanbod, niet vraag
+    re.compile(r"\bspoed[\s-]?monteur\b", re.IGNORECASE),
+    # "Bel ons/direct/nu" / "Whatsapp ons" — direct contact-CTA
+    re.compile(r"\b(bel|whatsapp|mail)\s+(ons|direct|nu|naar)\b", re.IGNORECASE),
+    # "Bel direct …" of "Direct bellen"
+    re.compile(r"\b(direct bellen|bel direct|nu bellen)\b", re.IGNORECASE),
+    # Telefoonnummer in titel: NL mobiel (06-XXXXXXXX) of vast (0XX-XXXXXXX)
+    re.compile(r"\b0[1-9]\d?[\s\-]?\d{6,8}\b"),
+)
+
+
+def _check_vendor_title(title: str) -> tuple[bool, str | None]:
+    """True als titel een vendor-promo pattern bevat.  Alleen titel-tekst —
+    body kan vrijuit dezelfde woorden gebruiken zonder vendor te zijn."""
+    if not title:
+        return False, None
+    for pat in VENDOR_TITLE_PATTERNS:
+        if pat.search(title):
+            return True, f"vendor_title:{pat.pattern[:40]}"
+    return False, None
+
 
 @dataclass(frozen=True)
 class BlockResult:
@@ -106,6 +139,10 @@ def check_hardblock(post: RawPost) -> BlockResult:
         if pat.search(title_text):
             return BlockResult(True, f"promo_pattern:{pat.pattern[:40]}")
 
+    vendor_hit, vendor_reason = _check_vendor_title(post.title or "")
+    if vendor_hit:
+        return BlockResult(True, vendor_reason)
+
     return BlockResult(False, None)
 
 
@@ -117,6 +154,7 @@ __all__ = [
     "AGGREGATOR_HOSTS",
     "BLOCKED_AUTHOR_PATTERNS",
     "HARD_PROMO_PATTERNS",
+    "VENDOR_TITLE_PATTERNS",
     "BlockResult",
     "check_hardblock",
     "is_blocked",
