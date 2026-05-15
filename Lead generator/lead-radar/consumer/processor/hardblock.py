@@ -138,6 +138,30 @@ def _check_vendor_title(title: str) -> tuple[bool, str | None]:
     return False, None
 
 
+# === Marktplaats/2dehands vendor signals ===
+# Listings in /diensten-en-vakmensen/ pad zijn betaalde dienst-listings door
+# installateurs/aannemers — geen consumer-leads.  Body-tags
+# "Topadvertentie/Dagtopper/Topzoekertje" zijn paid-promotion markers
+# afkomstig van de listing-UI (door scraper meegenomen in text).
+MARKTPLAATS_SOURCES: frozenset[str] = frozenset({"marktplaats", "2dehands"})
+MARKTPLAATS_VENDOR_PATH_RE = re.compile(r"/diensten-en-vakmensen/", re.IGNORECASE)
+MARKTPLAATS_PROMO_TAG_RE = re.compile(
+    r"\b(Topadvertentie|Dagtopper|Topzoekertje)\b",
+)
+
+
+def _check_marktplaats_vendor(post: "RawPost") -> tuple[bool, str | None]:
+    """Marktplaats/2dehands-specifieke vendor-signalen op URL-pad en body."""
+    if post.source not in MARKTPLAATS_SOURCES:
+        return False, None
+    if post.url and MARKTPLAATS_VENDOR_PATH_RE.search(post.url):
+        return True, "marktplaats_vendor_path:/diensten-en-vakmensen/"
+    if post.text and MARKTPLAATS_PROMO_TAG_RE.search(post.text):
+        m = MARKTPLAATS_PROMO_TAG_RE.search(post.text)
+        return True, f"marktplaats_promo_tag:{m.group(1) if m else ''}"
+    return False, None
+
+
 @dataclass(frozen=True)
 class BlockResult:
     blocked: bool
@@ -176,6 +200,10 @@ def check_hardblock(post: RawPost) -> BlockResult:
     if vendor_hit:
         return BlockResult(True, vendor_reason)
 
+    mp_hit, mp_reason = _check_marktplaats_vendor(post)
+    if mp_hit:
+        return BlockResult(True, mp_reason)
+
     return BlockResult(False, None)
 
 
@@ -188,6 +216,9 @@ __all__ = [
     "BLOCKED_AUTHOR_PATTERNS",
     "HARD_PROMO_PATTERNS",
     "VENDOR_TITLE_PATTERNS",
+    "MARKTPLAATS_SOURCES",
+    "MARKTPLAATS_VENDOR_PATH_RE",
+    "MARKTPLAATS_PROMO_TAG_RE",
     "BlockResult",
     "check_hardblock",
     "is_blocked",
