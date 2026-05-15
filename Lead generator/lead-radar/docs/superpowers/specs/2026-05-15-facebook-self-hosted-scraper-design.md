@@ -1,9 +1,11 @@
 # Facebook Self-Hosted Scraper — Design Spec
 
-**Status:** Draft — awaiting user review
+**Status:** v2 — post-review (Python + scraping reviewers)
 **Author:** Claude Opus 4.7 + operator
 **Date:** 2026-05-15
 **Scope:** Replace the manual-paste-only `consumer/sources/facebook.py` with a self-hosted, multi-surface FB scraper that feeds the existing lead-radar pipeline.
+
+**v2 changelog:** Added `listing_type` to MarketplaceTarget (§6.10); separated `BackoffRaised` from `ChallengeRaised` (§9); added CDP-fingerprint patches + warmup enforcement (§7-§8); added crash-safety requirements (§6.2, §12); revised success criteria to reflect realistic week-2 expectations (§15); added operator-isolation requirements (§16).
 
 ---
 
@@ -134,20 +136,26 @@ class Account:
     id: str
     state: Literal["fresh", "warmed", "active", "challenged", "dead"]
     last_used_at: datetime | None
-    last_run_stats: dict | None  # {posts_captured, errors, surfaces_visited}
+    warmed_at: datetime | None       # when login transitioned to WARMED — used by min_warmup_hours
+    last_run_stats: dict | None      # {posts_captured, errors, surfaces_visited, backoff_count}
     quota_remaining: dict[str, int]  # {"group_views": 100, "mp_queries": 50, "page_views": 30}
 
 class AccountPool:
     def __init__(self, state_dir: Path) -> None: ...
-    def acquire(self) -> Account: ...    # picks an active account, rotates round-robin in Phase 2
-    def release(self, account: Account, stats: dict) -> None: ...
+    def acquire(self, *, min_warmup_hours: int = 0) -> Account: ...  # gates on warmup age
+    def release(self, account: Account, stats: dict) -> None: ...    # also promotes WARMED -> ACTIVE on success
     def mark_challenged(self, account_id: str, reason: str) -> None: ...
+    def mark_backoff(self, account_id: str, surface: str) -> None: ...  # non-fatal soft-block
     def reset_quota(self) -> None: ...   # called by cron at midnight
 ```
 
 - Phase 1: AccountPool contains exactly 1 account ("main"); `acquire()` returns it or raises if challenged
 - Phase 2: pool of 3-5, round-robin selection skipping non-active states
 - Persists state to `data/fb_state/<account_id>/status.json` (state + timestamps + last_run_stats + quota_remaining)
+- **State persistence MUST be crash-safe** — atomic writes via `core/state_io.py` (write-tmp + os.replace); pool acquires a flock at `data/fb_state/.lock` to prevent overlapping runs corrupting status
+- **SingletonLock cleanup** — on session start, sweep stale Chromium `SingletonLock`/`SingletonCookie`/`SingletonSocket` files in `profile/` (left behind after non-clean shutdowns)
+- **Warmup gating** — `acquire(min_warmup_hours=72)` refuses to return an account whose `warmed_at` is less than 72h ago. Phase 1 default is `0` (warmup-disabled), but the runner should default to `72` for production cron entries. Document clearly in README that warmup matters.
+- **State machine** — both `WARMED` and `ACTIVE` are eligible for `acquire()`. `release()` promotes `WARMED → ACTIVE` after the first run that captures ≥1 post without `ChallengeRaised`. `challenged → warmed` happens via operator running `login` again.
 
 ### 6.3 `core/throttle.py` — HumanPace
 
@@ -190,7 +198,8 @@ class ChallengeState(Enum):
     OK = "ok"
     CHALLENGED = "challenged"   # /checkpoint/, "verify identity" dialogs
     LOGIN_WALL = "login_wall"   # redirect to /login
-    RATE_LIMITED = "rate_limited"  # "Slow down" banners
+    RATE_LIMITED = "rate_limited"  # "Slow down" banners — RECOVERABLE
+    EMPTY_FEED = "empty_feed"   # surface returned 0 articles but no challenge — possible shadow-block
 
 async def detect_state(page: Page) -> ChallengeState: ...
 ```
@@ -199,7 +208,10 @@ Detection rules:
 - URL contains `/checkpoint/` or `/security/` → CHALLENGED
 - DOM selector `[role=dialog]:has-text("verify identity"), :has-text("we beschermen je account")` → CHALLENGED
 - URL is `/login.php` or `/login/` after intended navigation → LOGIN_WALL
-- Visible text "you're temporarily blocked" / "vertraag het tempo" → RATE_LIMITED
+- Visible text "you're temporarily blocked" / "vertraag het tempo" / "slow down" → RATE_LIMITED
+- Feed container exists but contains 0 articles after scroll burst → EMPTY_FEED (caller decides whether to escalate)
+
+**Recovery distinction** — RATE_LIMITED and EMPTY_FEED are *recoverable*: surface raises `BackoffRaised`, runner skips remaining work in that surface but does NOT flip account state (just increments `last_run_stats.backoff_count`). After 3 consecutive runs with backoff on the same surface, escalate to CHALLENGED. CHALLENGED and LOGIN_WALL are *fatal for the run*: surface raises `ChallengeRaised`, runner flips account state immediately.
 
 ### 6.6 `surfaces/base.py` — Surface ABC
 
@@ -282,10 +294,15 @@ class PageTarget(BaseModel):
 
 class MarketplaceTarget(BaseModel):
     query: str
-    from_city: str = "Nederland"
-    location_slug: str = "nederland"
-    radius_km: int = 0
+    from_city: str = "Tilburg"           # default to a real NL city — "nederland" returns landing page, 0 results
+    location_slug: str = "tilburg"
+    radius_km: int = 50
     max_results: int = 30
+    listing_type: Literal["wanted", "sale", "all"] = "wanted"  # WANTED is what we want for lead-radar intent
+    # NOTE: FB Marketplace URL params for filtering listing_type change frequently.  Operator MUST
+    # verify the generated URL returns "Wanted" / "Gezocht" posts (people seeking) and not "For Sale"
+    # listings (vendors offering) before relying on output.  Sale-mode is the FB default and will
+    # surface vendor-equipment posts — exactly the opposite of consumer-intent we want.
 
 class NicheTargets(BaseModel):
     groups: list[GroupTarget] = []
@@ -364,20 +381,23 @@ python -m consumer.sources.facebook.runner health
 
 | Layer | Implementation |
 |---|---|
-| Browser | Playwright Chromium, **headed mode**, `playwright-stealth` plugin applied |
+| Browser | Playwright Chromium, **headed mode**, `tf-playwright-stealth` (maintained fork) applied |
+| CDP-leak patches | **Custom JS injected into every page** — nukes `window.__playwright__`, overrides `navigator.permissions.query` for `notifications` (Playwright returns `denied`, real Chrome returns `default`), neutralizes `chrome.runtime.connect` probe. Critical because stealth plugin alone does NOT cover CDP-presence vectors FB has used since late 2023. |
 | Fingerprint | Stealth plugin handles `navigator.webdriver`, `chrome` object, plugins array, languages, WebGL vendor |
 | Viewport | 1920×1080 base, ±50px random jitter per session |
 | User-agent | Playwright default (not spoofed — stealth keeps everything consistent) |
-| IP | Operator's residential IP (no proxy in Phase 1) |
-| Profile | Persistent `user_data_dir` per account; cookies/localStorage survive |
+| IP | Operator's residential IP (no proxy in Phase 1) — see §16 for isolation requirements |
+| Profile | Persistent `user_data_dir` per account; cookies/localStorage survive; SingletonLock files swept on session start |
+| **Warmup** | New burner accounts must sit in `WARMED` state for ≥72h before first scrape run (operator manually browses FB on the profile during warmup — likes 1-2 things, joins 2-3 groups, scrolls). `acquire(min_warmup_hours=72)` enforces this for production. |
 | Clicks | 3-8s random gap between any two clicks |
 | Scrolls | 2-4 burst-scrolls per page (200-600px) with 0.5-2s gaps |
 | Dwell | 2-5s read-time per post before scrolling past |
 | Targets | 10-20s gap between consecutive targets within a surface |
 | Surfaces | 30-90s gap between surfaces in a run |
 | Cron | 4h gap between runs (08:00 / 12:00 / 17:00 / 21:00) |
-| Quota | ≤100 group-views + ≤50 MP-queries + ≤30 page-views per account per day |
-| Off-hours | No runs between 02:00-06:00 (no human reads FB then) |
+| Navigation | `wait_until="networkidle"` with 15s timeout, then `wait_for_selector` for the surface-specific feed/card selector — `domcontentloaded` alone is too early for FB's SPA architecture and produces empty captures intermittently |
+| Quota | ≤100 group-views + ≤50 MP-queries + ≤30 page-views per account per day; `acquire()` gates on remaining quota |
+| Off-hours | **Code-level guard** — runner exits early if `datetime.now().hour in {2,3,4,5}`, regardless of how it was invoked. Belt-and-suspenders alongside cron schedule. |
 
 ## 8. Account Onboarding Flow
 
@@ -393,20 +413,53 @@ $ python -m consumer.sources.facebook.runner login --account-id main
 ```
 
 State machine transitions:
-- `fresh → warmed`: operator completes login
-- `warmed → active`: first successful scrape run produced ≥1 RawPost
-- `active → challenged`: ChallengeDetector returns CHALLENGED/LOGIN_WALL during a run
-- `challenged → active`: operator runs `login` again and detector confirms OK
-- `* → dead`: 3+ consecutive challenged runs without manual recovery
+- `fresh → warmed`: operator completes login (login subcommand verifies state and sets `warmed_at` timestamp)
+- `warmed → active`: first successful scrape run produced ≥1 RawPost without ChallengeRaised — `pool.release()` does this promotion
+- `active → challenged` OR `warmed → challenged`: ChallengeDetector returns CHALLENGED/LOGIN_WALL during a run (after the one-retry recovery attempt failed)
+- `challenged → warmed`: operator runs `login` again and detector confirms OK — account re-enters the eligible pool but its `warmed_at` is reset, so production cron with `min_warmup_hours=72` will wait before scraping again
+- `* → dead`: 3+ consecutive challenged runs without successful recovery
+
+Both `WARMED` and `ACTIVE` are eligible for `acquire()` — the distinction is informational (has the account ever successfully run?). Production `acquire()` calls additionally enforce `min_warmup_hours=72` so genuinely fresh accounts aren't thrown into the deep end.
 
 ## 9. Error Handling
 
-- **ChallengeRaised exception** thrown by Surface when ChallengeState != OK
-- Runner catches, marks account state, **skips remaining surfaces for this run**, writes partial queue file with what was captured
-- Logs structured summary: `{"run_id": "...", "account": "main", "captured": 23, "challenge_state": "challenged", "surfaces_completed": ["groups"]}`
-- Fires alert via existing `send_lead_alert()` (already in pipeline) when account flips to `challenged` or `dead`
-- Per-target failures (network, selector miss): logged, surface continues with next target
-- Pipeline-side: drain reads JSONL files; malformed records skipped with warning
+### Exception hierarchy
+
+- **`BackoffRaised`** — recoverable: surface hit RATE_LIMITED, EMPTY_FEED, or transient network. Runner skips remaining targets in this surface but **does NOT flip account state**. Increments `last_run_stats.backoff_count[surface]`. After 3 consecutive runs with backoff on the same surface, escalates to `ChallengeRaised`.
+- **`ChallengeRaised`** — fatal-for-run: surface hit CHALLENGED or LOGIN_WALL. Runner flips account state to `challenged`, skips remaining surfaces, writes partial queue file with what was captured before, alerts operator.
+
+### Mid-run challenge recovery (one retry)
+
+When `ChallengeRaised` is hit, before flipping account state, the runner navigates to `https://www.facebook.com/` (root), waits 30-60s, and re-checks state. If recovered (state == OK), resume next target. If still challenged, then flip. This catches transient interstitials that don't actually require operator login.
+
+### Cookie-jar snapshot before risky surfaces
+
+Before navigating to Marketplace (the most ban-prone surface), `core/session.py` copies `profile/Cookies` → `profile/Cookies.snapshot-pre-mp`. If the Marketplace run flips the account to `challenged`, the operator can run a `runner recover --account-id main` command that restores the pre-Marketplace cookie snapshot — often (~50%) this restores the account to OK without re-login.
+
+### Per-run logging
+
+Structured summary at run end: `{"run_id": "...", "account": "main", "captured": 23, "challenge_state": "ok"|"challenged"|..., "backoff_count": {"groups": 0, "marketplace": 1, "pages": 0}, "surfaces_completed": ["groups", "marketplace"]}`.
+
+### Operator alerts
+
+Fires `send_lead_alert()` (already in pipeline) when:
+- Account flips to `challenged` or `dead`
+- 3 consecutive backoffs on any surface
+- Quota exhausted before run completion
+
+### Process-level safety
+
+- **SIGTERM/SIGINT handler** in runner: closes Playwright context cleanly, releases pool flock, removes `SingletonLock` from profile. Ctrl-C must not leave zombie Chromium processes or locked profiles.
+- **Atomic status writes** — `core/state_io.py` writes to `status.json.tmp` then `os.replace`. Crash mid-write cannot brick an account record.
+- **Pool flock** — runner acquires `data/fb_state/.lock` at start. Overlapping cron entries (12:00 still running when 17:00 fires — easy if Playwright hangs) exit cleanly with "another run in progress" instead of corrupting state.
+
+### Per-target failures
+
+Network/selector misses on a single target are logged and the surface continues with the next target. Only surface-level signals (challenge, login wall, repeated rate-limit) abort.
+
+### Pipeline-side
+
+`drain()` reads JSONL files; malformed records are logged and skipped. **`drain()` must collect a file's records into a list before moving the file to `processed/`** — otherwise early-exit iteration loses records permanently.
 
 ## 10. Testing Strategy
 
@@ -450,15 +503,22 @@ State machine transitions:
 
 ## 12. Phased Rollout
 
-### Phase 1 — MVP (weeks 1-3)
-- AccountPool with single account ("main")
+### Phase 1 — MVP (weeks 1-4)
+- AccountPool with single account, persisted to disk via atomic `state_io` writes
+- Pool flock + SingletonLock cleanup on every session start
 - NoProxy implementation
-- All 3 surfaces with DOM-only extraction (GraphQL fallback wired but secondary)
-- Basic challenge detection
-- Cron 2-4x daily on operator's Mac
-- Manual operator recovery on challenge
+- All 3 surfaces with DOM-only extraction (GraphQL fallback wired but secondary), permissive parsers (recursive dict walk) tolerant to FB payload-shape drift
+- ChallengeDetector with backoff vs challenge distinction + mid-run challenge retry
+- CDP-fingerprint patches injected on every page (beyond stealth plugin)
+- 72h warmup enforcement on production cron entries
+- Cookie-jar snapshot before Marketplace + `recover` subcommand for rollback
+- SIGTERM/SIGINT handler + zombie-process cleanup
+- Off-hours code-level guard (02:00-06:00 skip)
+- **Real HTML fixtures captured from operator's logged-in session BEFORE parser implementation**
+- Cron 2-4x daily on operator's dedicated machine/VM (see §16 for isolation requirements)
+- Manual operator recovery on challenge (login OR cookie-snapshot rollback)
 
-**Done when:** running for 7 consecutive days without manual intervention, producing ≥10 RawPosts/day across surfaces, ≥1 of those clears hardblock and reaches CSV per niche.
+**Done when:** account survives ≥14 days without permanent ban (transient checkpoints OK if operator-recoverable), with ≥5 facebook-source rows per active niche in the **second-week** CSV (week-1 is warmup + ramp-up).
 
 ### Phase 2 — Resilient (post-MVP, when leads prove valuable)
 - AccountPool of 3-5 burner accounts with round-robin
@@ -492,8 +552,48 @@ State machine transitions:
 
 ## 15. Success Criteria
 
-After Phase 1 deployment is stable (running 7+ days without manual touch):
-1. FB-source rows in daily CSV: ≥5 per active niche
-2. False-positive rate (vendor/promo getting through): ≤10% (existing hardblock should catch most)
-3. Operator manual intervention: ≤1× per week (account login refresh)
-4. Existing pipeline unaffected: all non-FB tests still pass; non-FB lead counts unchanged
+Realistic week-by-week:
+
+- **Week 1 (warmup + ramp):** Account in `warmed` state, operator manually browses on the profile to age it. Limited or no automated scrapes. 0-5 rows/day expected. Goal: account survives without checkpoint.
+- **Week 2 (ramp + first real scrape weeks):** Production cron active. Expected: 5-15 FB rows/day total across niches in CSV. **Target: ≥5 FB rows per active niche by end of week 2.**
+- **Week 3-4:** Steady state. ≥5 rows per niche per day, ≤1 operator intervention per week, account in `active` state.
+
+Pass criteria for declaring Phase 1 successful (measured end of week 2):
+
+1. **Account survival** — account is in `active` or `warmed` state (not `challenged` for >24h or `dead`)
+2. **Volume** — ≥5 FB-source rows per active niche in the week-2 CSV (averaging over 7 days)
+3. **Quality** — false-positive rate (vendor/promo reaching CSV) ≤10% — existing hardblock + vendor patterns should catch most
+4. **Operator load** — ≤1× per week manual intervention (login refresh or cookie rollback)
+5. **Pipeline integrity** — all non-FB tests still pass; non-FB lead counts in CSVs unchanged vs pre-deployment baseline
+
+If criteria fail: do not escalate to Phase 2. Diagnose what specifically broke — DOM drift (capture new fixtures), CDP detection (escalate to `playwright-extra` or `camoufox`), warmup insufficient (extend warmup window), or operator-isolation breach (move to dedicated machine).
+
+## 16. Operator Isolation Requirements
+
+FB does device-graph linking — it correlates burner accounts to the operator's personal account through shared IP + browser fingerprint + behavior patterns. Without operator isolation, two real risks materialize:
+
+1. **The operator's personal FB account starts seeing "suspicious activity from your account" prompts within the first week**, because FB associates burner-activity-spikes with the operator's device-graph.
+2. **The burner gets banned faster** because FB's risk scoring flags accounts that fingerprint-match an existing user (the operator) acting from a different identity.
+
+### Required isolation (Phase 1)
+
+At minimum, **one** of the following:
+
+- **Dedicated machine** for the FB scraper (separate laptop, Mac Mini, or RPi 5 — costs ~€100-200 one-time or €5/m for a cloud VPS)
+- **Dedicated browser profile** that has NEVER been used to access personal FB (`data/fb_state/main/profile/` is fresh; operator must not log in to personal FB from this profile)
+- **VPN bound only to the FB scraper process** (e.g., `ProtonVPN-CLI` or `mullvad-cli` with split-tunneling — Dutch endpoint to avoid geo-flag) — but this only helps if the IP truly differs from personal-FB activity
+
+### Recommended isolation (production)
+
+All three combined:
+- Always-on dedicated box (Mac Mini at home, RPi 5, or cheap VPS)
+- Fresh browser profile per burner
+- VPN with Dutch residential endpoint
+
+### What the spec does NOT do for you
+
+- Provision the dedicated machine or VPS
+- Create burner FB accounts (FB requires phone-verification — operator does this manually, can use a pay-as-you-go SIM)
+- Resolve the legal/TOS grey-area (scraping public-ish posts under "legitimate interest" — see §11)
+
+This must be in the README as a hard warning, not a footnote.

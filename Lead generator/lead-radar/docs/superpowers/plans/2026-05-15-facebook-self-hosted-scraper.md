@@ -1,6 +1,25 @@
-# Facebook Self-Hosted Scraper Implementation Plan
+# Facebook Self-Hosted Scraper Implementation Plan (v2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**v2 changelog (post-review):**
+- T1 `drain()` rewritten: collect-list-then-move instead of `finally`-block move (fixes data-loss on partial iteration)
+- T2 `MarketplaceTarget` gains `listing_type` field; default location changed to `Tilburg` (was `nederland` which returned 0 results)
+- T2 `defaults: dict` → `dict[str, Any]`
+- T5 `NoProxy` return annotation fixed
+- **NEW Task 6.5**: `core/state_io.py` — atomic JSON write + pool flock + SingletonLock sweep
+- T6 AccountPool: atomic writes, `min_warmup_hours` param on `acquire()`, `mark_backoff()`, `warmed_at` timestamp, `release()` promotes WARMED → ACTIVE on success
+- T7 PlaywrightSession: CDP-fingerprint patches injected on every page (beyond stealth plugin), SingletonLock cleanup on entry
+- T8: `BackoffRaised` exception alongside `ChallengeRaised`
+- T9: NEW Step 0 — operator captures real FB HTML before parser implementation (real fixtures, not synthetic)
+- T9 scrape(): `wait_until="networkidle"` + permissive navigation
+- T10 GraphQL fallback rewritten: sync `_on_response` callback collects Response objects, awaits json AFTER navigation; parser does recursive dict-walk (tolerant to FB shape changes)
+- T11/T12: signal handler registration; off-hours code-level guard; mid-run challenge retry; cookie-jar snapshot before Marketplace
+- T13 integration test: `check_hardblock` returns `BlockResult` dataclass, not tuple
+- T14 README adds Operator Isolation hard-warning + launchd guidance (cron does not wake sleeping Mac)
+- **NEW Task 14.5**: `recover` subcommand (cookie-snapshot rollback)
+- T16 Marketplace: `listing_type` URL param, `wait_for_selector` for cards, real-fixture capture step
+- T19 success criteria updated to "week-2 measurement, 14-day account survival"
 
 **Goal:** Replace lead-radar's manual-paste-only `consumer/sources/facebook.py` with a self-hosted Playwright-based scraper that covers FB Groups (MVP), Marketplace, and Public Pages, feeding the existing pipeline via a decoupled JSONL queue.
 
@@ -401,37 +420,43 @@ def write_jsonl(path: Path, posts: Iterable[RawPost]) -> None:
 def drain(queue_dir: Path) -> Iterator[RawPost]:
     """Yield every RawPost from every ``*.jsonl`` file directly under queue_dir.
 
-    After yielding records from a file, the file is moved to
-    ``queue_dir/processed/`` so a subsequent run does not re-process it.
-    Malformed lines are logged and skipped — they do not abort the drain.
-    The ``processed/`` subdirectory is not scanned.
+    For each file we first read and parse ALL records into a local list, then
+    move the file to ``processed/``, then yield from the list.  This makes
+    early-exit iteration safe (the caller's break/return won't lose records
+    that were already read into memory) and also means a single file's records
+    are atomic — the caller sees all of them or none.
+
+    Malformed lines are logged and skipped.  The ``processed/`` subdirectory
+    is not scanned.
     """
     if not queue_dir.exists():
         return
     processed = queue_dir / "processed"
     processed.mkdir(parents=True, exist_ok=True)
     for jsonl in sorted(queue_dir.glob("*.jsonl")):
-        try:
-            with jsonl.open("r", encoding="utf-8") as fh:
-                for lineno, line in enumerate(fh, start=1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        rec = json.loads(line)
-                    except json.JSONDecodeError as exc:
-                        log.warning("fb_queue: malformed line %s:%d (%s)", jsonl.name, lineno, exc)
-                        continue
-                    try:
-                        yield RawPost(**rec)
-                    except TypeError as exc:
-                        log.warning("fb_queue: invalid RawPost shape %s:%d (%s)", jsonl.name, lineno, exc)
-                        continue
-        finally:
-            target = processed / jsonl.name
-            if target.exists():
-                target.unlink()
-            jsonl.rename(target)
+        records: list[RawPost] = []
+        with jsonl.open("r", encoding="utf-8") as fh:
+            for lineno, line in enumerate(fh, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    log.warning("fb_queue: malformed line %s:%d (%s)", jsonl.name, lineno, exc)
+                    continue
+                try:
+                    records.append(RawPost(**rec))
+                except TypeError as exc:
+                    log.warning("fb_queue: invalid RawPost shape %s:%d (%s)", jsonl.name, lineno, exc)
+                    continue
+        # Move file out of the queue dir BEFORE yielding so a caller break/early-return
+        # doesn't leave the file in place to be re-drained next run.
+        target = processed / jsonl.name
+        if target.exists():
+            target.unlink()
+        jsonl.rename(target)
+        yield from records
 ```
 
 - [ ] **Step 4: Run tests to verify all pass**
@@ -496,10 +521,17 @@ def test_page_target_defaults() -> None:
 
 def test_marketplace_target_defaults() -> None:
     m = MarketplaceTarget(query="warmtepomp installateur gezocht")
-    assert m.from_city == "Nederland"
-    assert m.location_slug == "nederland"
-    assert m.radius_km == 0
+    assert m.from_city == "Tilburg"
+    assert m.location_slug == "tilburg"
+    assert m.radius_km == 50
     assert m.max_results == 30
+    assert m.listing_type == "wanted"
+
+
+def test_marketplace_target_listing_type_validated() -> None:
+    import pytest
+    with pytest.raises(Exception):  # pydantic.ValidationError
+        MarketplaceTarget(query="x", listing_type="invalid")
 
 
 def test_niche_targets_all_surfaces_optional() -> None:
@@ -596,6 +628,7 @@ catches typos and missing required fields at load time rather than mid-run.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -616,12 +649,24 @@ class PageTarget(BaseModel):
 
 
 class MarketplaceTarget(BaseModel):
-    """A Marketplace search query."""
+    """A Marketplace search query.
+
+    `listing_type="wanted"` is the default because lead-radar wants posts from
+    PEOPLE SEEKING installers (consumer intent), not vendors offering equipment.
+    `listing_type="sale"` is what FB defaults to in its UI and will surface
+    exactly the opposite of what we want — keep this in mind when reviewing
+    targets.
+
+    `location_slug` MUST be a real FB-recognized city slug (e.g. "tilburg",
+    "amsterdam", "eindhoven").  "nederland" returns a Marketplace landing
+    page with 0 search results — do not use it.
+    """
     query: str
-    from_city: str = "Nederland"
-    location_slug: str = "nederland"
-    radius_km: int = 0
+    from_city: str = "Tilburg"
+    location_slug: str = "tilburg"
+    radius_km: int = 50
     max_results: int = 30
+    listing_type: Literal["wanted", "sale", "all"] = "wanted"
 
 
 class NicheTargets(BaseModel):
@@ -633,7 +678,7 @@ class NicheTargets(BaseModel):
 
 class FacebookTargetsConfig(BaseModel):
     """Top-level config: operator-tunable defaults + per-niche surface targets."""
-    defaults: dict = Field(default_factory=dict)
+    defaults: dict[str, Any] = Field(default_factory=dict)
     niches: dict[str, NicheTargets] = Field(default_factory=dict)
 
 
@@ -1202,7 +1247,7 @@ class HTTPProxy(Protocol):
 class NoProxy:
     """Routes traffic through the host's direct connection (no proxy)."""
 
-    def playwright_proxy_config(self) -> None:
+    def playwright_proxy_config(self) -> dict | None:
         return None
 
 
@@ -1539,6 +1584,219 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
+## Task 6.5: State IO Module — Atomic Writes + Pool Flock + SingletonLock Sweep
+
+**Files:**
+- Create: `consumer/sources/facebook/core/state_io.py`
+- Create: `tests/test_fb_state_io.py`
+
+**Why this exists (from reviewer):**
+> The plan's AccountPool persists `status.json` via `status.write_text(json.dumps(...))` — a non-atomic write. Crash mid-write truncates the file to 0 bytes and bricks the account record. Overlapping cron entries corrupt state. Stale Chromium `SingletonLock` files left behind after a crash hang the next launch with a misleading error.
+
+This module centralizes those concerns so AccountPool (T6) and PlaywrightSession (T7) both use it.
+
+- [ ] **Step 1: Write failing tests**
+
+Create `tests/test_fb_state_io.py`:
+
+```python
+"""Tests for atomic JSON write, pool flock, and SingletonLock cleanup."""
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from consumer.sources.facebook.core.state_io import (
+    atomic_write_json,
+    acquire_pool_lock,
+    PoolLockHeld,
+    cleanup_chromium_singletons,
+)
+
+
+def test_atomic_write_json_creates_file(tmp_path: Path) -> None:
+    target = tmp_path / "x.json"
+    atomic_write_json(target, {"hello": "world"})
+    assert json.loads(target.read_text()) == {"hello": "world"}
+
+
+def test_atomic_write_json_overwrites_existing(tmp_path: Path) -> None:
+    target = tmp_path / "x.json"
+    target.write_text(json.dumps({"old": True}), encoding="utf-8")
+    atomic_write_json(target, {"new": True})
+    assert json.loads(target.read_text()) == {"new": True}
+
+
+def test_atomic_write_json_does_not_leave_tmp_file(tmp_path: Path) -> None:
+    target = tmp_path / "x.json"
+    atomic_write_json(target, {"k": "v"})
+    leftovers = list(tmp_path.glob("*.tmp"))
+    assert leftovers == [], f"atomic write left tmp file(s): {leftovers}"
+
+
+def test_acquire_pool_lock_blocks_concurrent_acquire(tmp_path: Path) -> None:
+    lock_path = tmp_path / ".lock"
+    with acquire_pool_lock(lock_path):
+        with pytest.raises(PoolLockHeld):
+            with acquire_pool_lock(lock_path, timeout=0.0):
+                pass
+
+
+def test_acquire_pool_lock_releases_on_exit(tmp_path: Path) -> None:
+    lock_path = tmp_path / ".lock"
+    with acquire_pool_lock(lock_path):
+        pass
+    # After release, a new acquire should succeed
+    with acquire_pool_lock(lock_path, timeout=0.0):
+        pass
+
+
+def test_cleanup_chromium_singletons_removes_stale_locks(tmp_path: Path) -> None:
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        (profile / name).touch()
+    cleanup_chromium_singletons(profile)
+    for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        assert not (profile / name).exists(), f"{name} not cleaned up"
+
+
+def test_cleanup_chromium_singletons_missing_profile_is_noop(tmp_path: Path) -> None:
+    cleanup_chromium_singletons(tmp_path / "nonexistent")  # should not raise
+```
+
+- [ ] **Step 2: Run tests to verify fail**
+
+Run: `pytest tests/test_fb_state_io.py -v`
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement state_io**
+
+Create `consumer/sources/facebook/core/state_io.py`:
+
+```python
+"""Crash-safe filesystem helpers for the FB scraper.
+
+Three concerns centralized here:
+
+1. ``atomic_write_json`` — writes to a temp file in the same directory, then
+   ``os.replace`` swaps it in atomically.  A crash mid-write leaves the
+   original file intact; partial writes are never observable.
+
+2. ``acquire_pool_lock`` — an exclusive flock at ``data/fb_state/.lock`` so
+   overlapping cron entries (12:00 still running when 17:00 fires) exit
+   cleanly instead of corrupting status.json or fighting over Chromium
+   profile directories.
+
+3. ``cleanup_chromium_singletons`` — Chromium leaves ``SingletonLock``,
+   ``SingletonCookie``, ``SingletonSocket`` behind after a non-clean
+   shutdown (Ctrl-C during run, SIGKILL, crash).  Subsequent launches with
+   the same ``user_data_dir`` will hang with a misleading error.  Sweep
+   these on every session start.
+"""
+from __future__ import annotations
+
+import fcntl
+import json
+import logging
+import os
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Iterator
+
+log = logging.getLogger("consumer.sources.facebook.state_io")
+
+
+class PoolLockHeld(RuntimeError):
+    """Raised when another process holds the pool flock."""
+
+
+def atomic_write_json(path: Path, data: Any) -> None:
+    """Write JSON to ``path`` atomically.
+
+    Writes to ``<path>.tmp`` in the same directory, fsyncs, then
+    ``os.replace`` swaps it into place.  Same-filesystem rename is atomic
+    on POSIX so readers always see either the old file or the fully-written
+    new file — never a half-written state.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+
+
+@contextmanager
+def acquire_pool_lock(lock_path: Path, timeout: float = 0.0) -> Iterator[None]:
+    """Acquire an exclusive flock; raise PoolLockHeld if already held.
+
+    ``timeout=0.0`` is non-blocking — return immediately if held.  Caller
+    decides whether to wait or exit.  The lock is released when the context
+    manager exits, even on exception.
+    """
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.touch(exist_ok=True)
+    fh = lock_path.open("r")
+    try:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise PoolLockHeld(f"pool lock held by another process: {lock_path}")
+        yield
+    finally:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+        finally:
+            fh.close()
+
+
+def cleanup_chromium_singletons(profile_dir: Path) -> None:
+    """Remove stale Chromium singleton files left behind by a non-clean exit.
+
+    Safe to call on a profile that has never been used (profile_dir missing)
+    or that is currently in use (the files we sweep are only meaningful
+    while Chromium is actively running, and a separate process holding the
+    profile would have its own lock anyway).
+    """
+    if not profile_dir.exists():
+        return
+    for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        p = profile_dir / name
+        try:
+            if p.is_symlink() or p.exists():
+                p.unlink()
+                log.debug("swept %s", p)
+        except OSError as exc:
+            log.warning("could not sweep %s: %s", p, exc)
+```
+
+- [ ] **Step 4: Run tests to verify pass**
+
+Run: `pytest tests/test_fb_state_io.py -v`
+Expected: 7 passed.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add consumer/sources/facebook/core/state_io.py tests/test_fb_state_io.py
+git commit -m "Add crash-safe state IO: atomic write + pool flock + singleton sweep
+
+atomic_write_json writes via .tmp + os.replace so crash mid-write never
+truncates the target.  acquire_pool_lock(timeout=0) gives overlapping
+cron runs a clean exit instead of corrupted state.  cleanup_chromium_
+singletons removes stale SingletonLock/SingletonCookie/SingletonSocket
+files that hang the next launch after a non-clean shutdown.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
+```
+
+---
+
 ## Task 7: Session Module — PlaywrightSession Context Manager
 
 **Files:**
@@ -1553,8 +1811,20 @@ Create `consumer/sources/facebook/core/session.py`:
 """PlaywrightSession — async context manager around a stealth Chromium.
 
 Reuses the account's persistent profile directory so cookies/localStorage
-survive across runs.  Applies the tf-playwright-stealth patches to every
-new page so navigator.webdriver and friends are spoofed consistently.
+survive across runs.  Applies tf-playwright-stealth patches to every new
+page, PLUS additional CDP-leak patches that stealth alone does not cover.
+
+CDP-leak patches (critical — FB uses these vectors):
+
+* ``window.__playwright__`` and related Playwright-injected globals are deleted
+  before any page script runs.  Stealth plugin patches the most common ones
+  but the namespace varies between Playwright versions; this is a belt-and-
+  suspenders nuke.
+* ``navigator.permissions.query`` for ``notifications`` is overridden to return
+  ``"default"`` (real Chrome) instead of ``"denied"`` (Playwright's CDP leaks
+  this).
+* ``chrome.runtime`` is shimmed so a deep probe returns plausible values
+  instead of throwing.
 """
 from __future__ import annotations
 
@@ -1567,6 +1837,47 @@ from tf_playwright_stealth import stealth_async
 
 from .accounts import Account
 from .proxy import HTTPProxy, NoProxy
+from .state_io import cleanup_chromium_singletons
+
+
+# Script injected into every new page BEFORE any page-side JS runs.
+# Hides Playwright/CDP fingerprints FB checks for.
+_CDP_PATCH_SCRIPT = r"""
+(() => {
+  // Nuke any Playwright-injected globals
+  for (const k of Object.keys(window)) {
+    if (k.startsWith('__playwright') || k.startsWith('__pw_')) {
+      try { delete window[k]; } catch (e) {}
+    }
+  }
+
+  // navigator.permissions.query for 'notifications' returns 'denied' under
+  // Playwright CDP — real Chrome returns 'default' unless the user explicitly
+  // chose.
+  if (navigator.permissions && navigator.permissions.query) {
+    const original = navigator.permissions.query.bind(navigator.permissions);
+    navigator.permissions.query = (params) => {
+      if (params && params.name === 'notifications') {
+        return Promise.resolve({state: 'default', onchange: null});
+      }
+      return original(params);
+    };
+  }
+
+  // Make chrome.runtime present-but-shallow so the deep-probe heuristic
+  // doesn't fingerprint headless/Playwright
+  if (!window.chrome) {
+    window.chrome = {};
+  }
+  if (!window.chrome.runtime) {
+    window.chrome.runtime = {
+      connect: () => ({ disconnect: () => {} }),
+      sendMessage: () => {},
+      onMessage: { addListener: () => {} },
+    };
+  }
+})();
+"""
 
 log = logging.getLogger("consumer.sources.facebook.session")
 
@@ -1607,9 +1918,13 @@ class PlaywrightSession:
         self._context: BrowserContext | None = None
 
     async def __aenter__(self) -> BrowserContext:
-        self._playwright = await async_playwright().start()
         user_data_dir = self._state_dir / self._account.id / "profile"
         user_data_dir.mkdir(parents=True, exist_ok=True)
+        # Sweep stale Chromium singleton files left by a previous non-clean exit.
+        # Without this, launch_persistent_context will hang on the SingletonLock.
+        cleanup_chromium_singletons(user_data_dir)
+
+        self._playwright = await async_playwright().start()
         launch_kwargs: dict = {
             "headless": self._headless,
             "viewport": _jittered_viewport(),
@@ -1623,17 +1938,31 @@ class PlaywrightSession:
             launch_kwargs["viewport"]["width"], launch_kwargs["viewport"]["height"],
             bool(proxy_cfg),
         )
-        self._context = await self._playwright.chromium.launch_persistent_context(
-            user_data_dir=str(user_data_dir),
-            **launch_kwargs,
-        )
+        try:
+            self._context = await self._playwright.chromium.launch_persistent_context(
+                user_data_dir=str(user_data_dir),
+                **launch_kwargs,
+            )
+        except Exception:
+            # If launch fails, stop playwright so we don't leak the subprocess
+            await self._playwright.stop()
+            self._playwright = None
+            raise
+
+        # Apply the CDP-leak patches to every new page in this context.
+        # add_init_script runs the JS BEFORE any page-side script executes,
+        # which is the only way to hide globals from FB's fingerprinting code.
+        await self._context.add_init_script(_CDP_PATCH_SCRIPT)
         return self._context
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
-        if self._context is not None:
-            await self._context.close()
-        if self._playwright is not None:
-            await self._playwright.stop()
+        # Guarantee cleanup of both context and playwright even if one fails.
+        try:
+            if self._context is not None:
+                await self._context.close()
+        finally:
+            if self._playwright is not None:
+                await self._playwright.stop()
 
 
 async def new_stealth_page(context: BrowserContext) -> Page:
@@ -1696,13 +2025,30 @@ if TYPE_CHECKING:
 
 
 class ChallengeRaised(RuntimeError):
-    """Raised by a surface when the page state is not OK.
+    """Raised by a surface when the page hits a HARD state (CHALLENGED or LOGIN_WALL).
 
     The runner catches this, marks the account, and aborts the rest of the run.
+    Trigger states: CHALLENGED, LOGIN_WALL.
     """
 
     def __init__(self, state: ChallengeState, *, surface: str, url: str) -> None:
         super().__init__(f"{surface}: challenge state {state.value} at {url}")
+        self.state = state
+        self.surface = surface
+        self.url = url
+
+
+class BackoffRaised(RuntimeError):
+    """Raised by a surface when the page hits a SOFT state (RATE_LIMITED, EMPTY_FEED).
+
+    The runner catches this, increments the per-surface backoff counter, and
+    skips remaining targets in this surface but does NOT flip account state.
+    After 3 consecutive runs with backoff on the same surface, the runner
+    escalates to ChallengeRaised behavior on its own.
+    """
+
+    def __init__(self, state: ChallengeState, *, surface: str, url: str) -> None:
+        super().__init__(f"{surface}: soft backoff state {state.value} at {url}")
         self.state = state
         self.surface = surface
         self.url = url
@@ -1715,7 +2061,11 @@ class Surface(ABC):
 
     @abstractmethod
     async def scrape(self, account: "Account", target: Any, page: "Page") -> list[RawPost]:
-        """Drive ``page`` to the given target and return extracted RawPosts."""
+        """Drive ``page`` to the given target and return extracted RawPosts.
+
+        Raises ChallengeRaised on CHALLENGED / LOGIN_WALL (fatal for the run).
+        Raises BackoffRaised on RATE_LIMITED / EMPTY_FEED (skip surface, keep account).
+        """
 ```
 
 - [ ] **Step 2: Create the centralized selectors module**
@@ -1773,9 +2123,48 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Create: `consumer/sources/facebook/surfaces/groups.py`
 - Create: `tests/test_fb_groups_parser.py`
-- Create: `tests/fixtures/fb/groups_feed.html`
+- Create: `tests/fixtures/fb/groups_feed.html` (synthetic baseline fixture)
+- Create: `tests/fixtures/fb/groups_feed_real_001.html` (OPERATOR captures from live FB before this task)
 
-- [ ] **Step 1: Create a synthetic Groups-feed HTML fixture**
+**⚠ Important context from reviewer:**
+> The plan's selectors (`[data-ad-preview="message"]`, `strong a[role=link]`, etc.) are plausible but unverified against the actual FB DOM of 2026. Without a real fixture, the parser passes its synthetic tests but may extract 0 posts in production. To prevent this we capture real HTML from the operator's live FB session BEFORE writing the parser, and write tests against BOTH the synthetic and the real fixture so we know the selectors actually work end-to-end.
+
+- [ ] **Step 0 (OPERATOR MANUAL): Capture a real Groups-feed HTML fixture**
+
+Before writing the parser, the operator captures real HTML from a logged-in FB session. This catches DOM-selector drift at Task 9 instead of Task 15.
+
+Operator runs interactively:
+
+```bash
+python -c "
+import asyncio
+from pathlib import Path
+from consumer.sources.facebook.core.session import PlaywrightSession, new_stealth_page
+from consumer.sources.facebook.core.accounts import Account, AccountState
+
+async def main():
+    acc = Account(id='main', state=AccountState.WARMED)
+    async with PlaywrightSession(acc, state_dir=Path('data/fb_state'), headless=False) as ctx:
+        page = await new_stealth_page(ctx)
+        # Operator types the group URL when prompted
+        url = input('Group URL: ').strip()
+        await page.goto(url, wait_until='networkidle', timeout=30000)
+        input('Scroll the feed a bit to load posts, then press ENTER...')
+        html = await page.content()
+        out = Path('tests/fixtures/fb/groups_feed_real_001.html')
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(html, encoding='utf-8')
+        print(f'Saved {len(html)} bytes -> {out}')
+
+asyncio.run(main())
+"
+```
+
+Then the operator **manually sanitizes** the file before committing: redacts any real user names (find/replace with "Person A", "Person B"), removes any PII visible in metadata, but PRESERVES the DOM structure (tag names, role attributes, data-* attributes, class names). The sanitized file is what gets committed.
+
+This step depends on Task 7 (PlaywrightSession) being done, so logically Task 9 starts here AFTER Task 7. Tasks 0-8 don't need real FB access.
+
+- [ ] **Step 1: Create a synthetic Groups-feed HTML fixture (sanity-check baseline)**
 
 Create `tests/fixtures/fb/groups_feed.html`:
 
@@ -1923,6 +2312,48 @@ def test_parse_includes_title_from_first_line() -> None:
     posts = parse_groups_feed_html(FIXTURE.read_text(encoding="utf-8"),
                                     target=target, niche="warmtepomp", run_id="t")
     assert posts[0].title.startswith("Wie kent een goede warmtepomp installateur")
+
+
+# ── Real-fixture acceptance test ────────────────────────────────────────
+# This test validates the parser against operator-captured live FB HTML.
+# It is skipped if the real fixture does not exist (so the test suite stays
+# green in environments without operator setup), but if the fixture IS
+# present, the parser MUST extract at least 1 post — otherwise our DOM
+# selectors are wrong against the real FB DOM and we'd silently ship a
+# broken scraper.
+REAL_FIXTURE = Path(__file__).parent / "fixtures" / "fb" / "groups_feed_real_001.html"
+
+
+@pytest.mark.skipif(not REAL_FIXTURE.exists(),
+                    reason="real FB fixture not captured yet — run Task 9 Step 0")
+def test_parse_real_fixture_extracts_at_least_one_post() -> None:
+    """If a real captured HTML fixture exists, the parser MUST work on it."""
+    target = GroupTarget(id="0", name="real fixture", max_posts=50)
+    posts = parse_groups_feed_html(REAL_FIXTURE.read_text(encoding="utf-8"),
+                                    target=target, niche="warmtepomp", run_id="real")
+    assert len(posts) >= 1, (
+        "Parser extracted 0 posts from real FB HTML — DOM selectors in "
+        "_selectors.py are likely wrong against current FB.  Inspect the "
+        "fixture and update FEED_CONTAINER / POST_ARTICLE / POST_TEXT_* "
+        "before continuing."
+    )
+
+
+@pytest.mark.skipif(not REAL_FIXTURE.exists(),
+                    reason="real FB fixture not captured yet — run Task 9 Step 0")
+def test_parse_real_fixture_posts_have_text() -> None:
+    """Every extracted post from real FB must have non-empty text."""
+    target = GroupTarget(id="0", name="real fixture", max_posts=50)
+    posts = parse_groups_feed_html(REAL_FIXTURE.read_text(encoding="utf-8"),
+                                    target=target, niche="warmtepomp", run_id="real")
+    for p in posts:
+        assert p.text.strip(), "extracted post has empty text — selector matches container but not body"
+```
+
+Add this import at the top of `tests/test_fb_groups_parser.py`:
+
+```python
+import pytest
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -2183,6 +2614,45 @@ Append to `consumer/sources/facebook/surfaces/groups.py`:
 ```python
 
 
+def _walk_for_stories(node, out: list[dict]) -> None:
+    """Recursive walk over a GraphQL response collecting any dict that looks like a story.
+
+    FB's GraphQL shape changes between operations (GroupsFeedPaginationQuery,
+    CometGroupDiscussionRootSuccessQuery, GroupsCometFeedRegularStoriesPagination,
+    etc.) so we don't lock to a fixed path.  Instead we walk the tree and pick up
+    any dict that has BOTH a 'message' object containing 'text' AND a way to
+    identify the post (wwwURL, post_id, or id).
+    """
+    if isinstance(node, dict):
+        # Looks like a story?
+        message = node.get("message")
+        text = None
+        if isinstance(message, dict):
+            text = message.get("text")
+        # Some renderings put text under attached_story.message.text or attachments[0].title.text
+        if not text:
+            attached = node.get("attached_story")
+            if isinstance(attached, dict):
+                attached_msg = attached.get("message")
+                if isinstance(attached_msg, dict):
+                    text = attached_msg.get("text")
+        if text and (node.get("wwwURL") or node.get("url") or node.get("post_id")):
+            out.append({
+                "text": text,
+                "url": node.get("wwwURL") or node.get("url") or "",
+                "actors": node.get("actors") or [],
+                "creation_time": node.get("creation_time"),
+            })
+            # Don't recurse into a node we already captured — avoids double-counting
+            # nested reshared posts.
+            return
+        for value in node.values():
+            _walk_for_stories(value, out)
+    elif isinstance(node, list):
+        for item in node:
+            _walk_for_stories(item, out)
+
+
 def parse_groups_graphql_response(
     response: dict,
     *,
@@ -2190,40 +2660,44 @@ def parse_groups_graphql_response(
     niche: str,
     run_id: str,
 ) -> list[RawPost]:
-    """Parse an intercepted GroupsFeedPaginationQuery GraphQL response.
+    """Parse an intercepted FB Groups GraphQL response.
 
-    Tolerant to FB's frequent shape changes — bails on a flat empty list
-    when any expected nesting is missing.
+    Permissive: does a recursive walk over the response tree collecting any
+    dict that has a ``message.text`` AND a post identifier.  This tolerates
+    FB's frequent operation renames and payload-shape changes — we don't lock
+    to ``data.node.group_feed.edges[].node.story``.
     """
     if not isinstance(response, dict):
         return []
-    try:
-        edges = response["data"]["node"]["group_feed"]["edges"]
-    except (KeyError, TypeError):
-        return []
+    stories: list[dict] = []
+    _walk_for_stories(response, stories)
+
     out: list[RawPost] = []
-    for idx, edge in enumerate(edges):
+    for idx, story in enumerate(stories):
         if len(out) >= target.max_posts:
             break
-        story = (edge or {}).get("node", {}).get("story", {}) or {}
-        message = (story.get("message") or {}).get("text")
-        if not message:
-            continue
+        text = story["text"]
+        url = story["url"] or f"https://www.facebook.com/groups/{target.id}/"
+        if url.startswith("/"):
+            url = "https://www.facebook.com" + url
         actors = story.get("actors") or []
-        author = actors[0].get("name") if actors and isinstance(actors[0], dict) else None
-        url = story.get("wwwURL") or f"https://www.facebook.com/groups/{target.id}/"
+        author = (
+            actors[0].get("name")
+            if actors and isinstance(actors[0], dict) and actors[0].get("name")
+            else None
+        )
         created_ts = story.get("creation_time")
         created_at = (
             datetime.fromtimestamp(created_ts, tz=timezone.utc).isoformat(timespec="seconds")
             if isinstance(created_ts, (int, float)) else None
         )
-        title = message.split("\n", 1)[0][:120]
+        title = text.split("\n", 1)[0][:120]
         out.append(RawPost(
             id=_post_id(target.id, url, idx),
             source="facebook_groups",
             url=url,
             title=title,
-            text=message,
+            text=text,
             author=author,
             created_at=created_at,
             metadata={
@@ -2238,29 +2712,41 @@ def parse_groups_graphql_response(
     return out
 ```
 
-Then replace the existing `GroupsSurface.scrape()` method body with:
+Then replace the existing `GroupsSurface.scrape()` method body with this version. **Critical fix vs v1:** `page.on()` requires a SYNCHRONOUS callback in Playwright's async API — if we register an `async def` handler, the returned coroutine is never awaited and the response capture silently never happens. The fix is to collect `Response` objects synchronously, then `await resp.json()` AFTER navigation completes:
 
 ```python
     async def scrape(self, account, target: GroupTarget, page) -> list[RawPost]:
         url = f"https://www.facebook.com/groups/{target.id}/"
         log.info("groups: navigate %s", url)
 
-        graphql_captures: list[dict] = []
-        async def _on_response(resp):
+        # Sync handler — just stash the Response object.  We'll await .json() after nav.
+        # IMPORTANT: do not register an async function here — Playwright won't await it.
+        graphql_responses: list = []
+        def _on_response(resp) -> None:
             try:
                 if "/api/graphql/" not in resp.url:
                     return
+                # Check operation-name in BOTH header (x-fb-friendly-name) and body — FB
+                # sometimes only puts it in one or the other.
                 req = resp.request
+                friendly_name = (req.headers or {}).get("x-fb-friendly-name", "") or ""
                 post_data = req.post_data or ""
-                if "GroupsFeedPaginationQuery" in post_data or "CometGroupDiscussionRootSuccessQuery" in post_data:
-                    body = await resp.json()
-                    graphql_captures.append(body)
+                # Permissive match — FB renames Comet-prefixed operations every few months;
+                # match on substring "GroupsFeed" or "GroupsComet" or "CometGroup" to catch
+                # the rename family.
+                wanted = any(
+                    needle in haystack
+                    for haystack in (friendly_name, post_data)
+                    for needle in ("GroupsFeed", "GroupsComet", "CometGroup")
+                )
+                if wanted:
+                    graphql_responses.append(resp)
             except Exception:
-                pass
+                pass  # never let a capture error break the scrape
 
         page.on("response", _on_response)
 
-        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        await page.goto(url, wait_until="networkidle", timeout=30000)
         await HumanPace.read_dwell()
 
         state = await detect_state(page)
@@ -2269,15 +2755,22 @@ Then replace the existing `GroupsSurface.scrape()` method body with:
 
         await page.wait_for_selector(sel.FEED_CONTAINER, timeout=15000)
         await self._scroll_burst(page)
+        # Give late GraphQL responses a moment to arrive
+        await HumanPace.read_dwell()
         html = await page.content()
         dom_posts = parse_groups_feed_html(html, target=target, niche=self._niche, run_id=self._run_id)
 
-        if len(dom_posts) >= target.max_posts * 0.5:
+        if len(dom_posts) >= target.max_posts // 2:
             return dom_posts
 
-        log.warning("groups: DOM extraction underperformed (%d/%d) — trying GraphQL fallback",
-                    len(dom_posts), target.max_posts)
-        for body in graphql_captures:
+        log.warning("groups: DOM extraction underperformed (%d/%d) — trying GraphQL fallback (%d captured)",
+                    len(dom_posts), target.max_posts, len(graphql_responses))
+        for resp in graphql_responses:
+            try:
+                body = await resp.json()
+            except Exception as exc:
+                log.debug("groups: GraphQL body parse failed: %s", exc)
+                continue
             gql_posts = parse_groups_graphql_response(body, target=target, niche=self._niche, run_id=self._run_id)
             if gql_posts:
                 return gql_posts
@@ -2623,8 +3116,9 @@ def test_drained_posts_pass_hardblock(tmp_path: Path) -> None:
     )
     write_jsonl(tmp_path / "run.jsonl", [sample])
     drained = list(drain(tmp_path))
-    blocked, reason = check_hardblock(drained[0])
-    assert not blocked, f"hardblock falsely rejected consumer post: {reason}"
+    # check_hardblock returns a BlockResult dataclass, not a tuple.  Access fields directly.
+    result = check_hardblock(drained[0])
+    assert not result.blocked, f"hardblock falsely rejected consumer post: {result.reason}"
 ```
 
 - [ ] **Step 2: Run the test (queue drain + hardblock already exist — should pass)**
@@ -2708,6 +3202,30 @@ Self-hosted Playwright-based scraper for FB Groups (MVP), Marketplace, and
 Public Pages.  Feeds the lead-radar pipeline via a decoupled JSONL queue.
 
 See full design spec: `docs/superpowers/specs/2026-05-15-facebook-self-hosted-scraper-design.md`
+
+## ⚠ READ FIRST — Operator Isolation (mandatory)
+
+FB does device-graph linking: it correlates burner accounts to your personal
+account via shared IP + browser fingerprint + behavior.  Two real risks:
+
+1. **Your personal FB starts seeing "Did you do this? Suspicious activity"
+   prompts** within the first week, because FB associates burner activity with
+   YOUR device-graph.
+2. **The burner gets banned faster** because FB's risk scoring flags accounts
+   that fingerprint-match an existing user acting as a different identity.
+
+**Required isolation — at minimum ONE of:**
+- A dedicated machine for this scraper (separate laptop, Mac Mini, RPi 5, or
+  cheap VPS in NL — ~€5/mo)
+- A browser profile that has NEVER touched personal FB (use a brand-new burner
+  in `data/fb_state/main/profile/` and do not log in to your real FB there)
+- A VPN with split-tunneling, bound only to the FB scraper process
+
+**Recommended for production:** all three combined.
+
+Also: **on macOS, `cron` does NOT wake a sleeping laptop.** Use a `launchd`
+plist with `RunAtLoad=true` and `StartCalendarInterval`, or run on a Mac that
+stays awake (caffeinate), or deploy to an always-on box.
 
 ## Quickstart
 
@@ -3104,18 +3622,41 @@ class MarketplaceSurface(Surface):
         self._run_id = run_id
 
     async def scrape(self, account, target: MarketplaceTarget, page) -> list[RawPost]:
+        # Build the search URL with listing_type filter.  Default is "wanted"
+        # which is what lead-radar needs (people seeking installers).  FB's
+        # exact param name for filtering wanted-vs-sale changes — verify the
+        # generated URL returns the right kind of post before relying on it.
         base = f"https://www.facebook.com/marketplace/{target.location_slug}/search"
-        qs = f"?query={quote_plus(target.query)}"
+        params: list[str] = [f"query={quote_plus(target.query)}"]
         if target.radius_km:
-            qs += f"&radius={target.radius_km}"
-        url = base + qs
+            params.append(f"radius={target.radius_km}")
+        # FB Marketplace filter for "Looking for / Wanted" — current param name
+        # as of 2026-05.  Operator must verify against live FB; if the param
+        # is renamed, update the mapping here, NOT the per-target config.
+        listing_type_param = {
+            "wanted": "availability=looking_for_items",
+            "sale": "availability=in_stock",
+            "all": "",
+        }.get(target.listing_type, "")
+        if listing_type_param:
+            params.append(listing_type_param)
+        url = f"{base}?{'&'.join(params)}"
         log.info("marketplace: %s", url)
-        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        await page.goto(url, wait_until="networkidle", timeout=30000)
         await HumanPace.read_dwell()
 
         state = await detect_state(page)
         if state != ChallengeState.OK:
             raise ChallengeRaised(state, surface=self.name, url=url)
+
+        # Marketplace cards mount via JS after navigation; networkidle isn't
+        # enough on a slow run.  Wait explicitly for at least one item-link
+        # before reading content.
+        try:
+            await page.wait_for_selector('a[href^="/marketplace/item/"]',
+                                          timeout=15000, state="attached")
+        except Exception:
+            log.warning("marketplace: no item-cards loaded in 15s — capturing anyway")
 
         html = await page.content()
         return parse_marketplace_html(html, target=target, niche=self._niche, run_id=self._run_id)
@@ -3617,11 +4158,18 @@ ls -la data/fb_queue/processed/   # should have ~28 files (4/day x 7d)
 grep -c "facebook_" data/leads/consumer/*.csv   # confirm FB rows landed
 ```
 
-Success criteria from the spec:
-1. ≥5 FB rows per active niche in the daily CSV
-2. ≤10% false-positive rate (vendor/promo getting through)
-3. ≤1 manual intervention per week (account login refresh)
-4. All non-FB tests still pass; non-FB lead counts unchanged
+Success criteria from the spec (v2 — week-2 measurement):
+1. **Account survival** — account is in `active` or `warmed` state at end of week 2 (transient checkpoints during the period OK if operator-recoverable; permanent ban = fail)
+2. **Volume** — ≥5 FB-source rows per active niche in the **week-2** CSV averaged over 7 days (week 1 is warmup + ramp-up, expect 0-5 rows/day)
+3. **Quality** — false-positive rate (vendor/promo reaching CSV) ≤10%
+4. **Operator load** — ≤1× per week manual intervention (login refresh OR cookie-snapshot rollback)
+5. **Pipeline integrity** — all non-FB tests still pass; non-FB lead counts in CSVs unchanged vs pre-deployment baseline
+
+If criteria fail at week 2: do not escalate to Phase 2. Diagnose what specifically broke and patch in place:
+- 0 posts extracted despite no challenges → DOM drift → re-capture real fixtures, update `_selectors.py`
+- Frequent challenges within hours of run start → CDP detection → escalate to `playwright-extra` / `camoufox`
+- Account banned within first 7 days → insufficient warmup → extend warmup to 7+ days for next burner
+- Personal FB getting "suspicious activity" prompts → operator-isolation breach → move scraper to dedicated machine
 
 - [ ] **Step 5: Tag Phase 1 complete**
 
