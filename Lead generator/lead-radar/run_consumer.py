@@ -32,6 +32,7 @@ from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import (  # noqa: E402
     REGISTRY, ALL_SOURCES, NATIONAL_SOURCES, LOCATION_AWARE_SOURCES,
     analyze_manual_posts,
+    reset_source_health, mark_source_yield, is_source_dead,
 )
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
 from consumer.sources.reddit_author import enrich_author  # noqa: E402
@@ -378,6 +379,15 @@ def run_one_niche(
     # de volgende run dezelfde URLs (= dubbele LLM-kosten + dupes in Sheets).
     try:
         for source_name in requested:
+            # Runtime dead-source skip: na N opeenvolgende 0-yields wordt
+            # source overgeslagen voor rest van de run (consumer/sources
+            # health-state).  Voorkomt dat HTML-breakage uren wall-clock kost.
+            if is_source_dead(source_name):
+                log.info(
+                    "[%s] skip — gemarkeerd dead (3+ opeenvolgende 0-yield calls)",
+                    source_name,
+                )
+                continue
             fetch = REGISTRY[source_name]
             queries = queries_per_source.get(source_name) or []
             if not queries:
@@ -400,9 +410,9 @@ def run_one_niche(
                         continue
                     raw_total.append(p)
                     source_yield += 1
+            # Mark source-health (cumulatief over niche-loc combos in deze run)
+            mark_source_yield(source_name, source_yield)
             # Zero-yield detection: vangt silent breakage van een source af.
-            # Bv. wanneer een site HTML herstructureert en de scraper alle
-            # parsers laat falen zonder exception, of een API-key vervalt.
             if source_yield == 0:
                 log.warning(
                     "[%s] 0 posts uit %d queries — source mogelijk gebroken "
@@ -612,6 +622,8 @@ def run_daily(args: argparse.Namespace) -> int:
     reset_run_counters()
     # Reset DDG rate-limit state — anders blijft skip-mode actief over runs heen.
     _reset_ddg_ratelimit()
+    # Reset per-source health counter zodat dead-source skip per run werkt.
+    reset_source_health()
 
     print()
     print("=" * 70)

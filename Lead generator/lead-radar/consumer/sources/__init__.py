@@ -61,10 +61,45 @@ LOCATION_AWARE_SOURCES: frozenset[str] = frozenset({
 
 analyze_manual_posts = _facebook.analyze_manual_posts
 
+
+# ─── Runtime dead-source health detector ───────────────────────────────
+#
+# Telt consecutive 0-yield invocations per source per run.  Bij
+# DEAD_THRESHOLD hits-in-a-row markeert source als 'dead': dispatcher
+# slaat 'm dan over voor resterende niche-loc combos.  Voorkomt dat
+# een HTML-breakage, vervallen API-key of geblokte host wall-clock
+# blijft kosten voor de rest van de run.
+
+DEAD_THRESHOLD = 3
+_source_health: dict[str, int] = {}
+
+
+def reset_source_health() -> None:
+    """Reset per-source 0-yield counters.  Aan te roepen bij start van een run."""
+    _source_health.clear()
+
+
+def mark_source_yield(name: str, yield_count: int) -> None:
+    """Log uitkomst van source-call.  yield_count > 0 reset counter; 0 verhoogt."""
+    if yield_count > 0:
+        _source_health[name] = 0
+    else:
+        _source_health[name] = _source_health.get(name, 0) + 1
+
+
+def is_source_dead(name: str) -> bool:
+    """True als source DEAD_THRESHOLD keer achter elkaar 0 yields gaf."""
+    return _source_health.get(name, 0) >= DEAD_THRESHOLD
+
+
 __all__ = [
     "REGISTRY",
     "ALL_SOURCES",
     "NATIONAL_SOURCES",
     "LOCATION_AWARE_SOURCES",
+    "DEAD_THRESHOLD",
     "analyze_manual_posts",
+    "reset_source_health",
+    "mark_source_yield",
+    "is_source_dead",
 ]
