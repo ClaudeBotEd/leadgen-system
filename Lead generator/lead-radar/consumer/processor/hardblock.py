@@ -208,18 +208,19 @@ VENDOR_OFFERING_BODY_PATTERNS: tuple[re.Pattern, ...] = (
         r"vakmensen)\b",
         re.IGNORECASE,
     ),
-    # Corporate self-id: "wij zijn (gespecialiseerd|uw|een [bedrijfsvorm])"
+    # Corporate self-id: "(wij|we) zijn (gespecialiseerd|uw|een [bedrijfsvorm])"
     re.compile(
-        r"\bwij\s+zijn\s+(gespecialiseerd|uw|de\s+specialisten?|een\s+"
+        r"\b(?:wij|we)\s+zijn\s+(gespecialiseerd|uw|de\s+specialisten?|een\s+"
         r"(installatiebedrijf|loodgietersbedrijf|aannemersbedrijf|"
         r"klusbedrijf|bouwbedrijf|installateur))\b",
         re.IGNORECASE,
     ),
-    # First-person plural offering: "wij (bieden|verzorgen|verrichten|doen|voeren ... uit)"
+    # First-person plural offering: "(wij|we) (bieden|verzorgen|verrichten|doen|voeren ... uit)"
     re.compile(
-        r"\bwij\s+(bieden|verzorgen|verrichten|doen|leveren)\b", re.IGNORECASE,
+        r"\b(?:wij|we)\s+(bieden|verzorgen|verrichten|doen|leveren)\b",
+        re.IGNORECASE,
     ),
-    re.compile(r"\bwij\s+voeren\b", re.IGNORECASE),
+    re.compile(r"\b(?:wij|we)\s+voeren\b", re.IGNORECASE),
 )
 
 

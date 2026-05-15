@@ -224,6 +224,11 @@ def test_marktplaats_signals_not_blocked_other_sources(url: str, source: str, te
     # Vendor scope
     "Voor alle voorkomende werkzaamheden in en om uw huis.",
     "Wij doen alle voorkomende klussen netjes en betaalbaar.",
+    # "We" naast "Wij" — informele vorm (renovatie Row 17 echte CSV body)
+    "We zijn een aannemersbedrijf in de buurt van arnhem, gespecialiseerd in verbouw en renovatie.",
+    "We bieden complete renovaties tegen scherpe prijs.",
+    "We staan voor u klaar dag en nacht.",
+    "We verzorgen alle voorkomende werkzaamheden.",
 ])
 def test_vendor_offering_body_blocked(body_text: str) -> None:
     """Vendor-offering body-language is altijd vendor — geen consumer."""
