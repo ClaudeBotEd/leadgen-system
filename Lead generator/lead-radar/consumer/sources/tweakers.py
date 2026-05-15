@@ -84,7 +84,15 @@ def _parse_search(html: str, query_terms: list[str] | None = None) -> list[RawPo
 def _set_dpg_consent(sess: PoliteSession) -> None:
     """Tweakers verbergt zoekresultaten achter een DPG Media privacy-gate.
     Met de juiste consent-cookies + 1 warmup-call naar de privacy-gate
-    krijgen we volledige HTML."""
+    krijgen we volledige HTML.
+
+    Cached per-sessie via `_dpg_consent_done` attribuut: cookies blijven
+    geldig zolang de session bestaat, dus 1 warmup-call volstaat.  Bij
+    1380 fetch()-aanroepen op zelfde sessie scheelt dit 1379 nutteloze
+    extra HTTP-calls.
+    """
+    if getattr(sess, "_dpg_consent_done", False):
+        return
     for name, val in [
         ("pwv2-token", "accepted"),
         ("pwv2-consent-tracking-tcfv2", "1"),
@@ -98,6 +106,10 @@ def _set_dpg_consent(sess: PoliteSession) -> None:
     # Warmup GET (status mag 400 zijn — zet nog steeds de juiste sessie-cookies)
     try:
         sess.session.get("https://tweakers.net/privacy-gate/store/", timeout=10)
+    except Exception:
+        pass
+    try:
+        sess._dpg_consent_done = True  # type: ignore[attr-defined]
     except Exception:
         pass
 
