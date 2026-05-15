@@ -27,11 +27,14 @@ DEFAULT_USER_AGENT = (
 @dataclass
 class HttpConfig:
     user_agent: str = DEFAULT_USER_AGENT
-    timeout: float = 15.0
+    timeout: float = 10.0
     request_delay: float = 2.0
     jitter: float = 0.6
     max_retries: int = 2
     backoff: float = 3.0
+    # Max attempts (incl. first) voor Timeout-errors.  Lager dan max_retries+1
+    # zodat slow hosts niet 3 × full-timeout opeten = 30s+ per call.
+    timeout_max_attempts: int = 2
 
 
 class PoliteSession:
@@ -64,7 +67,8 @@ class PoliteSession:
     def get(self, url: str, *, params: dict | None = None, accept_json: bool = False) -> requests.Response | None:
         self._sleep_polite()
         last_err: Exception | None = None
-        for attempt in range(self.cfg.max_retries + 1):
+        max_attempts = self.cfg.max_retries + 1
+        for attempt in range(max_attempts):
             try:
                 headers = {}
                 if accept_json:
@@ -75,16 +79,36 @@ class PoliteSession:
                 if resp.status_code == 200:
                     return resp
                 if resp.status_code in (429, 502, 503, 504):
-                    log.warning("Throttled %s on %s (attempt %d/%d)", resp.status_code, url, attempt + 1, self.cfg.max_retries + 1)
+                    log.warning("Throttled %s on %s (attempt %d/%d)", resp.status_code, url, attempt + 1, max_attempts)
                     time.sleep(self.cfg.backoff * (attempt + 1))
                     continue
                 log.info("Non-200 %s on %s — gaf op", resp.status_code, url)
                 return None
+            except requests.exceptions.SSLError as e:
+                # SSL = config issue, niet recoverable: 0 retries
+                log.error("SSL fout op %s: %s — geen retry", url, e)
+                return None
+            except requests.exceptions.Timeout as e:
+                # Timeout: max `timeout_max_attempts` (default 2).  Bij 3 attempts
+                # × 10s timeout zou 1 broken host 30s+ per call kosten.
+                last_err = e
+                if attempt + 1 >= self.cfg.timeout_max_attempts:
+                    log.warning("Timeout op %s na %d attempt(s): %s — opgeven",
+                                url, attempt + 1, e)
+                    return None
+                log.warning("Timeout op %s (attempt %d/%d): %s",
+                            url, attempt + 1, self.cfg.timeout_max_attempts, e)
+                time.sleep(self.cfg.backoff * (attempt + 1))
+            except requests.exceptions.ConnectionError as e:
+                # DNS, connection refused, etc. — niet recoverable in deze run
+                log.warning("Connection fout op %s: %s — geen retry", url, e)
+                return None
             except requests.RequestException as e:
+                # Generic transient — keep retrying
                 last_err = e
                 log.warning("HTTP error op %s: %s", url, e)
                 time.sleep(self.cfg.backoff * (attempt + 1))
-        log.error("Opgegeven na %d pogingen op %s: %s", self.cfg.max_retries + 1, url, last_err)
+        log.error("Opgegeven na %d pogingen op %s: %s", max_attempts, url, last_err)
         return None
 
 
