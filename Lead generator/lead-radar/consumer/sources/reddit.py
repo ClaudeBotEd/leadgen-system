@@ -81,16 +81,19 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
     found: list[RawPost] = []
     seen_ids: set[str] = set()
 
-    targets: list[tuple[str, dict]] = []
+    # Endpoint-order: algemene /search.json EERST (1 brede call met goede
+    # recall over heel Reddit), dan per-sub fallback alleen indien yield
+    # < limit.  Voorheen: 13 sub-calls vóór algemene, bij low-yield 13
+    # nutteloze calls per query.
+    targets: list[tuple[str, dict]] = [(
+        f"{BASE}/search.json",
+        {"q": q, "sort": "new", "limit": min(50, limit)},
+    )]
     for sub in subs:
         targets.append((
             f"{BASE}/r/{sub}/search.json",
             {"q": q, "restrict_sr": "on", "sort": "new", "limit": min(25, limit)},
         ))
-    targets.append((
-        f"{BASE}/search.json",
-        {"q": q, "sort": "new", "limit": min(50, limit)},
-    ))
 
     for url, params in targets:
         if len(found) >= limit:
