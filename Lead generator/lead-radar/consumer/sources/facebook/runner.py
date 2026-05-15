@@ -69,6 +69,76 @@ async def _cmd_login(account_id: str) -> int:
         return 1
 
 
+async def _cmd_scrape(niche_arg: str, account_id: str) -> int:
+    from .targets import load_targets
+    from .queue import write_jsonl
+    from .surfaces.groups import GroupsSurface
+    from .surfaces.base import ChallengeRaised
+    from .core.throttle import HumanPace
+    from consumer import RawPost
+
+    if not TARGETS_PATH.exists():
+        log.error("Targets config missing: %s", TARGETS_PATH)
+        return 2
+    cfg = load_targets(TARGETS_PATH)
+
+    niches_to_run = list(cfg.niches.keys()) if niche_arg == "all" else [niche_arg]
+    if niche_arg != "all" and niche_arg not in cfg.niches:
+        log.error("Unknown niche %r -- available: %s", niche_arg, ", ".join(cfg.niches.keys()))
+        return 2
+
+    pool = AccountPool(STATE_DIR)
+    try:
+        account = pool.acquire()
+    except NoActiveAccount:
+        log.error("No warmed/active accounts in pool.  Run `login` first.")
+        return 1
+
+    run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
+    queue_file = QUEUE_DIR / f"{run_id}.jsonl"
+
+    all_posts: list[RawPost] = []
+    stats: dict = {"posts_captured": 0, "errors": 0, "surfaces_visited": []}
+    aborted = False
+
+    async with PlaywrightSession(account, state_dir=STATE_DIR, headless=False) as ctx:
+        page = await new_stealth_page(ctx)
+        for niche in niches_to_run:
+            if aborted:
+                break
+            niche_targets = cfg.niches[niche]
+            if not niche_targets.groups:
+                log.info("niche %s: no group targets, skipping", niche)
+                continue
+            surface = GroupsSurface(niche=niche, run_id=run_id)
+            log.info("niche %s: scraping %d groups", niche, len(niche_targets.groups))
+            for tgt in niche_targets.groups:
+                try:
+                    posts = await surface.scrape(account, tgt, page)
+                    log.info("  group %s (%s): %d posts", tgt.id, tgt.name, len(posts))
+                    all_posts.extend(posts)
+                    pool.consume_quota(account.id, "group_views", 1)
+                except ChallengeRaised as exc:
+                    log.error("CHALLENGE on group %s: %s -- aborting run", tgt.id, exc.state.value)
+                    pool.mark_challenged(account.id, reason=f"groups:{exc.state.value}")
+                    stats["challenge_state"] = exc.state.value
+                    aborted = True
+                    break
+                except Exception:
+                    log.exception("  group %s: error -- continuing", tgt.id)
+                    stats["errors"] += 1
+                await HumanPace.between_targets()
+            stats["surfaces_visited"].append(f"groups:{niche}")
+            if not aborted and niche != niches_to_run[-1]:
+                await HumanPace.between_surfaces()
+
+    stats["posts_captured"] = len(all_posts)
+    pool.release(account, stats)
+    write_jsonl(queue_file, all_posts)
+    log.info("Run complete: %d posts -> %s", len(all_posts), queue_file)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m consumer.sources.facebook.runner")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -92,8 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "login":
         return asyncio.run(_cmd_login(args.account_id))
     if args.cmd == "scrape":
-        log.error("scrape command not yet implemented in this task -- see T12")
-        return 2
+        return asyncio.run(_cmd_scrape(args.niche, args.account_id))
     if args.cmd == "health":
         log.error("health command not yet implemented in this task -- see T18")
         return 2
