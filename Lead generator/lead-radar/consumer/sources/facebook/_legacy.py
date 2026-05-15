@@ -19,8 +19,8 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .. import RawPost, Lead, intent_from_score
-from ..processor import clean_post, classify_post_kind, score_post
+from ... import RawPost, Lead, intent_from_score
+from ...processor import clean_post, classify_post_kind, score_post
 
 log = logging.getLogger("consumer.sources.facebook")
 
