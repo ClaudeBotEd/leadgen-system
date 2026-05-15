@@ -139,3 +139,73 @@ def test_parse_real_fixture_posts_have_text() -> None:
                                     target=target, niche="warmtepomp", run_id="real")
     for p in posts:
         assert p.text.strip(), "extracted post has empty text -- selector matches container but not body"
+
+
+def test_parse_graphql_response_extracts_posts() -> None:
+    from consumer.sources.facebook.surfaces.groups import parse_groups_graphql_response
+
+    response = {
+        "data": {
+            "node": {
+                "group_feed": {
+                    "edges": [
+                        {"node": {"story": {
+                            "id": "story_1",
+                            "message": {"text": "Wie kent goede installateur warmtepomp Tilburg?"},
+                            "actors": [{"name": "Jan de Vries"}],
+                            "wwwURL": "https://www.facebook.com/groups/123/posts/777/",
+                            "creation_time": 1715760000,
+                        }}},
+                        {"node": {"story": {
+                            "id": "story_2",
+                            "message": {"text": "Wat kost een warmtepomp installatie tegenwoordig?"},
+                            "actors": [{"name": "Marie Peters"}],
+                            "wwwURL": "https://www.facebook.com/groups/123/posts/888/",
+                            "creation_time": 1715846400,
+                        }}},
+                    ]
+                }
+            }
+        }
+    }
+    target = GroupTarget(id="123", name="WP NL", max_posts=10)
+    posts = parse_groups_graphql_response(response, target=target, niche="warmtepomp", run_id="rid")
+    assert len(posts) == 2
+    assert posts[0].author == "Jan de Vries"
+    assert posts[0].url.endswith("/groups/123/posts/777/")
+    assert posts[0].metadata["surface"] == "groups"
+    assert posts[0].metadata["extraction"] == "graphql"
+
+
+def test_parse_graphql_response_skips_missing_message() -> None:
+    from consumer.sources.facebook.surfaces.groups import parse_groups_graphql_response
+    response = {
+        "data": {"node": {"group_feed": {"edges": [
+            {"node": {"story": {"id": "x", "actors": [{"name": "A"}],
+                                 "wwwURL": "https://fb.com/x", "creation_time": 1}}},
+            {"node": {"story": {"id": "y", "message": {"text": "ok"},
+                                 "actors": [{"name": "B"}],
+                                 "wwwURL": "https://www.facebook.com/groups/1/posts/2/",
+                                 "creation_time": 2}}},
+        ]}}}
+    }
+    target = GroupTarget(id="1", name="t", max_posts=10)
+    posts = parse_groups_graphql_response(response, target=target, niche="warmtepomp", run_id="t")
+    assert len(posts) == 1
+    assert posts[0].text == "ok"
+
+
+def test_parse_graphql_response_empty_edges_returns_empty() -> None:
+    from consumer.sources.facebook.surfaces.groups import parse_groups_graphql_response
+    target = GroupTarget(id="1", name="t", max_posts=10)
+    assert parse_groups_graphql_response(
+        {"data": {"node": {"group_feed": {"edges": []}}}},
+        target=target, niche="warmtepomp", run_id="t",
+    ) == []
+
+
+def test_parse_graphql_response_malformed_returns_empty() -> None:
+    from consumer.sources.facebook.surfaces.groups import parse_groups_graphql_response
+    target = GroupTarget(id="1", name="t", max_posts=10)
+    assert parse_groups_graphql_response({}, target=target, niche="warmtepomp", run_id="t") == []
+    assert parse_groups_graphql_response({"data": None}, target=target, niche="warmtepomp", run_id="t") == []
