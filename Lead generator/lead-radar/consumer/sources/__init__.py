@@ -12,6 +12,7 @@ from . import tweakers as _tweakers
 from . import bouwinfo as _bouwinfo
 from . import bouwinfo_forum as _bouwinfo_forum
 from . import klusidee_forum as _klusidee_forum
+from . import ouders_forum as _ouders_forum
 from . import google as _google
 from . import marktplaats as _marktplaats
 from . import tweedehands as _tweedehands
@@ -24,6 +25,7 @@ REGISTRY: dict[str, Callable] = {
     "bouwinfo": _bouwinfo.fetch,
     "bouwinfo_forum": _bouwinfo_forum.fetch,
     "klusidee_forum": _klusidee_forum.fetch,
+    "ouders_forum": _ouders_forum.fetch,
     "google": _google.fetch,
     "marktplaats": _marktplaats.fetch,
     "2dehands": _tweedehands.fetch,
@@ -40,12 +42,14 @@ ALL_SOURCES: list[str] = list(REGISTRY.keys())
 #  - reddit_new: /r/<sub>/new.json — sub-feed, location genegeerd (reddit_new.py:34)
 #  - bouwinfo, bouwinfo_forum: BE nationaal forum, geen city-routing
 #  - klusidee_forum: NL nationaal forum, geen city-routing (klusidee_forum.py:92)
+#  - ouders_forum: NL nationaal forum, geen city-routing (ouders_forum.py)
 NATIONAL_SOURCES: frozenset[str] = frozenset({
     "tweakers",
     "reddit_new",
     "bouwinfo",
     "bouwinfo_forum",
     "klusidee_forum",
+    "ouders_forum",
 })
 
 # Sources waar location-string het query-resultaat WEL beïnvloedt:

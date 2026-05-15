@@ -166,6 +166,10 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    ouders_subforums:
+      # ouders.nl/forum/huis-tuin-en-keuken — gezinnen-segment met
+      # vloerverwarming/koelen/energie threads (warmtepomp-relevant)
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       # High-intent subs voor warmtepomp — pakt ALLE recente posts, geen keyword-filter
       - Klussers
@@ -298,6 +302,9 @@ niches:
       - /categories/technieken/ventilatie
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      # ouders.nl heeft koelen-huis / airco threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -419,6 +426,9 @@ niches:
       - /categories/technieken/elektriciteit
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      # ouders.nl heeft zonnepanelen / energie-keuze threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -545,6 +555,9 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    ouders_subforums:
+      # ouders.nl heeft vloerverwarming / cv-keuze threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -665,6 +678,9 @@ niches:
       - /Forum/forum/keuken.3/
       - /Forum/forum/dak-en-schoorsteen.4/
       - /Forum/forum/gevels-en-gevelbekleding.34/
+    ouders_subforums:
+      # ouders.nl heeft renovatie/keuken/badkamer-overwegingen in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
