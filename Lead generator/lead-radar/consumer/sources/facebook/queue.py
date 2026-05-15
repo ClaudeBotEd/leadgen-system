@@ -66,8 +66,16 @@ def drain(queue_dir: Path) -> Iterator[RawPost]:
                     continue
         # Move file out of the queue dir BEFORE yielding so a caller break/early-return
         # doesn't leave the file in place to be re-drained next run.
+        #
+        # On rare same-name collisions (e.g. a previous drain produced the same filename)
+        # we append a -N counter suffix instead of overwriting, so audit history in
+        # processed/ is never silently destroyed.
         target = processed / jsonl.name
         if target.exists():
-            target.unlink()
+            stem, suffix = jsonl.stem, jsonl.suffix
+            n = 1
+            while (processed / f"{stem}-{n}{suffix}").exists():
+                n += 1
+            target = processed / f"{stem}-{n}{suffix}"
         jsonl.rename(target)
         yield from records

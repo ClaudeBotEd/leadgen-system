@@ -81,7 +81,7 @@ def test_drain_skips_processed_subdir(tmp_path: Path) -> None:
     assert posts[0].id == "facebook_groups:abc-0"
 
 
-def test_drain_handles_malformed_line(tmp_path: Path) -> None:
+def test_drain_handles_malformed_line(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     f = tmp_path / "run.jsonl"
     f.write_text(
         json.dumps({
@@ -97,8 +97,30 @@ def test_drain_handles_malformed_line(tmp_path: Path) -> None:
         }) + "\n",
         encoding="utf-8",
     )
-    posts = list(drain(tmp_path))
+    with caplog.at_level("WARNING", logger="consumer.sources.facebook.queue"):
+        posts = list(drain(tmp_path))
     assert len(posts) == 2, "malformed line skipped, valid records returned"
+    # Closes a regression gap: if log.warning is ever silenced, this will fail.
+    assert any(
+        "malformed line" in rec.message and rec.levelname == "WARNING"
+        for rec in caplog.records
+    ), f"expected a WARNING about malformed line, got: {[(r.levelname, r.message) for r in caplog.records]}"
+
+
+def test_drain_processed_collision_appends_suffix(tmp_path: Path) -> None:
+    """When processed/<name>.jsonl already exists, drain should NOT overwrite — uses -1, -2, ... suffix."""
+    # Seed a pre-existing processed file (simulating a previous drain)
+    (tmp_path / "processed").mkdir()
+    (tmp_path / "processed" / "run.jsonl").write_text("preexisting\n", encoding="utf-8")
+
+    # Now write a new queue file with the same name
+    write_jsonl(tmp_path / "run.jsonl", [_sample_post(0)])
+    list(drain(tmp_path))
+
+    # The old processed file must still be there, untouched
+    assert (tmp_path / "processed" / "run.jsonl").read_text() == "preexisting\n"
+    # The new file lands at run-1.jsonl
+    assert (tmp_path / "processed" / "run-1.jsonl").exists()
 
 
 def test_drain_empty_dir_returns_nothing(tmp_path: Path) -> None:
