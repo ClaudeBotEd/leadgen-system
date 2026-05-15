@@ -5,6 +5,14 @@ Tweakers heeft geen publieke API.  We gebruiken hun Algemene Zoeken-pagina:
 
 Antwoorden zijn HTML — we parsen met BeautifulSoup.  Bij wijzigingen aan de
 HTML structuur faalt parsing maar returnen we []  — geen crash.
+
+Anti-bot workaround (2026-05-15): Tweakers/DPG Media privacy-gate
+detecteert PoliteSession's rijke Accept/Accept-Language/Accept-Encoding
+headers als 'unusual client' en redirect naar consent-gate ondanks
+geldige cookies (8KB gate HTML ipv 400KB resultaten).  De search-call
+gebruikt daarom `lean_headers=True` (PoliteSession-feature) waardoor
+sessie-level headers gestript worden — alleen User-Agent + Cookie blijft.
+Cookies worden vooraf gezet door _set_dpg_consent.
 """
 from __future__ import annotations
 
@@ -127,7 +135,10 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         if len(out) >= limit:
             break
         params = {"keywords": q, "page": page}
-        resp = sess.get(SEARCH_URL, params=params)
+        # lean_headers=True — Tweakers/DPG anti-bot redirect naar consent-gate
+        # bij rijke Accept/Accept-Language headers ondanks geldige cookies.
+        # Zie module docstring KNOWN ISSUE 2026-05-15.
+        resp = sess.get(SEARCH_URL, params=params, lean_headers=True)
         if resp is None:
             log.warning("Tweakers gaf geen response voor q=%r page=%d", q, page)
             break

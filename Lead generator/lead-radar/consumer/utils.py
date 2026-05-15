@@ -64,15 +64,30 @@ class PoliteSession:
         if elapsed < target:
             time.sleep(target - elapsed)
 
-    def get(self, url: str, *, params: dict | None = None, accept_json: bool = False) -> requests.Response | None:
+    def get(self, url: str, *, params: dict | None = None, accept_json: bool = False,
+            lean_headers: bool = False) -> requests.Response | None:
+        """HTTP GET met polite sleep + retry.
+
+        lean_headers: bij True strippen we session-level Accept/Accept-Language/
+        Accept-Encoding voor deze call (None-trick in requests).  Nodig voor
+        hosts met aggressive anti-bot (Tweakers/DPG): die detecteren onze
+        rijke header-set als 'unusual client' en redirecten naar consent-gate
+        zelfs met geldige cookies.
+        """
         self._sleep_polite()
         last_err: Exception | None = None
         max_attempts = self.cfg.max_retries + 1
         for attempt in range(max_attempts):
             try:
-                headers = {}
+                headers: dict = {}
                 if accept_json:
                     headers["Accept"] = "application/json"
+                if lean_headers:
+                    # None-value strip session-level header voor deze call
+                    headers.setdefault("Accept-Language", None)
+                    headers.setdefault("Accept-Encoding", None)
+                    if not accept_json:
+                        headers["Accept"] = None
                 resp = self.session.get(url, params=params, timeout=self.cfg.timeout, headers=headers)
                 with self._lock:
                     self._last_call = time.monotonic()

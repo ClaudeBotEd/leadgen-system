@@ -114,3 +114,49 @@ def test_default_timeout_is_ten_seconds() -> None:
     """Default timeout verlaagd van 15 naar 10 sec — passender voor JSON/HTML endpoints."""
     cfg = HttpConfig()
     assert cfg.timeout == 10.0, f"Default timeout zou 10 moeten zijn, was {cfg.timeout}"
+
+
+def test_lean_headers_strips_accept_headers() -> None:
+    """lean_headers=True strip session-level Accept/Accept-Language voor anti-bot
+    workaround (Tweakers/DPG)."""
+    sess = _make_session()
+    captured: dict = {}
+
+    class FakeResp:
+        status_code = 200
+
+    def fake_get(url, *, params=None, timeout=None, headers=None):  # noqa: ANN001
+        captured["headers"] = headers or {}
+        return FakeResp()
+
+    with patch.object(sess.session, "get", side_effect=fake_get):
+        sess.get("https://anti-bot.example/", lean_headers=True)
+
+    h = captured["headers"]
+    assert h.get("Accept") is None, f"Accept moest None zijn (gestript); was {h.get('Accept')!r}"
+    assert h.get("Accept-Language") is None, (
+        f"Accept-Language moest None zijn; was {h.get('Accept-Language')!r}"
+    )
+    assert h.get("Accept-Encoding") is None, (
+        f"Accept-Encoding moest None zijn; was {h.get('Accept-Encoding')!r}"
+    )
+
+
+def test_lean_headers_false_keeps_session_headers() -> None:
+    """lean_headers=False (default) laat session-level headers ongemoeid."""
+    sess = _make_session()
+    captured: dict = {}
+
+    class FakeResp:
+        status_code = 200
+
+    def fake_get(url, *, params=None, timeout=None, headers=None):  # noqa: ANN001
+        captured["headers"] = headers or {}
+        return FakeResp()
+
+    with patch.object(sess.session, "get", side_effect=fake_get):
+        sess.get("https://normal.example/", lean_headers=False)
+
+    h = captured["headers"]
+    assert "Accept" not in h or h.get("Accept") is not None
+    assert "Accept-Language" not in h or h.get("Accept-Language") is not None
