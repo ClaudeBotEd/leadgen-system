@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import logging
 import math
+import os
 import sys
 import time
 from datetime import datetime, timezone, timedelta
@@ -166,6 +167,12 @@ def parse_args() -> argparse.Namespace:
                    help="Min score voor LLM-verification (default 40)")
     p.add_argument("--llm-max-score", type=int, default=75,
                    help="Max score voor LLM-verification (default 75)")
+    p.add_argument("--llm-max-eur", type=float, default=0.0,
+                   help="LLM budget cap per run in EUR (default 0 = uit). "
+                        "Bij overschrijden van geschatte spend: verdere "
+                        "verify_post() calls returnen skipped(budget_exhausted) "
+                        "en de pipeline gebruikt regex-score. Aanbevolen bij "
+                        "--daily --locations all: 5.00.")
     p.add_argument("--no-author-enrich", action="store_true",
                    help="Skip Reddit author-history check")
     p.add_argument("--no-telegram", action="store_true",
@@ -624,6 +631,14 @@ def run_daily(args: argparse.Namespace) -> int:
     _reset_ddg_ratelimit()
     # Reset per-source health counter zodat dead-source skip per run werkt.
     reset_source_health()
+    # LLM budget cap: wire CLI flag naar env var die llm_verifier al leest.
+    # >0 = enforce; 0 = uit (verwijder env var zodat eerdere run niet doorlekt).
+    llm_max_eur = float(getattr(args, "llm_max_eur", 0.0) or 0.0)
+    if llm_max_eur > 0.0:
+        os.environ["LEAD_RADAR_LLM_BUDGET_EUR"] = str(llm_max_eur)
+        log.info("LLM budget cap actief: €%.2f", llm_max_eur)
+    else:
+        os.environ.pop("LEAD_RADAR_LLM_BUDGET_EUR", None)
 
     print()
     print("=" * 70)
