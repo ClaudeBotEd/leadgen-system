@@ -60,6 +60,10 @@ from consumer.logging_setup import setup_logging  # noqa: E402
 
 HOT_ALERT_THRESHOLD = 80
 
+# Mockable monotonic-clock voor wall-clock budget enforcement.  Tests
+# overschrijven via monkeypatch om elapsed-tijd te simuleren.
+_monotonic = time.monotonic
+
 log = logging.getLogger("consumer.cli")
 
 DEFAULT_QUERIES_YAML = HERE / "consumer" / "queries.yaml"
@@ -133,6 +137,10 @@ def parse_args() -> argparse.Namespace:
                    help="Cross-run dedup uit (negeer seen_hashes.json)")
     p.add_argument("--max-queries", type=int, default=8,
                    help="Max # tekst-queries per niche (default 8)")
+    p.add_argument("--max-runtime-minutes", type=float, default=0.0,
+                   help="Wall-clock budget voor --daily mode (default 0 = uit). "
+                        "Bij overschrijding: skip resterende niches, push wat we hebben. "
+                        "Aangeraden bij --locations all: 90.")
 
     # Google Sheets
     p.add_argument("--sheets", action="store_true",
@@ -624,7 +632,23 @@ def run_daily(args: argparse.Namespace) -> int:
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
-    for niche in niches_to_run:
+    # Wall-clock budget: stop met nieuwe niches starten zodra elapsed
+    # > budget.  Geen abort midden in niche — sheets-sync per niche
+    # zorgt dat tussen-resultaten al gepersist zijn.
+    budget_seconds = max(0.0, getattr(args, "max_runtime_minutes", 0.0) or 0.0) * 60.0
+    run_start = _monotonic()
+
+    for niche_idx, niche in enumerate(niches_to_run):
+        if budget_seconds > 0:
+            elapsed = _monotonic() - run_start
+            if elapsed > budget_seconds:
+                remaining = niches_to_run[niche_idx:]
+                log.warning(
+                    "Wall-clock budget %.0fs overschreden (elapsed=%.0fs) — "
+                    "skip %d resterende niches: %s",
+                    budget_seconds, elapsed, len(remaining), remaining,
+                )
+                break
         niche_leads: list[Lead] = []
         # Nationale sources: 1× per niche (locatie genegeerd door source-impl,
         # zie consumer/sources/__init__.py NATIONAL_SOURCES toelichting).
