@@ -73,7 +73,9 @@ async def _cmd_scrape(niche_arg: str, account_id: str) -> int:
     from .targets import load_targets
     from .queue import write_jsonl
     from .surfaces.groups import GroupsSurface
-    from .surfaces.base import ChallengeRaised
+    from .surfaces.marketplace import MarketplaceSurface
+    from .surfaces.pages import PagesSurface
+    from .surfaces.base import BackoffRaised, ChallengeRaised
     from .core.throttle import HumanPace
     from consumer import RawPost
 
@@ -98,44 +100,141 @@ async def _cmd_scrape(niche_arg: str, account_id: str) -> int:
     queue_file = QUEUE_DIR / f"{run_id}.jsonl"
 
     all_posts: list[RawPost] = []
-    stats: dict = {"posts_captured": 0, "errors": 0, "surfaces_visited": []}
+    stats: dict = {
+        "posts_captured": 0,
+        "errors": 0,
+        "surfaces_visited": [],
+        "backoffs": {},
+    }
     aborted = False
 
     async with PlaywrightSession(account, state_dir=STATE_DIR, headless=False) as ctx:
         page = await new_stealth_page(ctx)
+
         for niche in niches_to_run:
             if aborted:
                 break
             niche_targets = cfg.niches[niche]
-            if not niche_targets.groups:
-                log.info("niche %s: no group targets, skipping", niche)
-                continue
-            surface = GroupsSurface(niche=niche, run_id=run_id)
-            log.info("niche %s: scraping %d groups", niche, len(niche_targets.groups))
-            for tgt in niche_targets.groups:
-                try:
-                    posts = await surface.scrape(account, tgt, page)
-                    log.info("  group %s (%s): %d posts", tgt.id, tgt.name, len(posts))
-                    all_posts.extend(posts)
-                    pool.consume_quota(account.id, "group_views", 1)
-                except ChallengeRaised as exc:
-                    log.error("CHALLENGE on group %s: %s -- aborting run", tgt.id, exc.state.value)
-                    pool.mark_challenged(account.id, reason=f"groups:{exc.state.value}")
-                    stats["challenge_state"] = exc.state.value
-                    aborted = True
-                    break
-                except Exception:
-                    log.exception("  group %s: error -- continuing", tgt.id)
-                    stats["errors"] += 1
-                await HumanPace.between_targets()
-            stats["surfaces_visited"].append(f"groups:{niche}")
-            if not aborted and niche != niches_to_run[-1]:
-                await HumanPace.between_surfaces()
+
+            # ── Groups ────────────────────────────────────────────────
+            if niche_targets.groups:
+                groups = GroupsSurface(niche=niche, run_id=run_id)
+                surface_backoff = False
+                for tgt in niche_targets.groups:
+                    if surface_backoff:
+                        break
+                    try:
+                        posts = await groups.scrape(account, tgt, page)
+                        log.info("  groups/%s (%s): %d", tgt.id, tgt.name, len(posts))
+                        all_posts.extend(posts)
+                        pool.consume_quota(account.id, "group_views", 1)
+                    except ChallengeRaised as exc:
+                        log.error("CHALLENGE in groups: %s -- aborting", exc.state.value)
+                        pool.mark_challenged(account.id, reason=f"groups:{exc.state.value}")
+                        stats["challenge_state"] = exc.state.value
+                        aborted = True
+                        break
+                    except BackoffRaised as exc:
+                        log.warning("BACKOFF in groups: %s -- skipping rest of surface", exc.state.value)
+                        stats["backoffs"][f"groups:{niche}"] = exc.state.value
+                        surface_backoff = True
+                        break
+                    except Exception:
+                        log.exception("  groups/%s error -- continuing", tgt.id)
+                        stats["errors"] += 1
+                    await HumanPace.between_targets()
+                stats["surfaces_visited"].append(f"groups:{niche}")
+                if not aborted:
+                    await HumanPace.between_surfaces()
+            if aborted:
+                break
+
+            # ── Marketplace ───────────────────────────────────────────
+            if niche_targets.marketplace:
+                mp = MarketplaceSurface(niche=niche, run_id=run_id)
+                surface_backoff = False
+                for tgt in niche_targets.marketplace:
+                    if surface_backoff:
+                        break
+                    try:
+                        posts = await mp.scrape(account, tgt, page)
+                        log.info("  marketplace/%s: %d", tgt.query, len(posts))
+                        all_posts.extend(posts)
+                        pool.consume_quota(account.id, "mp_queries", 1)
+                    except ChallengeRaised as exc:
+                        log.error("CHALLENGE in marketplace: %s -- aborting", exc.state.value)
+                        pool.mark_challenged(account.id, reason=f"marketplace:{exc.state.value}")
+                        stats["challenge_state"] = exc.state.value
+                        aborted = True
+                        break
+                    except BackoffRaised as exc:
+                        log.warning("BACKOFF in marketplace: %s -- skipping rest of surface", exc.state.value)
+                        stats["backoffs"][f"marketplace:{niche}"] = exc.state.value
+                        surface_backoff = True
+                        break
+                    except Exception:
+                        log.exception("  marketplace/%s error -- continuing", tgt.query)
+                        stats["errors"] += 1
+                    await HumanPace.between_targets()
+                stats["surfaces_visited"].append(f"marketplace:{niche}")
+                if not aborted:
+                    await HumanPace.between_surfaces()
+            if aborted:
+                break
+
+            # ── Pages ─────────────────────────────────────────────────
+            if niche_targets.pages:
+                pages = PagesSurface(niche=niche, run_id=run_id)
+                surface_backoff = False
+                for tgt in niche_targets.pages:
+                    if surface_backoff:
+                        break
+                    try:
+                        posts = await pages.scrape(account, tgt, page)
+                        log.info("  pages/%s (%s): %d", tgt.slug, tgt.name, len(posts))
+                        all_posts.extend(posts)
+                        pool.consume_quota(account.id, "page_views", 1)
+                    except ChallengeRaised as exc:
+                        log.error("CHALLENGE in pages: %s -- aborting", exc.state.value)
+                        pool.mark_challenged(account.id, reason=f"pages:{exc.state.value}")
+                        stats["challenge_state"] = exc.state.value
+                        aborted = True
+                        break
+                    except BackoffRaised as exc:
+                        log.warning("BACKOFF in pages: %s -- skipping rest of surface", exc.state.value)
+                        stats["backoffs"][f"pages:{niche}"] = exc.state.value
+                        surface_backoff = True
+                        break
+                    except Exception:
+                        log.exception("  pages/%s error -- continuing", tgt.slug)
+                        stats["errors"] += 1
+                    await HumanPace.between_targets()
+                stats["surfaces_visited"].append(f"pages:{niche}")
 
     stats["posts_captured"] = len(all_posts)
     pool.release(account, stats)
     write_jsonl(queue_file, all_posts)
     log.info("Run complete: %d posts -> %s", len(all_posts), queue_file)
+    return 0
+
+
+def _cmd_health() -> int:
+    import json as _json
+    if not STATE_DIR.exists():
+        log.info("No accounts registered (state dir missing: %s)", STATE_DIR)
+        return 0
+    found = False
+    for acc_dir in sorted(STATE_DIR.iterdir()):
+        status = acc_dir / "status.json"
+        if not status.exists():
+            continue
+        found = True
+        data = _json.loads(status.read_text(encoding="utf-8"))
+        log.info("%s: state=%s last_used=%s quota=%s last_run=%s",
+                 data["id"], data["state"], data.get("last_used_at"),
+                 data.get("quota_remaining"), data.get("last_run_stats"))
+    if not found:
+        log.info("No accounts registered.  Run `login` to create one.")
     return 0
 
 
@@ -164,8 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "scrape":
         return asyncio.run(_cmd_scrape(args.niche, args.account_id))
     if args.cmd == "health":
-        log.error("health command not yet implemented in this task -- see T18")
-        return 2
+        return _cmd_health()
     return 1
 
 

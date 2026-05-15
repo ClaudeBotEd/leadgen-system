@@ -14,7 +14,7 @@ from consumer import RawPost
 from ..core.detector import ChallengeState, detect_state
 from ..core.throttle import HumanPace
 from ..targets import MarketplaceTarget
-from .base import ChallengeRaised, Surface
+from .base import BackoffRaised, ChallengeRaised, Surface
 from . import _selectors as sel
 
 if TYPE_CHECKING:
@@ -100,8 +100,12 @@ class MarketplaceSurface(Surface):
         await HumanPace.read_dwell()
 
         state = await detect_state(page)
-        if state != ChallengeState.OK:
+        # Hard states (CHALLENGED, LOGIN_WALL) abort the run and flip account state.
+        # Soft states (RATE_LIMITED) signal back-off without losing the account.
+        if state in (ChallengeState.CHALLENGED, ChallengeState.LOGIN_WALL):
             raise ChallengeRaised(state, surface=self.name, url=url)
+        if state == ChallengeState.RATE_LIMITED:
+            raise BackoffRaised(state, surface=self.name, url=url)
 
         # Marketplace cards mount via JS after navigation; networkidle isn't
         # enough on a slow run.  Wait explicitly for at least one item-link
