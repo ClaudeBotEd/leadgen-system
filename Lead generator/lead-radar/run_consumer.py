@@ -173,8 +173,12 @@ def parse_args() -> argparse.Namespace:
                         "verify_post() calls returnen skipped(budget_exhausted) "
                         "en de pipeline gebruikt regex-score. Aanbevolen bij "
                         "--daily --locations all: 5.00.")
+    p.add_argument("--enrich-authors", action="store_true",
+                   help="Reddit author-history check inschakelen (default UIT — "
+                        "rate-limited door Reddit, gaf 429s op daily runs)")
     p.add_argument("--no-author-enrich", action="store_true",
-                   help="Skip Reddit author-history check")
+                   help="[DEPRECATED] Was vroeger nodig om enrichment uit te zetten; "
+                        "enrichment is nu standaard uit. Gebruik --enrich-authors voor opt-in.")
     p.add_argument("--no-telegram", action="store_true",
                    help="Skip Telegram alerts voor HOT leads")
     p.add_argument("--telegram-threshold", type=int, default=80,
@@ -371,7 +375,7 @@ def run_one_niche(
                  len(fuzzy_store), args.dedup_threshold)
 
     author_cache_dir: Path | None = None
-    if not args.no_author_enrich:
+    if getattr(args, "enrich_authors", False) and not args.no_author_enrich:
         author_cache_dir = Path(args.outdir) / ".author_cache"
 
     cutoff = (datetime.now(timezone.utc) - timedelta(days=args.max_age_days)) if args.max_age_days > 0 else None
@@ -485,7 +489,7 @@ def run_one_niche(
                         breakdown["llm_adjustment"] = new_score - score
                     score = new_score
 
-            if (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
+            if getattr(args, "enrich_authors", False) and (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
                 profile = enrich_author(raw.author, cache_dir=author_cache_dir)
                 if profile.available:
                     author_calls += 1
