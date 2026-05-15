@@ -162,7 +162,7 @@ _RE_OFFER_RECEIVED = re.compile(
     r"\b(offerte\s*(gehad|ontvangen|gekregen|binnen)|"
     r"al een offerte|al offertes|andere offertes|tweede offerte|"
     r"second opinion|tweede mening|"
-    r"prijzen vergelijken|offertes vergelijken|"
+    r"prijzen vergelijken|offertes? vergelijken|"
     r"ik heb een offerte|gisteren een offerte|vorige week offerte)\b",
     re.IGNORECASE,
 )
@@ -291,6 +291,22 @@ def score_post(
         if not any(kw.lower() in lower for kw in niche_keywords):
             total -= 30
             breakdown["off_topic_penalty"] = -30
+
+    # HOT-tier gate: zonder hard koop-signal mag een soft-signal stack niet
+    # HOT (>=70) bereiken. Voorkomt dat news-artikelen / discussies met
+    # 4× soft-signal (location + situation + budget + soft urgency + intent)
+    # in de HOT-output landen zonder echte koop-intentie.
+    if total >= 70:
+        has_hard_signal = (
+            breakdown.get("urgency", 0) >= 35
+            or breakdown.get("broken_bonus", 0) > 0
+            or breakdown.get("deadline_bonus", 0) > 0
+            or breakdown.get("offer_received_bonus", 0) > 0
+        )
+        if not has_hard_signal:
+            cap = 65
+            breakdown["soft_signals_only_cap"] = cap - total
+            total = cap
 
     total = max(0, min(100, total))
 

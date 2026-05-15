@@ -120,3 +120,109 @@ def test_research_regex_still_catches_research_phrases() -> None:
     assert _RE_RESEARCH_ONLY.search("benieuwd naar de verschillen") is not None
     assert _RE_RESEARCH_ONLY.search("twijfel tussen warmtepomp en cv-ketel") is not None
     assert _RE_RESEARCH_ONLY.search("welk merk warmtepomp is beter") is not None
+
+
+# === HOT-tier gate (waargenomen 2026-05-15 audit) ===
+# Reddit news-artikel over hypotheekrenteaftrek scoorde 80 (zonder
+# author_penalty) door soft-signal stacking: location 20 (city in quote) +
+# urgency_soft 20 ("deze week") + situation 15 ("woning") + budget 15
+# ("kosten") + intent_bonus 10 ("deze week"). Geen hard koop-signal.
+#
+# Beleid: HOT (>=70) vereist >=1 hard signal —
+# urgency_hard (35) / broken_bonus (40) / deadline_bonus (25) /
+# offer_received_bonus (20). Anders cap op WARM-high (65).
+
+
+def _score_for(title: str, text: str, niche: str = "cv") -> tuple[int, dict]:
+    raw = RawPost(
+        id="x", source="test", url="https://example.com/x",
+        title=title, text=text,
+    )
+    cleaned = clean_post(raw)
+    keywords = NICHE_KEYWORDS.get(niche, [niche])
+    return score_post(cleaned, niche_keywords=keywords)
+
+
+def test_hot_tier_gate_caps_pure_soft_signals_to_65() -> None:
+    """Stack van soft-signals zonder hard signal mag niet HOT worden."""
+    score, breakdown = _score_for(
+        title="Renovatie installateur Amsterdam — graag offerte",
+        text=(
+            "Onze woning in Amsterdam heeft een renovatie nodig. "
+            "Wie kent een goede installateur? Budget rond 5000 euro. "
+            "Laten plaatsen graag, offerte gevraagd."
+        ),
+        niche="renovatie",
+    )
+    assert score <= 65, (
+        f"Pure soft-signal stack moet capped worden op 65, kreeg {score}. "
+        f"breakdown={breakdown}"
+    )
+    assert "soft_signals_only_cap" in breakdown, breakdown
+
+
+def test_hot_tier_gate_allows_hot_with_broken_bonus() -> None:
+    """Soft signals + broken_bonus = HOT toegestaan."""
+    score, breakdown = _score_for(
+        title="CV ketel kapot Amsterdam, monteur nodig",
+        text=(
+            "Onze cv-ketel is kapot, geen warm water, storing. "
+            "Wie kent een goede monteur in Amsterdam? Offerte gewenst."
+        ),
+        niche="cv",
+    )
+    assert score >= 70, f"Met broken_bonus moet HOT mogelijk zijn, kreeg {score}"
+    assert "soft_signals_only_cap" not in breakdown, breakdown
+
+
+def test_hot_tier_gate_allows_hot_with_urgency_hard() -> None:
+    """Soft signals + urgency_hard = HOT toegestaan."""
+    score, breakdown = _score_for(
+        title="Warmtepomp installateur Amsterdam, met spoed",
+        text=(
+            "Ik wil een warmtepomp laten plaatsen in mijn woning. "
+            "Met spoed nodig, asap. Budget 8000 euro."
+        ),
+        niche="warmtepomp",
+    )
+    assert score >= 70, f"Met urgency_hard moet HOT mogelijk zijn, kreeg {score}"
+    assert "soft_signals_only_cap" not in breakdown, breakdown
+
+
+def test_hot_tier_gate_allows_hot_with_deadline() -> None:
+    """Soft signals + deadline_bonus = HOT toegestaan."""
+    score, breakdown = _score_for(
+        title="Renovatie aannemer Rotterdam binnen 2 weken",
+        text=(
+            "Wij willen onze woning renoveren in Rotterdam. "
+            "Aannemer gezocht die binnen 2 weken kan starten. Budget 15000 euro."
+        ),
+        niche="renovatie",
+    )
+    assert score >= 70, f"Met deadline_bonus moet HOT mogelijk zijn, kreeg {score}"
+    assert "soft_signals_only_cap" not in breakdown, breakdown
+
+
+def test_hot_tier_gate_allows_hot_with_offer_received() -> None:
+    """Soft signals + offer_received_bonus = HOT toegestaan."""
+    score, breakdown = _score_for(
+        title="Warmtepomp Eindhoven — andere offerte vergelijken",
+        text=(
+            "Ik heb al een offerte gehad voor een warmtepomp in Eindhoven. "
+            "Wil graag een tweede mening. Installateur gezocht voor offerte."
+        ),
+        niche="warmtepomp",
+    )
+    assert score >= 70, f"Met offer_received_bonus moet HOT mogelijk zijn, kreeg {score}"
+    assert "soft_signals_only_cap" not in breakdown, breakdown
+
+
+def test_hot_tier_gate_below_70_unaffected() -> None:
+    """Onder 70 punten doet de gate niets — geen cap penalty."""
+    score, breakdown = _score_for(
+        title="Renovatie woning Brugge",
+        text="Wij gaan onze woning renoveren in Brugge. Bouwjaar 1972, 150m2.",
+        niche="renovatie",
+    )
+    assert score < 70
+    assert "soft_signals_only_cap" not in breakdown, breakdown
