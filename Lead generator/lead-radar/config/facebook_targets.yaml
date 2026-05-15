@@ -1,0 +1,43 @@
+# Facebook scraper target config — operator edits this file.
+#
+# Each niche lists which Facebook surfaces to scrape and what input to
+# feed them.  Group IDs come from the URL bar when you visit a group:
+# https://www.facebook.com/groups/123456789  ->  id: "123456789"
+# Page slugs come from the URL too: facebook.com/<slug>
+#
+# Leave any surface (groups, pages, marketplace) empty to skip it.
+defaults:
+  max_posts_per_target: 20
+  max_age_days: 7
+
+niches:
+  warmtepomp:
+    groups: []   # add NL groups about warmtepompen here
+    pages: []
+    marketplace:
+      - query: "warmtepomp installateur gezocht"
+      - query: "warmtepomp installatie hulp"
+
+  airco:
+    groups: []
+    pages: []
+    marketplace:
+      - query: "airco installateur gezocht"
+
+  zonnepanelen:
+    groups: []
+    pages: []
+    marketplace:
+      - query: "zonnepanelen installateur gezocht"
+
+  cv:
+    groups: []
+    pages: []
+    marketplace:
+      - query: "cv ketel installateur gezocht"
+
+  renovatie:
+    groups: []
+    pages: []
+    marketplace:
+      - query: "aannemer renovatie gezocht"
