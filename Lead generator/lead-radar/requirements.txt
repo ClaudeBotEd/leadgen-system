@@ -9,6 +9,9 @@ lxml>=4.9.0
 urllib3>=2.0.0
 
 # Search engines (gratis, geen API key)
+# ddgs is de hernoemde duckduckgo-search; raakt DDG direct ipv Bing-fallback
+ddgs>=9.0.0
+# Fallback voor wie nog op oude package zit — google.py probeert ddgs eerst
 duckduckgo-search>=6.0.0
 
 # Data & config

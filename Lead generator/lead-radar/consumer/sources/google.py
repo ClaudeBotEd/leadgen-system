@@ -18,18 +18,28 @@ from .. import RawPost
 log = logging.getLogger("consumer.sources.google")
 
 try:
-    from duckduckgo_search import DDGS  # type: ignore
+    # `ddgs` is de hernoemde versie van `duckduckgo_search` (mei 2026+).
+    # Critical: ddgs.text() raakt DDG direct, terwijl oude duckduckgo_search
+    # vanaf v8 vaak naar Bing-fallback gaat → 0 hits voor site:reddit.com queries.
+    from ddgs import DDGS  # type: ignore
     _HAS_DDG = True
 except Exception:
-    DDGS = None  # type: ignore
-    _HAS_DDG = False
+    try:
+        from duckduckgo_search import DDGS  # type: ignore
+        _HAS_DDG = True
+    except Exception:
+        DDGS = None  # type: ignore
+        _HAS_DDG = False
 
 try:
-    from duckduckgo_search.exceptions import RatelimitException  # type: ignore
+    from ddgs.exceptions import RatelimitException  # type: ignore
 except Exception:
-    # Fallback: vang alleen generieke Exception als lib oud/afwezig is
-    class RatelimitException(Exception):  # type: ignore
-        pass
+    try:
+        from duckduckgo_search.exceptions import RatelimitException  # type: ignore
+    except Exception:
+        # Fallback: vang alleen generieke Exception als lib oud/afwezig is
+        class RatelimitException(Exception):  # type: ignore
+            pass
 
 # Rate-limit guard: DDG blokt agressief bij >100 req/h.  Bij --daily
 # --locations all worden 1000+ DDG-calls gedaan; zodra DDG eenmaal

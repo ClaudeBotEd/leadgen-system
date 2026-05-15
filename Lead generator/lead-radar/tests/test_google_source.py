@@ -66,7 +66,7 @@ def test_fetch_skips_after_ratelimit_threshold(
     DDG ons al heeft geblokt.
     """
     from consumer.sources import google as google_mod
-    from duckduckgo_search.exceptions import RatelimitException
+    from consumer.sources.google import RatelimitException
 
     google_mod.reset_ratelimit_state()
 
@@ -127,7 +127,7 @@ def test_reset_ratelimit_state_clears_counter(
 ) -> None:
     """Reset moet rate-limit counter terug op 0 zetten — voor nieuwe runs."""
     from consumer.sources import google as google_mod
-    from duckduckgo_search.exceptions import RatelimitException
+    from consumer.sources.google import RatelimitException
 
     google_mod.reset_ratelimit_state()
 
