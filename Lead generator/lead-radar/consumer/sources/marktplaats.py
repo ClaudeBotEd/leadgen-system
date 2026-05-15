@@ -94,15 +94,22 @@ def fetch_classifieds(
     limit: int = 25,
     location: str | None = None,
     session: PoliteSession | None = None,
+    deep_variants: bool = True,
 ) -> list[RawPost]:
-    """Generieke fetcher voor marktplaats.nl en 2dehands.be — zelfde JSON/HTML."""
+    """Generieke fetcher voor marktplaats.nl en 2dehands.be — zelfde JSON/HTML.
+
+    `deep_variants`: True (default) probeert "q", "q gezocht", "q gevraagd"
+    voor max recall.  False = alleen base-query — bespaart 2/3 HTTP-calls
+    bij daily multi-loc runs waar varianten <5% extra hits gaven.
+    """
     sess = session or PoliteSession(HttpConfig(request_delay=2.5))
     q = f"{query} {location}".strip() if location else query
 
     # Search-URL.  Sorteer op datum (recent eerst) voor verse leads.
     out: list[RawPost] = []
     seen: set[str] = set()
-    for variant in (q, f"{q} gezocht", f"{q} gevraagd"):
+    variants = (q, f"{q} gezocht", f"{q} gevraagd") if deep_variants else (q,)
+    for variant in variants:
         if len(out) >= limit:
             break
         url = f"{base}/q/{quote(variant)}/"
@@ -127,8 +134,11 @@ def fetch_classifieds(
 
 
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
-          session: PoliteSession | None = None, **_: object) -> list[RawPost]:
+          session: PoliteSession | None = None,
+          deep_variants: bool = True,
+          **_: object) -> list[RawPost]:
     return fetch_classifieds(
         BASE, query, source_name="marktplaats",
         limit=limit, location=location, session=session,
+        deep_variants=deep_variants,
     )

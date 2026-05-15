@@ -236,18 +236,24 @@ def scale_max_queries_for_locations(base: int, n_locations: int) -> int:
     return min(base, scaled)
 
 
-def extra_kwargs_for_source(source_name: str, defaults: dict) -> dict:
+def extra_kwargs_for_source(source_name: str, defaults: dict,
+                            *, daily: bool = False) -> dict:
     """Source-specific kwargs uit queries.yaml `defaults`-section.
 
-    Voorkomt dat per-source config silent dead code wordt.  Reddit is
-    momenteel de enige source die kwargs uit defaults nodig heeft
-    (subreddits-lijst).  Andere sources krijgen lege dict terug zodat
-    `**extra_kwargs` veilig spreidt.
+    Voorkomt dat per-source config silent dead code wordt.  Reddit
+    gebruikt kwargs uit defaults (subreddits-lijst).  Marktplaats/
+    2dehands krijgen `deep_variants=False` in daily mode om de 3-
+    variant loop ("q gezocht", "q gevraagd") over te slaan.
+
+    Andere sources krijgen lege dict terug zodat `**extra_kwargs`
+    veilig spreidt.
     """
     if source_name == "reddit":
         subs = defaults.get("reddit_subreddits")
         if subs:
             return {"subreddits": list(subs)}
+    if daily and source_name in ("marktplaats", "2dehands"):
+        return {"deep_variants": False}
     return {}
 
 
@@ -376,7 +382,10 @@ def run_one_niche(
             queries = queries_per_source.get(source_name) or []
             if not queries:
                 continue
-            extra = extra_kwargs_for_source(source_name, defaults_cfg)
+            extra = extra_kwargs_for_source(
+                source_name, defaults_cfg,
+                daily=bool(getattr(args, "daily", False)),
+            )
             source_yield = 0  # posts deze run via deze source (na seen-filter)
             for q in queries:
                 t0 = time.monotonic()

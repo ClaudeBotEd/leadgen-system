@@ -18,8 +18,11 @@ SOURCE_NAME = "2dehands"
 
 
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
-          session: PoliteSession | None = None, **_: object) -> list[RawPost]:
+          session: PoliteSession | None = None,
+          deep_variants: bool = True,
+          **_: object) -> list[RawPost]:
     return fetch_classifieds(
         BASE, query, source_name=SOURCE_NAME,
         limit=limit, location=location, session=session,
+        deep_variants=deep_variants,
     )
