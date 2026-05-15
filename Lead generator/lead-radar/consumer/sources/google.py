@@ -24,6 +24,27 @@ except Exception:
     DDGS = None  # type: ignore
     _HAS_DDG = False
 
+try:
+    from duckduckgo_search.exceptions import RatelimitException  # type: ignore
+except Exception:
+    # Fallback: vang alleen generieke Exception als lib oud/afwezig is
+    class RatelimitException(Exception):  # type: ignore
+        pass
+
+# Rate-limit guard: DDG blokt agressief bij >100 req/h.  Bij --daily
+# --locations all worden 1000+ DDG-calls gedaan; zodra DDG eenmaal
+# blokkeert hangen alle volgende calls op interne backoff.  Na N
+# rate-limits in deze run skippen we DDG volledig zodat de rest van
+# de pipeline doorloopt zonder cascade.
+_RATELIMIT_THRESHOLD = 2
+_DDG_TIMEOUT_SECONDS = 10
+_ratelimit_state: dict[str, int] = {"count": 0}
+
+
+def reset_ratelimit_state() -> None:
+    """Reset DDG rate-limit counter — aan te roepen bij start van een run."""
+    _ratelimit_state["count"] = 0
+
 
 def _short_hash(s: str) -> str:
     return hashlib.sha1(s.encode("utf-8", errors="ignore")).hexdigest()[:12]
@@ -32,9 +53,23 @@ def _short_hash(s: str) -> str:
 def _ddg_search(query: str, max_results: int) -> Iterable[dict]:
     if not _HAS_DDG:
         return []
+    if _ratelimit_state["count"] >= _RATELIMIT_THRESHOLD:
+        # Hard-skip: voorkomt cascade van trage zombie-calls bij DDG-block
+        return []
     try:
-        with DDGS() as ddgs:
-            return list(ddgs.text(query, region="nl-nl", safesearch="moderate", max_results=max_results))
+        with DDGS(timeout=_DDG_TIMEOUT_SECONDS) as ddgs:
+            return list(ddgs.text(
+                query, region="nl-nl", safesearch="moderate",
+                max_results=max_results,
+            ))
+    except RatelimitException as e:
+        _ratelimit_state["count"] += 1
+        log.warning(
+            "DDG rate-limit hit (%d/%d) op q=%r: %s — verdere DDG-calls "
+            "worden geskipt bij overschrijden threshold",
+            _ratelimit_state["count"], _RATELIMIT_THRESHOLD, query, e,
+        )
+        return []
     except Exception as e:
         log.warning("DDG search faalde voor q=%r: %s", query, e)
         return []

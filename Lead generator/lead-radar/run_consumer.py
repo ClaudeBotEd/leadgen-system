@@ -50,6 +50,7 @@ from consumer.processor.llm_verifier import (  # noqa: E402
     get_run_stats,
     reset_run_counters,
 )
+from consumer.sources.google import reset_ratelimit_state as _reset_ddg_ratelimit  # noqa: E402
 from consumer.output import (  # noqa: E402
     export_leads,
     send_lead_alert,
@@ -580,6 +581,8 @@ def run_daily(args: argparse.Namespace) -> int:
     # zijn, niet cumulatief over meerdere run_daily invocaties in hetzelfde
     # Python-proces (relevant bij testing / langlopende daemon).
     reset_run_counters()
+    # Reset DDG rate-limit state — anders blijft skip-mode actief over runs heen.
+    _reset_ddg_ratelimit()
 
     print()
     print("=" * 70)
