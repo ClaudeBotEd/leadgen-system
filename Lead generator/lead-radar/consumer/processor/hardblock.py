@@ -91,6 +91,39 @@ VENDOR_TITLE_PATTERNS: tuple[re.Pattern, ...] = (
     re.compile(r"\b(direct bellen|bel direct|nu bellen)\b", re.IGNORECASE),
     # Telefoonnummer in titel: NL mobiel (06-XXXXXXXX) of vast (0XX-XXXXXXX)
     re.compile(r"\b0[1-9]\d?[\s\-]?\d{6,8}\b"),
+    # === Renovatie-niche vendor patterns (toegevoegd 2026-05-15) ===
+    # "van A tot Z" — vendor scope-claim, nooit consumer
+    re.compile(r"\bvan\s+a\s+tot\s+z\b", re.IGNORECASE),
+    # "voor al uw [X]" — klassieke B2C vendor-pitch
+    re.compile(r"\bvoor\s+al\s+uw\b", re.IGNORECASE),
+    # B2B partnership ad
+    re.compile(r"\bsamenwerking\s+gezocht\b", re.IGNORECASE),
+    # "Complete Renovaties" / "Totale verbouwingen" — vendor scope
+    re.compile(r"\b(complete|totale)\s+(renovaties?|verbouwingen?)\b", re.IGNORECASE),
+    # "Renovaties Regio Den Bosch" — vendor service-area phrasing
+    re.compile(r"\brenovaties?\s+regio\b", re.IGNORECASE),
+    # Vendor qualification: "Erkend/Gediplomeerd/Gecertificeerd + role"
+    re.compile(
+        r"\b(erkend(?:e)?|gediplomeerd(?:e)?|gecertificeerd(?:e)?)\s+"
+        r"(aannemer|vakman|elektricien|elektriciens|loodgieter|installateur|"
+        r"monteur|stukadoor|tegelzetter|timmerman|hovenier|metselaar|"
+        r"dakdekker|stratenmaker|schilder)\b",
+        re.IGNORECASE,
+    ),
+    # "[role] zoekt [X]" — reverse offer (vendor biedt diensten aan)
+    re.compile(
+        r"\b(vakman|aannemer|monteur|stukadoor|tegelzetter|loodgieter|"
+        r"installateur|elektricien|klusbedrijf)\s+zoekt\b",
+        re.IGNORECASE,
+    ),
+    # Vendor availability claim: "direct/nu/meteen beschikbaar"
+    re.compile(r"\b(direct|nu|meteen)\s+beschikbaar\b", re.IGNORECASE),
+    # Vendor service-promise: "snel geholpen"
+    re.compile(r"\bsnel\s+geholpen\b", re.IGNORECASE),
+    # Vendor scope keyword: "totaalbouw"
+    re.compile(r"\btotaalbouw\b", re.IGNORECASE),
+    # Vendor brand-pattern: "X Bouwgroep / Bouwbedrijf / Klusbedrijf"
+    re.compile(r"\b(bouwgroep|bouwbedrijf|klusbedrijf)\b", re.IGNORECASE),
 )
 
 

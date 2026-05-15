@@ -59,3 +59,74 @@ def test_legitimate_consumer_intent_not_blocked(title: str) -> None:
         f"Consumer-titel onterecht geblocked als vendor: {title!r} "
         f"(reason={result.reason})"
     )
+
+
+# === Renovatie-niche vendor patterns (waargenomen 2026-05-15 daily-run) ===
+# 15 vendor-leads scoorden 60-100 (WARM/HOT) op renovatie omdat de vorige
+# vendor-patterns vooral spoed/24-7 vocab waren. Renovatie-vendors gebruiken
+# scope-claims ("van A tot Z", "Complete Renovaties"), B2C-pitches
+# ("voor al uw"), en kwalificatie-claims ("Erkend Elektricien").
+@pytest.mark.parametrize("title", [
+    # van A tot Z — vendor scope claim
+    "Aannemer/Huisrenovatie/ van A tot Z / Whats App",
+    "Renovatie van a tot z, scherpe prijs",
+    # voor al uw — B2C vendor-pitch
+    "Erkend Elektricien voor al uw Elektriciteitswerken",
+    "Loodgieter voor al uw lekkages",
+    # samenwerking gezocht — B2B partnership ad
+    "Ervaren Timmerman Gezocht samenwerking gezocht vakman badkamer",
+    # complete/totale renovaties — vendor scope
+    "Renova Bouwgroep – Complete Renovaties & Verbouwingen",
+    "Totale renovatie van uw woning binnen 2 weken",
+    # renovaties regio — vendor service-area phrasing
+    "Ervaren Aannemer – Renovaties Regio Den Bosch",
+    # erkende/gediplomeerd + role — vendor qualification
+    "Gediplomeerd installateur warmtepomp Amsterdam",
+    "Gecertificeerde loodgieter regio Utrecht",
+    # [role] zoekt [X] — reverse offer (vendor)
+    "Vakman zoekt huis te huur – onderhoud mogelijk",
+    "Aannemer zoekt projecten in Den Haag",
+    # direct/nu beschikbaar — vendor availability claim
+    "Aannemer gezocht? Proffesionele bouwteam direct beschikbaar",
+    "Klusbedrijf nu beschikbaar voor uw verbouwing",
+    # snel geholpen — vendor service-promise
+    "Loodgieter Gezocht? Snel geholpen bij storing en renovatie",
+    # totaalbouw — vendor scope keyword
+    "Aannemer voor verbouwingen, afbouw, aanbouw en totaalbouw",
+    # bouwgroep/bouwbedrijf/klusbedrijf — vendor brand pattern
+    "Smit Bouwbedrijf voor uw verbouwing",
+    "Klusbedrijf Jansen — alle voorkomende werkzaamheden",
+])
+def test_renovatie_vendor_titles_blocked(title: str) -> None:
+    """Renovatie-niche vendor titels moeten hard-block triggeren."""
+    post = RawPost(
+        id="x", source="marktplaats",
+        url="https://www.marktplaats.nl/v/diensten-en-vakmensen/aannemers/x",
+        title=title, text="",
+    )
+    result = check_hardblock(post)
+    assert result.blocked, f"Renovatie-vendor niet geblocked: {title!r}"
+    assert result.reason and result.reason.startswith("vendor_title:"), result.reason
+
+
+@pytest.mark.parametrize("title", [
+    # Consumer-renovatie posts: legitimate vragen, geen vendor-language
+    "Gezocht: aannemer die badkamer kan renoveren",
+    "Aannemer gezocht voor verbouwing badkamer in Utrecht",
+    "Wie kan helpen met renovatie van mijn keuken?",
+    "Tip nodig voor goede aannemer Amsterdam regio",
+    "Ik wil mijn badkamer laten renoveren — offerte gezocht",
+    "Verbouwing thuis: zoek vakman voor tegelwerk",
+])
+def test_legitimate_consumer_renovatie_not_blocked(title: str) -> None:
+    """Echte renovatie-vragen van consumers mogen NIET door vendor-filter."""
+    post = RawPost(
+        id="x", source="reddit",
+        url="https://reddit.com/r/Klussen/comments/abc/",
+        title=title, text="",
+    )
+    result = check_hardblock(post)
+    assert not result.blocked, (
+        f"Consumer-renovatie onterecht geblocked: {title!r} "
+        f"(reason={result.reason})"
+    )
