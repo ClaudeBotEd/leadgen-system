@@ -28,7 +28,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from consumer import Lead, RawPost, intent_from_score  # noqa: E402
-from consumer.sources import REGISTRY, ALL_SOURCES, analyze_manual_posts  # noqa: E402
+from consumer.sources import (  # noqa: E402
+    REGISTRY, ALL_SOURCES, NATIONAL_SOURCES, LOCATION_AWARE_SOURCES,
+    analyze_manual_posts,
+)
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
 from consumer.sources.reddit_author import enrich_author  # noqa: E402
 from consumer.processor import (  # noqa: E402
@@ -275,12 +278,18 @@ def run_one_niche(
     niche: str,
     *,
     location_override: str | None = None,
+    sources_override: list[str] | None = None,
 ) -> list[Lead]:
     """Run pipeline voor 1 niche en returnt de Lead-list.
 
     location_override: optioneel; als gezet override args.location voor
     deze run.  Gebruikt door run_daily() om over meerdere locaties te
     itereren zonder args te muteren.
+
+    sources_override: optioneel; als gezet bepaalt deze lijst welke
+    sources gedraaid worden (i.p.v. args.sources).  Gebruikt door
+    run_daily() voor location-aware/national split — nationale sources
+    draaien 1× per niche, locatie-afhankelijke 1× per niche-loc.
     """
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
@@ -291,7 +300,10 @@ def run_one_niche(
     niche_cfg = niches[niche]
     keywords_required = niche_cfg.get("keywords_required") or [niche]
 
-    requested = [s.strip() for s in args.sources.split(",") if s.strip()] if args.sources else ALL_SOURCES
+    if sources_override is not None:
+        requested = list(sources_override)
+    else:
+        requested = [s.strip() for s in args.sources.split(",") if s.strip()] if args.sources else ALL_SOURCES
     invalid = [s for s in requested if s not in REGISTRY]
     if invalid:
         log.error("Onbekende sources: %s", invalid)
@@ -592,14 +604,46 @@ def run_daily(args: argparse.Namespace) -> int:
                  len(locations),
                  ", ".join(locations) if len(locations) <= 6 else f"{', '.join(locations[:5])}, ...")
 
+    # Location-aware dispatch split: nationale forums hebben geen geo-filter,
+    # dus per niche 1× draaien.  Location-aware sources (reddit search, google,
+    # marktplaats, 2dehands) draaien per locatie.  Bespaart ~95% van runtime
+    # bij multi-loc runs op nationale sources.
+    requested_for_split = (
+        [s.strip() for s in args.sources.split(",") if s.strip()]
+        if args.sources else ALL_SOURCES
+    )
+    national_subset = [s for s in requested_for_split if s in NATIONAL_SOURCES]
+    loc_aware_subset = [s for s in requested_for_split if s in LOCATION_AWARE_SOURCES]
+    if national_subset and len(locations) > 1:
+        log.info(
+            "Source split: nationale sources %s 1× per niche; "
+            "locatie-afhankelijke %s 1× per niche-locatie (%d locs)",
+            national_subset, loc_aware_subset, len(locations),
+        )
+
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
     for niche in niches_to_run:
         niche_leads: list[Lead] = []
-        for loc in locations:
-            leads = run_one_niche(args, niche, location_override=loc)
+        # Nationale sources: 1× per niche (locatie genegeerd door source-impl,
+        # zie consumer/sources/__init__.py NATIONAL_SOURCES toelichting).
+        if national_subset:
+            leads = run_one_niche(
+                args, niche,
+                location_override=locations[0],
+                sources_override=national_subset,
+            )
             niche_leads.extend(leads)
+        # Locatie-afhankelijke sources: 1× per locatie.
+        if loc_aware_subset:
+            for loc in locations:
+                leads = run_one_niche(
+                    args, niche,
+                    location_override=loc,
+                    sources_override=loc_aware_subset,
+                )
+                niche_leads.extend(leads)
         sheets_result = None
         if niche_leads and not getattr(args, "dry_run", False):
             try:
