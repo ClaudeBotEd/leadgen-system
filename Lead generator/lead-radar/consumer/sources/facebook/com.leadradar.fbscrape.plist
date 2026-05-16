@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lead Radar -- FB scraper launchd agent (macOS).
+
+  Why launchd in plaats van cron: cron wekt geen slapende Mac. launchd
+  schedule een gemiste run zodra de Mac wakker is.
+
+  Installatie:
+    cp consumer/sources/facebook/com.leadradar.fbscrape.plist ~/Library/LaunchAgents/
+    launchctl load   ~/Library/LaunchAgents/com.leadradar.fbscrape.plist
+    launchctl list | grep leadradar    # verify
+
+  Verwijderen:
+    launchctl unload ~/Library/LaunchAgents/com.leadradar.fbscrape.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.leadradar.fbscrape</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/claudebot/Lead generator/lead-radar/.venv/bin/python</string>
+    <string>-m</string>
+    <string>consumer.sources.facebook.runner</string>
+    <string>scrape</string>
+    <string>--niche</string>
+    <string>all</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/claudebot/Lead generator/lead-radar</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Schedule: 08:00, 12:00, 17:00, 21:00 -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>8</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>12</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>17</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>21</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/data/fb_state/launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/data/fb_state/launchd.err</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+</dict>
+</plist>
