@@ -69,7 +69,7 @@ class Lead:
     city: str | None
     score: int
     intent: str  # 'hot' | 'warm' | 'cold'
-    breakdown: dict[str, int]
+    breakdown: dict[str, Any]
     niche: str
     author: str | None = None
     created_at: str | None = None
@@ -79,7 +79,15 @@ class Lead:
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        d["breakdown"] = {k: int(v) for k, v in d["breakdown"].items()}
+        coerced: dict[str, Any] = {}
+        for k, v in d["breakdown"].items():
+            if isinstance(v, bool):
+                coerced[k] = v
+            elif isinstance(v, (int, float)):
+                coerced[k] = int(v)
+            else:
+                coerced[k] = v
+        d["breakdown"] = coerced
         return d
 
 
