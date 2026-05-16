@@ -299,6 +299,62 @@ def _cmd_onboard(account_id: str, *, non_interactive: bool = False,
     return 0
 
 
+def _cmd_apify(niche_arg: str) -> int:
+    """Run the Apify-cloud Facebook Groups collector for one or all niches.
+
+    Does NOT require a logged-in burner account or Playwright -- Apify
+    runs server-side with their own account pool + residential proxies.
+    Output lands in the SAME data/fb_queue/*.jsonl shape as the self-
+    hosted scraper, so run_consumer.py drains it identically.
+    """
+    from .targets import load_targets
+    from .apify_client import ApifyNotConfigured, ApifyRunner, is_configured
+    from .apify_groups import collect_groups
+
+    if not TARGETS_PATH.exists():
+        log.error("Targets config missing: %s", TARGETS_PATH)
+        return 2
+    cfg = load_targets(TARGETS_PATH)
+
+    if niche_arg != "all" and niche_arg not in cfg.niches:
+        log.error("Unknown niche %r -- available: %s",
+                  niche_arg, ", ".join(cfg.niches.keys()))
+        return 2
+
+    if not is_configured():
+        log.error(
+            "APIFY_API_TOKEN is not set.  Add it to .env or export it, then retry.\n"
+            "Token: https://console.apify.com/settings/integrations"
+        )
+        return 2
+
+    try:
+        runner = ApifyRunner()
+    except ApifyNotConfigured as exc:
+        log.error("Apify not configured: %s", exc)
+        return 2
+
+    summary = collect_groups(
+        runner=runner,
+        config=cfg,
+        queue_dir=QUEUE_DIR,
+        niche_filter=None if niche_arg == "all" else niche_arg,
+    )
+    log.info(
+        "Apify groups run done: %d posts, $%.4f total%s (queue: %s)",
+        summary["total_posts"], summary["total_cost_usd"],
+        " [BUDGET HIT]" if summary["stopped_early"] else "",
+        summary["queue_file"],
+    )
+    for row in summary["per_group"]:
+        tag = "OK " if row.get("ok") else "ERR"
+        log.info("  %s %s/%s: posts=%s cost=$%.4f %s",
+                 tag, row["niche"], row["group_id"],
+                 row.get("posts", 0), row.get("cost_usd", 0.0),
+                 row.get("error", ""))
+    return 0
+
+
 def _cmd_health() -> int:
     import json as _json
     if not STATE_DIR.exists():
@@ -327,10 +383,15 @@ def _build_parser() -> argparse.ArgumentParser:
     p_login = sub.add_parser("login", help="Onboard a new FB account (manual login)")
     p_login.add_argument("--account-id", default="main")
 
-    p_scrape = sub.add_parser("scrape", help="Run scraping for one or all niches")
+    p_scrape = sub.add_parser("scrape", help="Run scraping for one or all niches (self-hosted)")
     p_scrape.add_argument("--niche", default="all",
                           help="Niche key from facebook_targets.yaml, or 'all'")
     p_scrape.add_argument("--account-id", default="main")
+
+    p_apify = sub.add_parser("apify",
+                             help="Run Apify-cloud scraper (groups) — no burner account needed")
+    p_apify.add_argument("--niche", default="all",
+                         help="Niche key from facebook_targets.yaml, or 'all'")
 
     sub.add_parser("health", help="Show per-account health")
 
@@ -349,6 +410,8 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_login(args.account_id))
     if args.cmd == "scrape":
         return asyncio.run(_cmd_scrape(args.niche, args.account_id))
+    if args.cmd == "apify":
+        return _cmd_apify(args.niche)
     if args.cmd == "health":
         return _cmd_health()
     if args.cmd == "onboard":
