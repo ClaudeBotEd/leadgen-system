@@ -18,8 +18,9 @@ niches:
         name: "Hybride warmtepomp"
       - id: "1430530037683847"
         name: "DeWarmte AO hybride / MP warmtepomp gebruikers"
-      - id: "413638707531015"
-        name: "Quatt Hybride Warmtepomp ervaringen"
+      # Verwijderd 2026-05-17: groep 413638707531015 ("Quatt Hybride Warmtepomp ervaringen")
+      # is PRIVATE — Apify-actor kan zonder FB-login geen data ophalen.
+      # Quatt-content blijft gedekt door groep 500485775066150 hieronder.
       - id: "500485775066150"
         name: "Quatt hybride warmtepomp"
       - id: "649786509481882"
@@ -41,8 +42,8 @@ niches:
 
   zonnepanelen:
     groups:
-      - id: "zonnepanelenforum"
-        name: "Zonnepanelen forum"
+      # Verwijderd 2026-05-17: groep "zonnepanelenforum" is PRIVATE —
+      # Apify-actor kan zonder FB-login geen data ophalen.
       - id: "550933513413032"
         name: "Zonnepanelen Vragen en Opbrengst forum"
       - id: "1463894423872949"
