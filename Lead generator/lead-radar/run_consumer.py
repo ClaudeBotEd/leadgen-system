@@ -74,6 +74,23 @@ log = logging.getLogger("consumer.cli")
 DEFAULT_QUERIES_YAML = HERE / "consumer" / "queries.yaml"
 DEFAULT_OUTDIR = HERE / "data" / "leads" / "consumer"
 
+
+def _check_env(args) -> tuple[bool, list[str]]:
+    """Return (ok, errors). Sheets vars required unless --no-sheets is set."""
+    errors: list[str] = []
+    if not getattr(args, "no_sheets", False):
+        if not os.environ.get("LEAD_RADAR_SPREADSHEET_ID"):
+            errors.append(
+                "LEAD_RADAR_SPREADSHEET_ID is missing. Set it in .env "
+                "(launchd does NOT source ~/.zshrc) or pass --no-sheets."
+            )
+        if not os.environ.get("LEAD_RADAR_GS_CREDENTIALS"):
+            errors.append(
+                "LEAD_RADAR_GS_CREDENTIALS is missing. Set absolute quoted "
+                "path in .env or pass --no-sheets."
+            )
+    return (not errors, errors)
+
 # Defaults voor --daily mode (production usage)
 DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
 DAILY_LOCATION = "nederland"
@@ -150,6 +167,8 @@ def parse_args() -> argparse.Namespace:
     # Google Sheets
     p.add_argument("--sheets", action="store_true",
                    help="Push leads naar Google Sheets (--daily zet dit automatisch)")
+    p.add_argument("--no-sheets", action="store_true",
+                   help="Skip Google Sheets sync (env validation will pass without Sheets vars)")
     p.add_argument("--spreadsheet-id", default=None,
                    help="Spreadsheet ID. Default: env LEAD_RADAR_SPREADSHEET_ID")
     p.add_argument("--credentials", default=None,
@@ -190,6 +209,8 @@ def parse_args() -> argparse.Namespace:
                         "(geen Sheets sync, geen Telegram alerts). "
                         "CSV/JSON exports gebeuren wel. Combineer met "
                         "--no-llm voor kosten-vrije test.")
+    p.add_argument("--check-env-only", action="store_true",
+                   help="Validate env vars and exit (used by test harness and CI checks)")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
@@ -874,6 +895,17 @@ def run_single(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
+
+    # Fail-fast env validation (must run BEFORE logging setup for error clarity)
+    env_ok, env_errors = _check_env(args)
+    if not env_ok:
+        for err in env_errors:
+            print(f"ENV ERROR: {err}", file=sys.stderr)
+        sys.exit(2)
+    if args.check_env_only:
+        print("Env check OK.")
+        sys.exit(0)
+
     run_id = _setup_logging(args.verbose)
     log.info("Lead Radar start (run_id=%s, daily=%s)", run_id, bool(args.daily))
     try:
