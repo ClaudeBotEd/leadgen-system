@@ -83,10 +83,12 @@ class Lead:
         for k, v in d["breakdown"].items():
             if isinstance(v, bool):
                 coerced[k] = v
-            elif isinstance(v, (int, float)):
-                coerced[k] = int(v)
-            else:
+            elif isinstance(v, int):
                 coerced[k] = v
+            elif isinstance(v, float):
+                coerced[k] = int(v) if v.is_integer() else v
+            else:
+                coerced[k] = v  # strings, None, nested dict/list — pass through unchanged
         d["breakdown"] = coerced
         return d
 
