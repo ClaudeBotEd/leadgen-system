@@ -46,6 +46,13 @@ class RawPost:
     author: str | None = None
     created_at: str | None = None  # ISO 8601
     metadata: dict[str, Any] = field(default_factory=dict)
+    # source_id: granular bron-label voor Sheets (bv. "reddit:r/duurzaam").
+    # Default = source (registry name) voor backwards compat.
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.source_id is None:
+            self.source_id = self.source
 
     def fingerprint(self) -> str:
         """Stable hash voor dedup — source + id + canonical url.
@@ -76,6 +83,11 @@ class Lead:
     captured_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
     )
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.source_id is None:
+            self.source_id = self.source
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
