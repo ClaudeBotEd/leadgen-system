@@ -53,3 +53,7 @@ apify-client>=1.7.0
 
 # Layer-2 dedup: MinHash for cross-run duplicate detection
 datasketch>=1.0.0
+
+# llm-council integration: HTTP client with timeouts + retries for the
+# AI intelligence layer (lead-radar -> llm-council /api/council/* endpoints)
+httpx>=0.27.0

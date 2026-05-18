@@ -83,9 +83,11 @@ complete list. The most important ones:
 | --- | --- | --- |
 | POST | `/api/council/query` | Generic prompt → full council output |
 | POST | `/api/council/query/stream` | Same, SSE |
-| POST | `/api/council/analyze-lead` | Qualify a lead (ICP score, signals, next action) |
-| POST | `/api/council/generate-outreach` | Draft email / LinkedIn / SMS outreach |
+| POST | `/api/council/analyze-lead` | Qualify a lead (ICP score, signals, next action) — narrative output |
+| POST | `/api/council/generate-outreach` | Draft email / LinkedIn / SMS outreach — single channel |
 | POST | `/api/council/review-scrape` | QA report on a scraped sample |
+| POST | `/api/council/score-lead` | **Structured JSON intelligence dict** (lead-radar integration) |
+| POST | `/api/council/generate-sequence` | **Cold email + LinkedIn + 3-step follow-up + CTAs** (structured JSON) |
 
 All endpoints return:
 
@@ -149,6 +151,93 @@ curl -s -X POST http://localhost:8001/api/council/review-scrape \
     ]
   }' | jq
 ```
+
+### Example: score a lead (structured JSON, lead-radar integration)
+
+```bash
+curl -s -X POST http://localhost:8001/api/council/score-lead \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "lead": {
+      "lead_id": "lr_00042",
+      "company_name": "Acme Solar",
+      "domain": "acme.nl",
+      "email": "info@acme.nl",
+      "notes": "Heat pump installer hiring engineers, quoting still manual"
+    },
+    "strategy": "fast",
+    "locale": "en"
+  }' | jq
+```
+
+Returns:
+
+```json
+{
+  "lead_id": "lr_00042",
+  "intelligence": {
+    "company_name": "Acme Solar",
+    "lead_quality_score": 7,
+    "automation_fit_score": 8,
+    "estimated_budget": "10-50k EUR",
+    "urgency_score": 6,
+    "outbound_potential": 7,
+    "ai_opportunities": ["Automated lead qualification", "AI-driven scheduling"],
+    "pain_points": ["Manual quoting", "Lead bottlenecks"],
+    "recommended_offer": "AI intake bot + scheduling automation",
+    "best_outreach_angle": "Unlock faster growth by automating customer journey",
+    "recommended_channel": "email",
+    "confidence_score": 7,
+    "rationale": "Strong automation signals; intent score 70; warm web data."
+  },
+  "strategy": "fast",
+  "model": "openai/gpt-4.1",
+  "elapsed_ms": 4351,
+  "json_parsed": true,
+  "error": null
+}
+```
+
+### Example: generate full outreach sequence
+
+```bash
+curl -s -X POST http://localhost:8001/api/council/generate-sequence \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "lead": {"company_name": "Acme Solar", "domain": "acme.nl"},
+    "analysis": {
+      "company_name": "Acme Solar",
+      "lead_quality_score": 7,
+      "automation_fit_score": 8,
+      "estimated_budget": "10-50k EUR",
+      "urgency_score": 6,
+      "outbound_potential": 7,
+      "ai_opportunities": ["Automated lead qualification"],
+      "pain_points": ["Manual quoting"],
+      "recommended_offer": "AI intake bot",
+      "best_outreach_angle": "Free intake audit",
+      "recommended_channel": "email",
+      "confidence_score": 7,
+      "rationale": "..."
+    }
+  }' | jq
+```
+
+Returns `{ cold_email{subject, body}, linkedin_opener, follow_up_sequence[], cta_suggestions[] }`.
+
+---
+
+## Lead-radar integration
+
+The `lead-radar` package consumes these endpoints via `lead-radar/intelligence/`.
+When `LEAD_RADAR_INTELLIGENCE_ENABLED=1` is set, every scrape automatically:
+
+1. POSTs each lead to `/api/council/score-lead`
+2. For leads above `LEAD_RADAR_INTELLIGENCE_QUALITY_THRESHOLD` (default 6), POSTs to `/api/council/generate-sequence`
+3. Appends the qualified lead + intelligence + outreach to `lead-radar/data/crm/qualified_leads.jsonl`
+4. Optionally POSTs an `event: lead.qualified` webhook to `LEAD_RADAR_INTELLIGENCE_WEBHOOK_URL` (n8n-ready)
+
+See `lead-radar/README.md` for the full env-var reference.
 
 ---
 

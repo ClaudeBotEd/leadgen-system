@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Iterable
 
+from pcs import ensure_leads_master_workflow, normalize_state
+
 
 CSV_COLUMNS = [
     "lead_id",
@@ -38,6 +40,9 @@ CSV_COLUMNS = [
     "title",
     "snippet",
     "query",
+    "assigned_to",
+    "sent_at",
+    "state",
 ]
 
 
@@ -60,6 +65,7 @@ def normalize_lead(lead: dict, idx: int = 0, niche: str = "") -> dict:
     out["lead_id"] = lead_id
     if niche and not out.get("niche"):
         out["niche"] = niche
+    out["state"] = normalize_state(out.get("state"))
     return out
 
 
@@ -70,7 +76,13 @@ def export_leads(
     fmt: str = "csv",
     directory: str | Path = "data",
 ) -> list[Path]:
-    """Schrijf leads naar bestand(en). Returns lijst van paths."""
+    """Schrijf leads naar bestand(en). Returns lijst van paths.
+
+    If LEAD_RADAR_INTELLIGENCE_ENABLED=1, every exported lead is also fed
+    through the llm-council AI intelligence layer (scoring -> outreach ->
+    CRM persist -> optional n8n webhook). The CSV/JSON output is unchanged
+    so existing downstream tools keep working.
+    """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -98,13 +110,41 @@ def export_leads(
         paths.append(json_path)
         print(f"[export] JSON: {json_path} ({len(leads_list)} leads)")
 
+    _maybe_run_intelligence(leads_list)
+
     return paths
+
+
+def _maybe_run_intelligence(leads_list: list[dict]) -> None:
+    """Best-effort AI enrichment hook. Never raises into the exporter."""
+    try:
+        from intelligence import enrich_leads, get_config  # lazy import
+    except ImportError as e:
+        print(f"[export] intelligence import failed (skipping): {e}")
+        return
+
+    config = get_config()
+    if not config.enabled:
+        return
+
+    try:
+        summary = enrich_leads(leads_list, config=config)
+        print(
+            f"[intelligence] scored={summary.scored} qualified={summary.qualified} "
+            f"persisted={summary.persisted} webhooks={summary.webhooks_fired} "
+            f"errors={summary.errors}"
+        )
+        if summary.error_kinds:
+            print(f"[intelligence] error_kinds={dict(summary.error_kinds)}")
+    except Exception as e:  # noqa: BLE001 — protect the pipeline from any intel bug
+        print(f"[intelligence] enrichment crashed (continuing): {e}")
 
 
 def append_to_master(leads: Iterable[dict], master_path: str | Path = "data/leads_master.csv") -> Path:
     """Voeg leads toe aan een master CSV (cumulatief over alle scrapes)."""
     master_path = Path(master_path)
     master_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_leads_master_workflow(master_path, base_fields=CSV_COLUMNS)
 
     file_exists = master_path.exists()
     with open(master_path, "a", encoding="utf-8", newline="") as f:
