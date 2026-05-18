@@ -333,6 +333,7 @@ async def score_lead(
     started = time.monotonic()
     prompt = build_score_prompt(lead, objective, locale)
     upstream_error: Optional[Dict[str, Any]] = None
+    usage: Optional[Dict[str, Any]] = None
 
     if strategy == "council":
         _stage1, _stage2, stage3, _meta = await council_svc.run_full_council(prompt)
@@ -347,6 +348,7 @@ async def score_lead(
         )
         if result.get("ok"):
             text = result.get("content", "")
+            usage = result.get("usage")
         else:
             text = ""
             upstream_error = {
@@ -367,6 +369,7 @@ async def score_lead(
         "model": settings.chairman_model if strategy == "fast" else "council",
         "elapsed_ms": elapsed_ms,
         "json_parsed": parsed is not None,
+        "usage": usage,
         "error": upstream_error,
     }
     log.info(
@@ -413,8 +416,10 @@ async def generate_sequence(
     )
 
     upstream_error: Optional[Dict[str, Any]] = None
+    usage: Optional[Dict[str, Any]] = None
     if result.get("ok"):
         text = result.get("content", "")
+        usage = result.get("usage")
     else:
         text = ""
         upstream_error = {
@@ -434,6 +439,7 @@ async def generate_sequence(
         "model": settings.chairman_model,
         "elapsed_ms": elapsed_ms,
         "json_parsed": parsed is not None,
+        "usage": usage,
         "error": upstream_error,
     }
     log.info(

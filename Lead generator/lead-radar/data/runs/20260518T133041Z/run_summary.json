@@ -1,0 +1,70 @@
+{
+  "totals": {
+    "leads_input": 27,
+    "scored": 27,
+    "qualified": 15,
+    "errors": 0,
+    "qualification_rate_pct": 55.6
+  },
+  "latency_ms": {
+    "score": {
+      "p50": 4012,
+      "p95": 7963,
+      "max": 11500
+    },
+    "sequence": {
+      "p50": 6013,
+      "p95": 9376,
+      "max": 9712
+    },
+    "wall_clock_seconds": 44.01,
+    "throughput_leads_per_min": 36.81
+  },
+  "tokens": {
+    "prompt": 30639,
+    "completion": 15154,
+    "total": 45793,
+    "per_lead_avg": 1696
+  },
+  "score_distribution": {
+    "0": 0,
+    "1": 0,
+    "2": 2,
+    "3": 2,
+    "4": 2,
+    "5": 6,
+    "6": 3,
+    "7": 8,
+    "8": 3,
+    "9": 1,
+    "10": 0
+  },
+  "quality_score_stats": {
+    "mean": 5.74,
+    "median": 6,
+    "min": 2,
+    "max": 9
+  },
+  "automation_fit_stats": {
+    "mean": 6.33,
+    "median": 7
+  },
+  "urgency_stats": {
+    "mean": 5.33
+  },
+  "confidence_stats": {
+    "mean": 6.67,
+    "median": 7
+  },
+  "channel_recommendations": {
+    "email": 27
+  },
+  "error_kinds": {},
+  "config": {
+    "strategy": "fast",
+    "quality_threshold": 6,
+    "max_concurrent": 6,
+    "council_url": "http://127.0.0.1:8001",
+    "generate_sequence": true
+  }
+}

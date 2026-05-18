@@ -186,6 +186,14 @@ class LeadIntelligence(BaseModel):
     rationale: str = ""
 
 
+class TokenUsage(BaseModel):
+    """OpenRouter usage block. All counts are integers."""
+
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+
+
 class ScoreLeadResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
@@ -195,6 +203,7 @@ class ScoreLeadResponse(BaseModel):
     model: str
     elapsed_ms: int
     json_parsed: bool
+    usage: Optional[TokenUsage] = None
     error: Optional[ModelError] = None
 
 
@@ -233,6 +242,7 @@ class GenerateSequenceResponse(BaseModel):
     model: str
     elapsed_ms: int
     json_parsed: bool
+    usage: Optional[TokenUsage] = None
     error: Optional[ModelError] = None
 
 

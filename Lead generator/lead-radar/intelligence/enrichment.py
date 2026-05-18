@@ -39,6 +39,8 @@ class EnrichmentResult:
     elapsed_ms_sequence: int = 0
     model: Optional[str] = None
     score: int = 0
+    score_usage: Optional[Dict[str, int]] = None
+    sequence_usage: Optional[Dict[str, int]] = None
 
 
 @dataclass
@@ -91,6 +93,7 @@ def enrich_one(
     result.model = score_resp.get("model")
     result.elapsed_ms_score = int(score_resp.get("elapsed_ms") or 0)
     result.score = _safe_get_score(intelligence)
+    result.score_usage = score_resp.get("usage")
     if upstream_error:
         result.error_kind = upstream_error.get("kind")
         result.error_message = upstream_error.get("message")
@@ -114,6 +117,7 @@ def enrich_one(
             seq_resp = client.generate_sequence(lead, intelligence)
             sequence = seq_resp.get("sequence") or {}
             result.elapsed_ms_sequence = int(seq_resp.get("elapsed_ms") or 0)
+            result.sequence_usage = seq_resp.get("usage")
             if seq_resp.get("error"):
                 err = seq_resp["error"]
                 log.warning(
