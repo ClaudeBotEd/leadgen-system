@@ -146,6 +146,97 @@ class ReviewScrapeRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Lead intelligence — structured scoring + outreach sequence
+# ---------------------------------------------------------------------------
+
+
+class ScoreLeadRequest(BaseModel):
+    """Structured scoring request — single lead in, structured intel out."""
+
+    lead: LeadInput
+    objective: str = Field(
+        default="qualify this lead for outbound AI-automation outreach",
+        max_length=400,
+    )
+    locale: str = Field(default="en", max_length=10)
+    strategy: Literal["fast", "council"] = Field(
+        default="fast",
+        description="'fast' = single chairman call. 'council' = full 3-stage deliberation.",
+    )
+    use_cache: bool = True
+
+
+class LeadIntelligence(BaseModel):
+    """Structured intelligence dict matching the lead-radar consumer contract."""
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    company_name: str = ""
+    lead_quality_score: int = Field(default=0, ge=0, le=10)
+    automation_fit_score: int = Field(default=0, ge=0, le=10)
+    estimated_budget: str = ""
+    urgency_score: int = Field(default=0, ge=0, le=10)
+    outbound_potential: int = Field(default=0, ge=0, le=10)
+    ai_opportunities: List[str] = Field(default_factory=list)
+    pain_points: List[str] = Field(default_factory=list)
+    recommended_offer: str = ""
+    best_outreach_angle: str = ""
+    recommended_channel: Literal["email", "linkedin", "sms", "phone"] = "email"
+    confidence_score: int = Field(default=0, ge=0, le=10)
+    rationale: str = ""
+
+
+class ScoreLeadResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    lead_id: Optional[str] = None
+    intelligence: LeadIntelligence
+    strategy: Literal["fast", "council"]
+    model: str
+    elapsed_ms: int
+    json_parsed: bool
+    error: Optional[ModelError] = None
+
+
+class FollowUpStep(BaseModel):
+    day: int = Field(default=3, ge=0, le=90)
+    channel: Literal["email", "linkedin", "sms", "phone"] = "email"
+    subject: str = ""
+    body: str = ""
+
+
+class ColdEmail(BaseModel):
+    subject: str = ""
+    body: str = ""
+
+
+class OutreachSequence(BaseModel):
+    cold_email: ColdEmail = Field(default_factory=ColdEmail)
+    linkedin_opener: str = ""
+    follow_up_sequence: List[FollowUpStep] = Field(default_factory=list)
+    cta_suggestions: List[str] = Field(default_factory=list)
+
+
+class GenerateSequenceRequest(BaseModel):
+    lead: LeadInput
+    analysis: LeadIntelligence
+    locale: str = "en"
+    tone: str = "professional, direct, friendly"
+    use_cache: bool = True
+
+
+class GenerateSequenceResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    lead_id: Optional[str] = None
+    sequence: OutreachSequence
+    model: str
+    elapsed_ms: int
+    json_parsed: bool
+    error: Optional[ModelError] = None
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 

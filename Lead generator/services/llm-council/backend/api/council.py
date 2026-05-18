@@ -22,11 +22,16 @@ from ..schemas import (
     CouncilOutput,
     CouncilQueryRequest,
     GenerateOutreachRequest,
+    GenerateSequenceRequest,
+    GenerateSequenceResponse,
     ModelResponse,
     RankingResponse,
     ReviewScrapeRequest,
+    ScoreLeadRequest,
+    ScoreLeadResponse,
 )
 from ..services import council as council_svc
+from ..services import lead_intel
 from ..services import storage
 
 router = APIRouter(prefix="/api/council", tags=["council"])
@@ -198,3 +203,60 @@ async def review_scrape(
     )
     stage1, stage2, stage3, metadata = await council_svc.run_full_council(prompt)
     return _to_output(stage1, stage2, stage3, metadata).model_dump()
+
+
+# ---------------------------------------------------------------------------
+# Lead intelligence — structured scoring + sequence generation
+# ---------------------------------------------------------------------------
+
+
+@router.post("/score-lead", response_model=ScoreLeadResponse)
+@limiter.limit(_rate_limit)
+async def score_lead(
+    body: ScoreLeadRequest,
+    request: Request,  # noqa: ARG001
+    _=Depends(require_api_token),
+) -> ScoreLeadResponse:
+    """Score a single lead and return structured intelligence (JSON).
+
+    Used by lead-radar to enrich scraped companies before CRM persistence.
+    """
+    lead_dict = body.lead.model_dump()
+    result = await lead_intel.score_lead(
+        lead_dict,
+        objective=body.objective,
+        locale=body.locale,
+        strategy=body.strategy,
+        use_cache=body.use_cache,
+    )
+    log.info(
+        "score_lead",
+        lead_id=lead_dict.get("lead_id"),
+        company=result["intelligence"]["company_name"],
+        strategy=body.strategy,
+        json_parsed=result["json_parsed"],
+    )
+    return ScoreLeadResponse(**result)
+
+
+@router.post("/generate-sequence", response_model=GenerateSequenceResponse)
+@limiter.limit(_rate_limit)
+async def generate_sequence(
+    body: GenerateSequenceRequest,
+    request: Request,  # noqa: ARG001
+    _=Depends(require_api_token),
+) -> GenerateSequenceResponse:
+    """Generate cold email + LinkedIn opener + follow-up sequence + CTAs."""
+    result = await lead_intel.generate_sequence(
+        body.lead.model_dump(),
+        body.analysis.model_dump(),
+        locale=body.locale,
+        tone=body.tone,
+        use_cache=body.use_cache,
+    )
+    log.info(
+        "generate_sequence",
+        lead_id=body.lead.model_dump().get("lead_id"),
+        json_parsed=result["json_parsed"],
+    )
+    return GenerateSequenceResponse(**result)
