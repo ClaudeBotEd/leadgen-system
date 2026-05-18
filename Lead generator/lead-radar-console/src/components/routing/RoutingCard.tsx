@@ -49,6 +49,8 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [pickAltOpen, setPickAltOpen] = useState(false);
+  const [pickedAltIdx, setPickedAltIdx] = useState(0);
 
   const lead = (decision.inputsPayload as Record<string, unknown>).lead as LeadShape | undefined;
   const rec = decision.agentRecommendation as AgentRec | null;
@@ -106,17 +108,30 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
     startTransition(() => router.refresh());
   }
 
+  async function submitPickAlt() {
+    const alt = alts[pickedAltIdx];
+    if (!alt) return;
+    await submit('approve', alt.name);
+    setPickAltOpen(false);
+    setPickedAltIdx(0);
+  }
+
   const shortcuts = useMemo(() => ({
     'A': () => { void submit('approve'); },
+    'P': () => setPickAltOpen(true),
     'O': () => setOverrideOpen(true),
     'H': () => { void submit('hold'); },
     'N': () => { void submit('next'); },
+    '1': () => { if (pickAltOpen) setPickedAltIdx(0); },
+    '2': () => { if (pickAltOpen) setPickedAltIdx(1); },
+    'Enter': () => { if (pickAltOpen) { void submitPickAlt(); } },
     'Escape': () => {
       if (overrideOpen) { setOverrideOpen(false); return; }
+      if (pickAltOpen) { setPickAltOpen(false); return; }
       router.push('/triage');
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [overrideOpen]);
+  }), [overrideOpen, pickAltOpen, pickedAltIdx]);
 
   useKeyboardShortcuts(shortcuts);
 
@@ -128,13 +143,15 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
       whyText={whyText}
       helpEntries={[
         { key: 'A', label: 'Approve & route' },
+        { key: 'P', label: 'Pick alternative installer' },
         { key: 'O', label: 'Override' },
         { key: 'H', label: 'Hold' },
         { key: 'N', label: 'Next without action' },
-        { key: 'Esc', label: overrideOpen ? 'Close override' : 'Back to triage' },
+        { key: 'Esc', label: overrideOpen ? 'Close override' : pickAltOpen ? 'Close picker' : 'Back to triage' },
       ]}
       actions={[
         { key: 'A', label: 'Approve & route', onClick: () => { void submit('approve'); } },
+        { key: 'P', label: 'Pick alt', onClick: () => setPickAltOpen(true) },
         { key: 'O', label: 'Override', onClick: () => setOverrideOpen(true) },
         { key: 'H', label: 'Hold', onClick: () => { void submit('hold'); } },
         { key: 'N', label: 'Next', onClick: () => { void submit('next'); } },
@@ -157,6 +174,19 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
         <h3 className="text-xs text-zinc-500 mb-1">Alternatives:</h3>
         {alts.map((a) => <InstallerRecommendation key={a.name} installer={a} />)}
       </section>
+      {pickAltOpen && (
+        <div className="mt-4 p-4 border border-zinc-700 rounded bg-zinc-900">
+          <div className="text-xs text-zinc-500 mb-2">Pick alternative:</div>
+          {alts.map((a: InstallerShape, i: number) => (
+            <label key={a.name} className="flex items-center gap-2 mb-1 cursor-pointer">
+              <input type="radio" name="alt" checked={pickedAltIdx === i} onChange={() => setPickedAltIdx(i)} />
+              <span className="text-zinc-400">[{i + 1}]</span>
+              <span>{a.name}</span>
+            </label>
+          ))}
+          <div className="text-xs text-zinc-500 mt-2">[Enter] confirm · [Esc] cancel</div>
+        </div>
+      )}
       {overrideOpen && (
         <OverrideInlineForm
           categories={categories}
