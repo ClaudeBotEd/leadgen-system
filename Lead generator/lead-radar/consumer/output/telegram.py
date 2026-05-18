@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 from urllib.parse import quote
 
@@ -77,6 +77,49 @@ def _escape_md_v2_url(url: str) -> str:
     if not url:
         return ""
     return url.replace("\\", "\\\\").replace(")", "\\)")
+
+
+def _post_to_telegram(
+    chat_id: str,
+    text: str,
+    *,
+    bot_token: str | None = None,
+    parse_mode: str = "MarkdownV2",
+    timeout_s: int = DEFAULT_TIMEOUT_S,
+) -> bool:
+    """Post a message to Telegram. Returns True on success.
+
+    Used by both send_lead_alert and send_run_digest.
+    """
+    bot_token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not bot_token:
+        return False
+
+    url = f"{API_BASE}/bot{quote(bot_token, safe=':')}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": parse_mode,
+        "disable_web_page_preview": False,
+    }
+    try:
+        resp = requests.post(url, json=payload, timeout=timeout_s)
+    except requests.RequestException as e:
+        log.warning("Telegram send failed: %s", e)
+        return False
+
+    if resp.status_code != 200:
+        log.warning("Telegram non-200: %d %s", resp.status_code, resp.text[:200])
+        return False
+
+    try:
+        data = resp.json()
+        if not data.get("ok"):
+            return False
+    except (ValueError, AttributeError):
+        return False
+
+    return True
 
 
 def _format_lead(lead: Lead, suggested_message: str | None = None) -> str:
@@ -173,8 +216,77 @@ def ping_bot(
         return False, "parse"
 
 
+@dataclass
+class SourceStat:
+    """Per-source stats for a run-digest message."""
+    source: str          # base name (no source_id subcontext)
+    posts: int           # raw posts fetched
+    leads: int           # leads after scoring + thresholding
+    hot: int             # HOT subset (score >= 80 after source-weight)
+    dead: bool = False   # true if dead-source detector tripped this run
+
+
+@dataclass
+class RunStats:
+    """Aggregated stats for a run-digest message."""
+    timestamp: str                       # ISO-8601 NL-tz of run start
+    per_source: list[SourceStat] = field(default_factory=list)
+    apify_spend_used_usd: float = 0.0
+    apify_spend_cap_usd: float = 0.0
+
+
+def format_run_digest(stats: RunStats) -> str:
+    """Format a single Telegram run-digest message.
+
+    Layout matches spec §5 example. Sources sorted by leads desc within
+    alive group; dead sources sorted last and marked with ✗.
+    """
+    # Short date/time form (YYYY-MM-DD HH:MM in original tz)
+    short_ts = stats.timestamp[:16].replace("T", " ")
+
+    sorted_stats = sorted(
+        stats.per_source,
+        key=lambda s: (s.dead, -s.leads, s.source),
+    )
+
+    lines = [f"Daily run {short_ts}:"]
+    for s in sorted_stats:
+        if s.dead:
+            lines.append(f"  ✗ {s.source}: 0 posts (DEAD — needs inspection)")
+        else:
+            lines.append(
+                f"  ✓ {s.source}: {s.posts} posts → {s.leads} leads ({s.hot} HOT)"
+            )
+
+    total_leads = sum(s.leads for s in stats.per_source)
+    total_hot = sum(s.hot for s in stats.per_source)
+    lines.append("")
+    lines.append(f"Total: {total_leads} leads, {total_hot} HOT")
+    if stats.apify_spend_cap_usd > 0:
+        lines.append(
+            f"Apify spend today: ${stats.apify_spend_used_usd:.2f} / ${stats.apify_spend_cap_usd:.2f} cap"
+        )
+    return "\n".join(lines)
+
+
+def send_run_digest(stats: RunStats, *, channel: str = "consumer") -> bool:
+    """Send the digest to the resolved chat. Returns True on success.
+
+    Reuses _post_to_telegram helper for HTTP delivery. Uses resolve_chat_id
+    to find the target based on channel preference (consumer vs default).
+    """
+    chat_id = resolve_chat_id(channel=channel)
+    if not chat_id:
+        return False
+    text = format_run_digest(stats)
+    return _post_to_telegram(chat_id=chat_id, text=text)
+
+
 __all__ = [
     "DEFAULT_HOT_THRESHOLD", "DEFAULT_TIMEOUT_S",
     "TelegramResult",
+    "SourceStat", "RunStats",
     "send_lead_alert", "ping_bot",
+    "format_run_digest", "send_run_digest",
+    "resolve_chat_id",
 ]
