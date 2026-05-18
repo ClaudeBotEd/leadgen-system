@@ -1,0 +1,29 @@
+# VCS
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[oc]
+.venv
+build
+dist
+*.egg-info
+.pytest_cache
+.ruff_cache
+
+# Secrets / local data
+.env
+.env.local
+data/
+*.db
+*.sqlite
+
+# Node (built inside its own image)
+frontend/node_modules
+frontend/dist
+
+# OS / IDE
+.DS_Store
+.vscode
+.idea
