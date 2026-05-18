@@ -119,7 +119,9 @@ def dispatch(config: DeliveryConfig, *, limit: Optional[int] = None) -> Dispatch
             body_text = render_text(routed, now=now)
             body_html = render_html(routed, now=now)
 
-            violations = check_no_banned_terms(subject + "\n" + body_text)
+            violations = check_no_banned_terms(
+                subject + "\n" + body_text + "\n" + body_html
+            )
             if violations:
                 summary.vocab_violations += 1
                 _append_audit(
