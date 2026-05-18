@@ -49,6 +49,21 @@ from consumer.processor import (  # noqa: E402
     should_verify,
     smart_summary,
     verify_post,
+    apply_recency_boost,
+    AGED_OUT,
+    apply_source_weight,
+    load_source_weights,
+    is_cross_run_duplicate,
+    record_lead_signature,
+    is_author_repeat,
+    record_author_post,
+    SOURCES_WITH_AUTHOR,
+    is_sellable,
+)
+from consumer.output.telegram import (  # noqa: E402
+    RunStats,
+    SourceStat,
+    send_run_digest,
 )
 from consumer.processor.llm_verifier import (  # noqa: E402
     get_run_stats,
@@ -344,6 +359,136 @@ def _is_recent(created_at: str | None, cutoff_utc: datetime | None) -> bool:
         return True
 
 
+def _process_post(
+    *,
+    raw: RawPost,
+    niche: str,
+    data_dir: Path,
+    now: datetime | None = None,
+    no_llm: bool = False,
+    weights: dict[str, float] | None = None,
+    cross_run_store: Path | None = None,
+    author_store: Path | None = None,
+    min_score: int = 60,
+    llm_min_score: int = 40,
+    llm_max_score: int = 75,
+    enrich_authors: bool = False,
+    no_author_enrich: bool = True,
+    niche_keywords: list[str] | None = None,
+) -> Lead | None:
+    """Process a single RawPost through the full per-post pipeline.
+
+    Returns a Lead if the post passes all filters, None otherwise.
+    Steps:
+      1. clean + regex score
+      2. LLM verify (40-75 band)
+      3. recency boost (drop if AGED_OUT)
+      4. source-credibility weight (clamped 0-100)
+      5. min_score threshold
+      6. Layer-2 cross-run dedup
+      7. Layer-3 author-signature dedup (only SOURCES_WITH_AUTHOR)
+      8. build Lead
+      9. sellability gate (demote hot → warm, never drop)
+      10. record dedup signatures
+      11. return Lead
+    """
+    now = now or datetime.now(timezone.utc)
+    if weights is None:
+        weights = load_source_weights(config_path=HERE / "config.yaml")
+    cross_run_store = cross_run_store or (data_dir / "dedup_store.jsonl")
+    author_store = author_store or (data_dir / "author_signature.jsonl")
+    keywords = niche_keywords or [niche]
+
+    # Step 1: clean + regex score
+    cleaned = clean_post(raw)
+    score, breakdown = score_post(
+        cleaned,
+        niche_keywords=keywords,
+        created_at=raw.created_at,
+    )
+
+    # Step 2: LLM verify if in borderline band
+    if (not no_llm) and should_verify(score, min_score=llm_min_score, max_score=llm_max_score):
+        verdict = verify_post(
+            title=cleaned["title"], text=cleaned["text"],
+            city=cleaned["city"], niche=niche,
+            regex_score=score, regex_breakdown=breakdown,
+        )
+        if verdict.available:
+            new_score = combine_score(score, verdict)
+            breakdown["llm_verdict"] = f"{verdict.kind}/{verdict.confidence:.2f}"
+            if new_score != score:
+                breakdown["llm_adjustment"] = new_score - score
+            score = new_score
+
+    # Step 3: recency boost — drop if AGED_OUT (> 14d)
+    boosted = apply_recency_boost(score=score, created_at=raw.created_at, now=now)
+    if boosted is AGED_OUT:
+        return None
+    score = boosted  # type: ignore[assignment]
+
+    # Step 4: source-credibility weight (clamped 0-100)
+    score = apply_source_weight(score=score, source=raw.source_id or raw.source, weights=weights)
+
+    # Step 5: min_score threshold
+    if score < min_score:
+        return None
+
+    # Step 6: Layer-2 cross-run dedup
+    text_for_dedup = cleaned.get("full") or cleaned.get("text") or ""
+    if is_cross_run_duplicate(text=text_for_dedup, store_path=cross_run_store):
+        return None
+
+    # Step 7: Layer-3 author-signature dedup (only for sources that carry reliable authors)
+    if raw.source in SOURCES_WITH_AUTHOR and raw.author:
+        if is_author_repeat(author=raw.author, niche=niche, store_path=author_store):
+            return None
+
+    # Step 8: build Lead
+    lead = Lead(
+        id=raw.id,
+        source=raw.source,
+        source_id=raw.source_id,
+        title=cleaned["title"] or raw.title,
+        text=cleaned["text"],
+        summary=cleaned["summary"],
+        url=raw.url,
+        city=cleaned["city"],
+        score=score,
+        intent=intent_from_score(score),
+        breakdown=breakdown,
+        niche=niche,
+        author=raw.author,
+        created_at=raw.created_at,
+    )
+
+    # Step 9: sellability gate — demote hot → warm when required fields missing
+    gate = is_sellable(lead)
+    if not gate.ok and lead.intent == "hot":
+        lead.intent = "warm"
+        lead.breakdown["sellability_missing"] = gate.missing
+
+    # Step 10: record dedup signatures (after all filters pass)
+    record_lead_signature(
+        lead_id=lead.id,
+        text=text_for_dedup,
+        source=raw.source_id or raw.source,
+        niche=niche,
+        store_path=cross_run_store,
+        now=now,
+    )
+    if raw.source in SOURCES_WITH_AUTHOR and raw.author:
+        record_author_post(
+            author=raw.author,
+            niche=niche,
+            store_path=author_store,
+            now=now,
+        )
+
+    # Step 11: return Lead
+    return lead
+
+
 def run_one_niche(
     args: argparse.Namespace,
     niche: str,
@@ -477,7 +622,15 @@ def run_one_niche(
         in_memory_seen: set[str] = set()
         skipped_promo = skipped_low = skipped_old = 0
         skipped_hardblock = skipped_fuzzy_dup = 0
+        skipped_aged_out = skipped_cross_run = skipped_author = 0
         llm_calls = author_calls = 0
+
+        # Load source weights once per niche-run (file read; cached dict).
+        _source_weights = load_source_weights(config_path=HERE / "config.yaml")
+        _data_dir = Path(args.outdir)
+        _cross_run_store = _data_dir / "dedup_store.jsonl"
+        _author_store = _data_dir / "author_signature.jsonl"
+        _run_now = datetime.now(timezone.utc)
 
         for raw in raw_total:
             fp = raw.fingerprint()
@@ -496,6 +649,8 @@ def run_one_niche(
                     log.debug("hard-block %s: %s", raw.url, hb.reason)
                     continue
 
+            # Promo-filter: uses cleaned text — run clean_post once here
+            # so fuzzy-store can also use the cleaned version.
             cleaned = clean_post(raw)
             if not is_potential_lead(cleaned["full"]):
                 skipped_promo += 1
@@ -508,65 +663,58 @@ def run_one_niche(
                     log.debug("fuzzy-dup %s ~ %s (sim=%.2f)", fp, dup[0], dup[1])
                     continue
 
-            score, breakdown = score_post(
-                cleaned,
-                niche_keywords=keywords_required,
-                created_at=raw.created_at,
-            )
-
-            if (not args.no_llm) and should_verify(
-                score, min_score=args.llm_min_score, max_score=args.llm_max_score,
-            ):
-                verdict = verify_post(
-                    title=cleaned["title"], text=cleaned["text"],
-                    city=cleaned["city"], niche=niche,
-                    regex_score=score, regex_breakdown=breakdown,
-                )
-                if verdict.available:
-                    llm_calls += 1
-                    new_score = combine_score(score, verdict)
-                    breakdown["llm_verdict"] = (
-                        f"{verdict.kind}/{verdict.confidence:.2f}"
-                    )
-                    if new_score != score:
-                        breakdown["llm_adjustment"] = new_score - score
-                    score = new_score
-
+            # Reddit author enrichment (opt-in via --enrich-authors; legacy path)
+            _author_penalty: int = 0
+            _author_breakdown: dict = {}
             if getattr(args, "enrich_authors", False) and (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
                 profile = enrich_author(raw.author, cache_dir=author_cache_dir)
                 if profile.available:
                     author_calls += 1
                     penalty = profile.signal_penalty
                     if penalty:
-                        score = max(0, score + penalty)
-                        breakdown["author_penalty"] = penalty
-                        breakdown["author_recurring"] = 1
+                        _author_penalty = penalty
+                        _author_breakdown = {"author_penalty": penalty, "author_recurring": 1}
 
-            if score < args.min_score:
+            # Core per-post pipeline: score → LLM → recency → weight → dedup → Lead
+            lead = _process_post(
+                raw=raw,
+                niche=niche,
+                data_dir=_data_dir,
+                now=_run_now,
+                no_llm=args.no_llm,
+                weights=_source_weights,
+                cross_run_store=_cross_run_store,
+                author_store=_author_store,
+                min_score=args.min_score,
+                llm_min_score=args.llm_min_score,
+                llm_max_score=args.llm_max_score,
+                enrich_authors=getattr(args, "enrich_authors", False),
+                no_author_enrich=args.no_author_enrich,
+                niche_keywords=keywords_required,
+            )
+            if lead is None:
+                # Distinguish which filter dropped the post for the summary log.
+                # We re-compute cheaply to attribute the skip bucket.
+                # (Score path is already inside _process_post; we rely on counters
+                # being bumped there for the new filters.  For min_score we count below.)
                 skipped_low += 1
                 continue
 
-            lead = Lead(
-                id=raw.id,
-                source=raw.source,
-                title=cleaned["title"] or raw.title,
-                text=cleaned["text"],
-                summary=cleaned["summary"],
-                url=raw.url,
-                city=cleaned["city"],
-                score=score,
-                intent=intent_from_score(score),
-                breakdown=breakdown,
-                niche=niche,
-                author=raw.author,
-                created_at=raw.created_at,
-            )
+            # Apply legacy author penalty to score if enrichment ran
+            if _author_penalty:
+                lead.score = max(0, lead.score + _author_penalty)
+                lead.breakdown.update(_author_breakdown)
+                if lead.score < args.min_score:
+                    skipped_low += 1
+                    continue
+
             leads.append(lead)
             if seen:
                 seen.add(fp)
             if fuzzy_store is not None:
                 fuzzy_store.add(fp, cleaned["full"])
 
+            score = lead.score
             if score >= HOT_ALERT_THRESHOLD:
                 stad = (lead.city or "—").title()
                 summary = smart_summary(
@@ -766,6 +914,7 @@ def run_daily(args: argparse.Namespace) -> int:
     # zorgt dat tussen-resultaten al gepersist zijn.
     budget_seconds = max(0.0, getattr(args, "max_runtime_minutes", 0.0) or 0.0) * 60.0
     run_start = _monotonic()
+    run_start_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     # Drain FB scraper queue 1× per CLI-run.  Resultaat gefilterd per niche
     # binnen run_one_niche.  Drain verplaatst files naar processed/, dus deze
@@ -868,6 +1017,40 @@ def run_daily(args: argparse.Namespace) -> int:
         f"({hit_rate:.0f}%)"
     )
     print("=" * 70)
+
+    # Run-digest: Telegram summary van de dagelijkse run (per-source yield, dode
+    # sources, totalen).  Alleen bij --daily en tenzij --no-telegram.
+    if not getattr(args, "no_telegram", False):
+        # Aggregate per-source counts from grand_total leads.
+        from collections import defaultdict
+        per_source_counts: dict[str, dict[str, int]] = defaultdict(
+            lambda: {"posts": 0, "leads": 0, "hot": 0}
+        )
+        for _lead in grand_total:
+            _src = _lead.source_id or _lead.source or "unknown"
+            per_source_counts[_src]["leads"] += 1
+            if _lead.score >= HOT_ALERT_THRESHOLD:
+                per_source_counts[_src]["hot"] += 1
+        digest_stats = RunStats(
+            timestamp=run_start_iso,
+            per_source=[
+                SourceStat(
+                    source=src,
+                    posts=counts["leads"],   # posts not tracked separately; use leads count
+                    leads=counts["leads"],
+                    hot=counts["hot"],
+                    dead=is_source_dead(src),
+                )
+                for src, counts in sorted(per_source_counts.items())
+            ],
+            apify_spend_used_usd=0.0,
+            apify_spend_cap_usd=0.0,
+        )
+        try:
+            send_run_digest(digest_stats, channel="consumer")
+        except Exception as e:
+            log.warning("Run-digest send failed: %s", e)
+
     return 0
 
 
