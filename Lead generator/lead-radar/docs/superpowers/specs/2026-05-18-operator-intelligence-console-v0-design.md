@@ -1052,3 +1052,12 @@ Console v0 is **read-only** voor workflow profiles. Schrijft alleen naar `decisi
 
 Versie 1.0 — 2026-05-18.
 Volgende revisie wanneer operationele realiteit aantoont welke ergonomic-aannames bijgesteld moeten worden.
+
+---
+
+## V0 implementation log
+
+| Date | Phase | Notes |
+|---|---|---|
+| 2026-05-18 | Phase 3 (MVP daily usability) | Founder can log in via magic-link, see triage with live counts, navigate via 1/2/3 keys, review routing decisions with A/H/N keyboard actions, all audit-logged in decisions table |
+| 2026-05-18 | Phase 11 (V0 complete) | All 12 components live: auth, triage, card-shell, routing/classification/conversion cards, override flow, audit chain, universal search, operational headroom widget, why-string generator, retrieval service. JWT session strategy (deviation from plan's database strategy due to DrizzleAdapter incompatibility with operator-schema). 4/4 Playwright e2e tests passing via ENABLE_TEST_AUTH pattern. |
