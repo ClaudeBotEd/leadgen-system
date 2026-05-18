@@ -2,7 +2,7 @@ import { db } from './client';
 import { workflowProfiles } from './schema';
 import { eq, and, desc } from 'drizzle-orm';
 
-const cache = new Map<string, { value: any; expiresAt: number }>();
+const cache = new Map<string, { value: Record<string, unknown>; expiresAt: number }>();
 const TTL = 60_000;
 
 export async function getActiveProfile(workflowId: string) {
