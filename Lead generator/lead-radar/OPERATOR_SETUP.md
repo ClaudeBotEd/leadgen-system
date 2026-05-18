@@ -127,3 +127,53 @@ ls -la "/Users/claudebot/Lead generator/lead-radar/data/leads/consumer"/*.jsonl
 ```
 
 If files don't exist, first run should create them. If they exist but don't grow, check Python exception logs in the console output for file I/O or JSON serialization errors.
+
+## Dead-source reset
+
+If the daily digest reports a source as DEAD (e.g. `✗ marktplaats: 0 posts (DEAD)`):
+
+1. **Quick check** — re-run the source manually with verbose logging:
+   ```bash
+   cd "/Users/claudebot/Lead generator/lead-radar"
+   source .env
+   .venv/bin/python run_consumer.py \
+     --niche warmtepomp --location amsterdam \
+     --sources marktplaats --limit 5 \
+     --no-sheets --no-telegram --min-score 1
+   ```
+
+2. **If the manual run produces 0 posts**, the parser has likely drifted. Re-capture a fresh fixture and re-run the parser-health test:
+   ```bash
+   curl -sS -A "Mozilla/5.0" "https://www.marktplaats.nl/q/..." \
+     > "tests/fixtures/parser_health/marktplaats/sample.html"
+   .venv/bin/python -m pytest tests/test_parser_health.py::test_marktplaats_parser_extracts_post -v
+   ```
+   If the test fails, the parser needs repair.
+
+3. **If the manual run DOES produce posts**, the dead-source flag is stale (likely from a transient network issue). Reset it:
+   ```bash
+   .venv/bin/python scripts/reset_dead_source.py marktplaats
+   ```
+   The next launchd-triggered run will re-attempt the source.
+
+## queries.yaml tuning
+
+`consumer/queries.yaml` lists per-niche, per-source search queries. Tuning rules:
+
+- **Never edit the file while a pipeline run is in progress** (`launchctl list | grep com.leadradar.consumer` should show `-` PID).
+- **Add city permutations** for location-aware sources (`reddit`, `google`, `marktplaats`, `2dehands`) when a city is heavily represented in your customer base.
+- **Remove zero-yield queries** after the weekly report (Plan C) shows them.
+- **Don't add more than 50 queries per source per niche** — overcrowds the dispatcher and triggers rate limits.
+
+Schema reminder (see `consumer/queries.yaml` header for the full doc):
+
+```yaml
+niches:
+  warmtepomp:
+    keywords_required: [warmtepomp]
+    queries_text:
+      - "warmtepomp installateur gezocht"
+      - "wie kan warmtepomp installeren {location}"
+```
+
+After editing, run a single-niche dry-run (see "Consumer pipeline — manual dry-run" section above) to confirm queries don't break parsers.

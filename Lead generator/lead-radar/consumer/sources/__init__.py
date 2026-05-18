@@ -78,9 +78,17 @@ DEAD_THRESHOLD = 3
 _source_health: dict[str, int] = {}
 
 
-def reset_source_health() -> None:
-    """Reset per-source 0-yield counters.  Aan te roepen bij start van een run."""
-    _source_health.clear()
+def reset_source_health(source: str | None = None) -> None:
+    """Reset per-source 0-yield counters.
+
+    Args:
+        source: If None, reset all sources. Otherwise reset only this source.
+                Aan te roepen bij start van een run of voor specifieke troubleshooting.
+    """
+    if source is None:
+        _source_health.clear()
+    else:
+        _source_health[source] = 0
 
 
 def mark_source_yield(name: str, yield_count: int) -> None:
