@@ -155,6 +155,85 @@ const fixtures = [
     agentConfidence: 0.91,
     leadId: 'lead-fixture-003',
   },
+  // Classification fixtures — ambiguous band (pre-score 0.40–0.75)
+  {
+    decisionId: '00000000-0000-0000-0000-000001000001',
+    workflowId: 'signal_classification_ambiguous_band',
+    profileVersion: 1,
+    tierAtDecision: 'T1',
+    inputsHash: 'fixture-c-001',
+    inputsPayload: {
+      in_ambiguous_band: true,
+      signal: {
+        source: 'ouders.nl forum',
+        user: 'tweemoeders-bart',
+        ageHours: 4,
+        preScore: 0.62,
+        postText: 'Even geleden post ik over de subsidie maar nog niet veel reactie. Iemand toch een idee wat zo\'n hybride installatie nu echt gaat kosten met de huidige aanvragen? Mijn aannemer wil offerte maar ik wil eerst beeld.',
+      },
+    },
+    agentRecommendation: {
+      candidates: [
+        { categoryKey: 'research_intent', confidence: 0.62, reasoning: 'kostenvergelijking, geen koopintentie nu' },
+        { categoryKey: 'purchase_intent_pre_quote', confidence: 0.28, reasoning: 'aannemer wil offerte uitbrengen → mogelijke buyer' },
+        { categoryKey: 'no_intent', confidence: 0.10, reasoning: '' },
+      ],
+    },
+    agentConfidence: 0.62,
+    signalId: 'sig-c-001',
+  },
+  {
+    decisionId: '00000000-0000-0000-0000-000001000002',
+    workflowId: 'signal_classification_ambiguous_band',
+    profileVersion: 1,
+    tierAtDecision: 'T1',
+    inputsHash: 'fixture-c-002',
+    inputsPayload: {
+      in_ambiguous_band: true,
+      signal: {
+        source: 'reddit r/zonnepanelen',
+        user: 'solar_newbie_rdam',
+        ageHours: 7,
+        preScore: 0.55,
+        postText: 'Heb net een huis gekocht in Rotterdam-Zuid, plat dak 45m2. Weet iemand of zonnepanelen op een plat dak renderen? Ik lees tegenstrijdige dingen over hoek en opbrengst.',
+      },
+    },
+    agentRecommendation: {
+      candidates: [
+        { categoryKey: 'research_intent', confidence: 0.55, reasoning: 'technische vraag, oriëntatiefase' },
+        { categoryKey: 'purchase_intent_pre_quote', confidence: 0.35, reasoning: 'nieuw huis, concreet dak → serieuze kandidaat' },
+        { categoryKey: 'no_intent', confidence: 0.10, reasoning: '' },
+      ],
+    },
+    agentConfidence: 0.55,
+    signalId: 'sig-c-002',
+  },
+  {
+    decisionId: '00000000-0000-0000-0000-000001000003',
+    workflowId: 'signal_classification_ambiguous_band',
+    profileVersion: 1,
+    tierAtDecision: 'T2',
+    inputsHash: 'fixture-c-003',
+    inputsPayload: {
+      in_ambiguous_band: true,
+      signal: {
+        source: 'tweakers.net forum',
+        user: 'tweaker_duurzaam',
+        ageHours: 2,
+        preScore: 0.48,
+        postText: 'Mijn buurman heeft een warmtepomp genomen van Vaillant. Ik vraag me af of die subsidie ISDE nog de moeite waard is na de recente bezuinigingen. Heeft iemand recent aangevraagd?',
+      },
+    },
+    agentRecommendation: {
+      candidates: [
+        { categoryKey: 'research_intent', confidence: 0.52, reasoning: 'subsidie-informatie, geen directe koopuitdrukking' },
+        { categoryKey: 'no_intent', confidence: 0.28, reasoning: 'louter informatievraag over beleid' },
+        { categoryKey: 'purchase_intent_pre_quote', confidence: 0.20, reasoning: 'warmtepomp buurman → mogelijk zelf ook' },
+      ],
+    },
+    agentConfidence: 0.52,
+    signalId: 'sig-c-003',
+  },
 ];
 
 async function main() {
