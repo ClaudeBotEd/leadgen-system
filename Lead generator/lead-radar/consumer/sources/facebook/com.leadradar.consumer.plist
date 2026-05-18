@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lead Radar — Consumer-pipeline (non-FB) launchd agent (macOS).
+
+  Roept scripts/run_consumer_only.sh aan, dat:
+    1. .env source't (Sheets, LLM, Telegram vars)
+    2. Fail-fast env check (Plan A Task 2)
+    3. run_consumer.py --daily --sources <10 non-FB> draait
+
+  Schedule: 08:30 / 13:00 / 18:00 lokale tijd (Amsterdam mits Mac op CET).
+  Offset 30min van FB Apify (08:00) om Apify-cost overlap te vermijden.
+  Launchd schedule een gemiste run zodra de Mac wakker is.
+
+  Installatie:
+    cp consumer/sources/facebook/com.leadradar.consumer.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.leadradar.consumer.plist
+    launchctl list | grep leadradar     # verify
+
+  Handmatige trigger (smoke-test na installatie):
+    launchctl start com.leadradar.consumer
+    tail -f "/Users/claudebot/Lead generator/lead-radar/logs/consumer.log"
+
+  Uitschakelen:
+    launchctl unload ~/Library/LaunchAgents/com.leadradar.consumer.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.leadradar.consumer</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/claudebot/Lead generator/lead-radar/scripts/run_consumer_only.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/claudebot/Lead generator/lead-radar</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Schedule: 08:30, 13:00, 18:00 lokale tijd -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>8</integer>
+      <key>Minute</key><integer>30</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>13</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>18</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/consumer.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/consumer.err</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>
