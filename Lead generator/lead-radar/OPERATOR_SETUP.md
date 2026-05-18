@@ -177,3 +177,57 @@ niches:
 ```
 
 After editing, run a single-niche dry-run (see "Consumer pipeline — manual dry-run" section above) to confirm queries don't break parsers.
+
+## Bootstrapped launchd agents
+
+Three agents are loaded after Plan B Task 7 bootstrap:
+
+| Agent | Trigger | Wrapper | Logs |
+|---|---|---|---|
+| `com.leadradar.fbapify` | 08:00 / 12:00 / 17:00 / 21:00 | `scripts/run_apify_pipeline.sh` | `logs/apify.log` |
+| `com.leadradar.consumer` | 08:30 / 13:00 / 18:00 | `scripts/run_consumer_only.sh` | `logs/consumer.log` |
+| `com.leadradar.heartbeat` | 00:15 / 04:15 / 10:15 / 14:15 / 19:15 / 22:30 | `scripts/heartbeat.sh` | `logs/heartbeat.log` |
+
+### Verify agents are loaded
+
+```bash
+launchctl list | grep leadradar
+```
+
+Expected: 3 lines, recent exit code 0 (or a single non-zero from a transient failure that the next trigger will clear).
+
+### Manually trigger an agent (smoke test)
+
+```bash
+launchctl start com.leadradar.consumer
+launchctl start com.leadradar.heartbeat
+```
+
+`launchctl start` is fire-and-forget. Tail the corresponding log to watch progress.
+
+### Reload an agent after editing its plist
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.leadradar.consumer.plist
+cp "/Users/claudebot/Lead generator/lead-radar/consumer/sources/facebook/com.leadradar.consumer.plist" \
+   ~/Library/LaunchAgents/
+launchctl load -w ~/Library/LaunchAgents/com.leadradar.consumer.plist
+```
+
+### Diagnose silent failures
+
+If a pipeline went silent and heartbeat didn't alert (or heartbeat itself is silent):
+
+```bash
+launchctl list | grep leadradar     # check for non-zero exit codes
+tail -50 logs/consumer.err          # look for stack traces or env errors
+tail -50 logs/heartbeat.err
+```
+
+Common causes:
+- `.env` file moved or deleted → wrapper exits 2 with `FATAL: .env missing`.
+- `LEAD_RADAR_SPREADSHEET_ID` removed from `.env` → consumer wrapper exits 2 with the fail-fast env-check.
+- venv python deleted → wrapper exits 2 with `FATAL: venv python not found`.
+- venv missing a dependency (e.g. `datasketch` after Plan A landed) → wrapper exits with `ModuleNotFoundError`. Fix: `.venv/bin/pip install -r requirements.txt`.
+- macOS sleep extended over a scheduled trigger → launchd auto-fires after wake.
+- Telegram-vars missing in `.env` → heartbeat reports OK/ALERT to stdout but cannot send Telegram (exits 1 silently). Add `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` to `.env` to enable alerts.
