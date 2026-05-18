@@ -1,0 +1,903 @@
+=== 2026-05-18T10:23:12Z Consumer-only pipeline begin ===
+Env check OK.
+--- Running run_consumer.py --daily --sources reddit,reddit_new,tweakers,bouwinfo,bouwinfo_forum,klusidee_forum,ouders_forum,google,marktplaats,2dehands ---
+11:23:13 [INFO] consumer.cli [run=a1837730-ccd]: Lead Radar start (run_id=a1837730-ccd, daily=True)
+11:23:13 [INFO] consumer.cli [run=a1837730-ccd]: === warmtepomp @ nederland | sources=['reddit_new', 'tweakers', 'bouwinfo', 'bouwinfo_forum', 'klusidee_forum', 'ouders_forum'] limit=25 min_score=60 max_age_days=7 ===
+11:23:13 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 396 eerder gehashte posts (threshold=0.70)
+11:23:13 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/r/Klussers/new.json — gaf op
+11:23:13 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Klussers' -> 0 posts in 0.2s
+11:23:16 [INFO] consumer.sources.reddit_new [run=a1837730-ccd]: Reddit /r/Offertes/new: 25 posts
+11:23:16 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Offertes' -> 25 posts in 2.7s
+11:23:19 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 404 on https://www.reddit.com/r/duurzaam/new.json — gaf op
+11:23:19 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='duurzaam' -> 0 posts in 2.7s
+11:23:22 [INFO] consumer.sources.reddit_new [run=a1837730-ccd]: Reddit /r/heatpumps/new: 25 posts
+11:23:22 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='heatpumps' -> 25 posts in 3.1s
+11:23:25 [INFO] consumer.sources.reddit_new [run=a1837730-ccd]: Reddit /r/hvac/new: 25 posts
+11:23:25 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='hvac' -> 25 posts in 2.8s
+11:23:35 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 10 posts voor q='warmtepomp installateur gezocht'
+11:23:35 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp installateur gezocht' -> 10 posts in 10.3s
+11:23:45 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 10 posts voor q='warmtepomp installateur nodig'
+11:23:45 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp installateur nodig' -> 10 posts in 9.7s
+11:23:56 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 14 posts voor q='warmtepomp advies nodig'
+11:23:56 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp advies nodig' -> 14 posts in 11.1s
+11:24:06 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='warmtepomp offerte'
+11:24:06 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp offerte' -> 9 posts in 10.5s
+11:24:16 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='warmtepomp offerte nodig'
+11:24:16 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp offerte nodig' -> 9 posts in 10.2s
+11:24:29 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 10 posts voor q='warmtepomp laten plaatsen'
+11:24:29 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp laten plaatsen' -> 10 posts in 12.1s
+11:24:39 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='warmtepomp laten installeren'
+11:24:39 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp laten installeren' -> 9 posts in 10.2s
+11:24:50 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 12 posts voor q='warmtepomp plaatsen prijs'
+11:24:50 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='warmtepomp plaatsen prijs' -> 12 posts in 11.4s
+11:25:02 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='wie kan warmtepomp installeren'
+11:25:02 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan warmtepomp installeren' -> 9 posts in 11.7s
+11:25:13 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='wie kan warmtepomp plaatsen'
+11:25:13 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan warmtepomp plaatsen' -> 9 posts in 11.5s
+11:25:24 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='hybride warmtepomp installateur'
+11:25:24 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='hybride warmtepomp installateur' -> 9 posts in 11.0s
+11:25:36 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 9 posts voor q='lucht water warmtepomp'
+11:25:36 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='lucht water warmtepomp' -> 9 posts in 12.1s
+11:25:43 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp installateur gezocht'
+11:25:43 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp installateur gezocht' -> 6 posts in 6.2s
+11:25:49 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp installateur nodig'
+11:25:49 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp installateur nodig' -> 6 posts in 6.3s
+11:25:55 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp advies nodig'
+11:25:55 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp advies nodig' -> 6 posts in 6.0s
+11:26:00 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp offerte'
+11:26:00 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp offerte' -> 6 posts in 5.2s
+11:26:05 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp offerte nodig'
+11:26:05 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp offerte nodig' -> 6 posts in 5.4s
+11:26:12 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp laten plaatsen'
+11:26:12 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp laten plaatsen' -> 6 posts in 6.6s
+11:26:18 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp laten installeren'
+11:26:18 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp laten installeren' -> 6 posts in 5.6s
+11:26:25 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='warmtepomp plaatsen prijs'
+11:26:25 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='warmtepomp plaatsen prijs' -> 6 posts in 6.9s
+11:26:30 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan warmtepomp installeren'
+11:26:30 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan warmtepomp installeren' -> 6 posts in 5.3s
+11:26:35 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan warmtepomp plaatsen'
+11:26:35 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan warmtepomp plaatsen' -> 6 posts in 4.9s
+11:26:40 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='hybride warmtepomp installateur'
+11:26:40 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='hybride warmtepomp installateur' -> 6 posts in 5.3s
+11:26:45 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='lucht water warmtepomp'
+11:26:45 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='lucht water warmtepomp' -> 6 posts in 4.9s
+11:26:47 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/verwarming-en-koeling/warmtepompen
+11:26:47 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/verwarming-en-koeling/warmtepompen' -> 6 posts in 1.9s
+11:26:49 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming
+11:26:49 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming' -> 6 posts in 1.8s
+11:26:51 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/verwarming-en-koeling
+11:26:51 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/verwarming-en-koeling' -> 6 posts in 2.4s
+11:26:54 [INFO] consumer.sources.klusidee_forum [run=a1837730-ccd]: Klusidee forum: 25 posts uit /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
+11:26:54 [INFO] consumer.cli [run=a1837730-ccd]: [klusidee_forum] q='/Forum/forum/cv-ketels-gaskachels-en-geisers.33/' -> 25 posts in 2.5s
+11:26:55 [INFO] consumer.sources.klusidee_forum [run=a1837730-ccd]: Klusidee forum: 25 posts uit /Forum/forum/verwarming-inclusief-leidingwerk.5/
+11:26:55 [INFO] consumer.cli [run=a1837730-ccd]: [klusidee_forum] q='/Forum/forum/verwarming-inclusief-leidingwerk.5/' -> 25 posts in 1.7s
+11:26:58 [INFO] consumer.sources.ouders_forum [run=a1837730-ccd]: Ouders forum: 25 posts uit /forum/huis-tuin-en-keuken
+11:26:58 [INFO] consumer.cli [run=a1837730-ccd]: [ouders_forum] q='/forum/huis-tuin-en-keuken' -> 25 posts in 2.3s
+11:26:58 [INFO] consumer.cli [run=a1837730-ccd]: [warmtepomp] raw=359 -> leads=0 (promo=9 oud=0 low=149 hardblock=1 fuzzy=19 llm_calls=0 author_calls=0)
+11:26:58 [INFO] consumer.output.exporter [run=a1837730-ccd]: CSV geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_warmtepomp_2026-05-18.csv (0 leads)
+11:26:58 [INFO] consumer.output.exporter [run=a1837730-ccd]: JSON geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_warmtepomp_2026-05-18.json
+11:26:58 [INFO] consumer.cli [run=a1837730-ccd]: === warmtepomp @ nederland | sources=['reddit', 'google', 'marktplaats', '2dehands'] limit=25 min_score=60 max_age_days=7 ===
+11:26:58 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 396 eerder gehashte posts (threshold=0.70)
+11:26:58 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/search.json — gaf op
+11:27:01 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp installateur gezocht nederland' (subs=23)
+11:27:01 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp installateur gezocht nederland' -> 25 posts in 3.0s
+11:27:04 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp installateur nodig nederland' (subs=23)
+11:27:04 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp installateur nodig nederland' -> 25 posts in 3.2s
+11:27:07 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp advies nodig nederland' (subs=23)
+11:27:07 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp advies nodig nederland' -> 25 posts in 3.1s
+11:27:11 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp offerte nederland' (subs=23)
+11:27:11 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp offerte nederland' -> 25 posts in 3.1s
+11:27:13 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp offerte nodig nederland' (subs=23)
+11:27:13 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp offerte nodig nederland' -> 25 posts in 2.5s
+11:27:16 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp laten plaatsen nederland' (subs=23)
+11:27:16 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp laten plaatsen nederland' -> 25 posts in 3.4s
+11:27:19 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp laten installeren nederland' (subs=23)
+11:27:19 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp laten installeren nederland' -> 25 posts in 2.3s
+11:27:22 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='warmtepomp plaatsen prijs nederland' (subs=23)
+11:27:22 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='warmtepomp plaatsen prijs nederland' -> 25 posts in 2.8s
+11:27:24 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan warmtepomp installeren nederland' (subs=23)
+11:27:24 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan warmtepomp installeren nederland' -> 25 posts in 2.5s
+11:27:27 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan warmtepomp plaatsen nederland' (subs=23)
+11:27:27 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan warmtepomp plaatsen nederland' -> 25 posts in 3.1s
+11:27:30 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='hybride warmtepomp installateur nederland' (subs=23)
+11:27:30 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='hybride warmtepomp installateur nederland' -> 25 posts in 3.0s
+11:27:32 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='lucht water warmtepomp nederland' (subs=23)
+11:27:32 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='lucht water warmtepomp nederland' -> 25 posts in 2.1s
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Areddit.com+warmtepomp+installateur+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+warmtepomp+installateur+nederland&limit=1 200
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_97114e79-c0c5-4dbc-8b50-7bec4b72f710 200
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20warmtepomp%20installateur%20nederland 200
+11:27:33 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+warmtepomp+installateur+nederland&web=1&searchid=1027744 200
+11:27:34 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:34 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+warmtepomp+installateur+nederland 403
+11:27:34 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+warmtepomp+installateur+nederland&source=web 200
+11:27:34 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:reddit.com warmtepomp installateur nederland' (filtered)
+11:27:34 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com warmtepomp installateur nederland' -> 25 posts in 2.2s
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+warmtepomp+offerte+nederland 403
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20warmtepomp%20offerte%20nederland 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Areddit.com+warmtepomp+offerte+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=CLQ5uKto8EqN5rSWip_te4HD;_ylu=oTQgfLJ71v9mphziRykK7ErfgX53iIcHfa8QWrQyrHNjE78?p=site%3Areddit.com+warmtepomp+offerte+nederland 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+warmtepomp+offerte+nederland&limit=1 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+warmtepomp+offerte+nederland&web=1&searchid=8566003 200
+11:27:35 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:36 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+warmtepomp+offerte+nederland&source=web 200
+11:27:36 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:reddit.com warmtepomp offerte nederland' (filtered)
+11:27:36 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com warmtepomp offerte nederland' -> 25 posts in 1.8s
+11:27:36 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+warmtepomp+advies+nederland 403
+11:27:36 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:37 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20warmtepomp%20advies%20nederland 200
+11:27:37 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Areddit.com+warmtepomp+advies+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:37 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+warmtepomp+advies+nederland&limit=1 200
+11:27:37 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+warmtepomp+advies+nederland&source=web 200
+11:27:37 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+warmtepomp+advies+nederland&web=1&searchid=3788206 200
+11:27:38 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:reddit.com warmtepomp advies nederland' (filtered)
+11:27:38 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com warmtepomp advies nederland' -> 25 posts in 1.5s
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+hybride+warmtepomp+nederland&limit=1 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20hybride%20warmtepomp%20nederland 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=dvctvmFdbKq8HUjnxz1Cu12E;_ylu=B-NHPfKc-q1ka-bBL1u89DbJbkWlyAVGiyrG70jsLiETTns?p=site%3Areddit.com+hybride+warmtepomp+nederland 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+hybride+warmtepomp+nederland&web=1&searchid=4506577 200
+11:27:38 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+hybride+warmtepomp+nederland&source=web 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+hybride+warmtepomp+nederland 403
+11:27:39 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:reddit.com hybride warmtepomp nederland' (filtered)
+11:27:39 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com hybride warmtepomp nederland' -> 25 posts in 1.0s
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+warmtepomp+gezocht+nederland 403
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20warmtepomp%20gezocht%20nederland 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+warmtepomp+gezocht+nederland&limit=1 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_ce022157-28ad-45d9-8eeb-4e3a17791c31 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+warmtepomp+gezocht+nederland&web=1&searchid=2490780 200
+11:27:39 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+warmtepomp+gezocht+nederland&source=web 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:40 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:reddit.com warmtepomp gezocht nederland' (filtered)
+11:27:40 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com warmtepomp gezocht nederland' -> 25 posts in 1.4s
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20warmtepomp%20installateur%20nederland 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=emYHK3VE3sLm6_qIYJGZG3vJ;_ylu=KvVVVmCRXcINZWS1apTfxG0UyPxnjXBiiwppJmEY5NnFjbQ?p=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:40 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland&limit=1 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland&web=1&searchid=1747325 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland&source=web 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+warmtepomp+installateur+nederland 403
+11:27:41 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 25 post-URLs voor q='site:gathering.tweakers.net warmtepomp installateur nederland' (filtered)
+11:27:41 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net warmtepomp installateur nederland' -> 25 posts in 1.0s
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20warmtepomp%20offerte%20nederland 200
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+warmtepomp+offerte+nederland&source=web 429
+11:27:41 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Agathering.tweakers.net+warmtepomp+offerte+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:42 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_e868ca39-19c1-46a5-accf-74dc6f00126b 200
+11:27:42 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:42 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+warmtepomp+offerte+nederland&limit=1 200
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+warmtepomp+offerte+nederland 403
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+warmtepomp+offerte+nederland&web=1&searchid=9326208 200
+11:27:43 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:gathering.tweakers.net warmtepomp offerte nederland' (filtered)
+11:27:43 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net warmtepomp offerte nederland' -> 14 posts in 2.0s
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+warmtepomp+advies+nederland 403
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+warmtepomp+advies+nederland&limit=1 200
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20warmtepomp%20advies%20nederland 200
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+warmtepomp+advies+nederland&source=web 429
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:43 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Agathering.tweakers.net+warmtepomp+advies+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:44 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+warmtepomp+advies+nederland&web=1&searchid=4511713 200
+11:27:44 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:45 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=uNlIp1kfAXXngO05dIWs0wIU;_ylu=4DQmxY0awiM2iEY1qxYOhTKAL7jbGoopFu4zid8sCBqQH_8?p=site%3Agathering.tweakers.net+warmtepomp+advies+nederland 200
+11:27:45 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 19 post-URLs voor q='site:gathering.tweakers.net warmtepomp advies nederland' (filtered)
+11:27:45 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net warmtepomp advies nederland' -> 19 posts in 2.1s
+11:27:45 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20hybride%20warmtepomp%20nederland 200
+11:27:45 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland&source=web 429
+11:27:45 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:45 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:46 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland&limit=1 200
+11:27:46 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland&web=1&searchid=9219391 200
+11:27:46 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:46 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=VRGsJS7e8w3CVOX5tlKzVHcD;_ylu=hqdXMV1HX1gNTQIDBjJ84XxN6achfFYWV_574sDQHPv3Ez0?p=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland 200
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+hybride+warmtepomp+nederland 403
+11:27:47 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net hybride warmtepomp nederland' (filtered)
+11:27:47 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net hybride warmtepomp nederland' -> 15 posts in 1.7s
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+all+electric+warmtepomp+nederland 403
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20all%20electric%20warmtepomp%20nederland 200
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+all+electric+warmtepomp+nederland&source=web 429
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+all+electric+warmtepomp+nederland&limit=1 200
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:47 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+all+electric+warmtepomp+nederland&web=1&searchid=7296797 200
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_ccb08fa8-8605-49be-beec-42056378bc5e 200
+11:27:48 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net all electric warmtepomp nederland' (filtered)
+11:27:48 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net all electric warmtepomp nederland' -> 15 posts in 1.0s
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20warmtepomp%20installateur%20nederland 200
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+warmtepomp+installateur+nederland&source=web 429
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=ahj48XFXTf__GYM4ORwO-uHK;_ylu=5kO1rbHuY1RK6okdTnlSOR8nMGqjryKe2UU3lTG5BwqEfrs?p=site%3Abouwinfo.be+warmtepomp+installateur+nederland 200
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Abouwinfo.be+warmtepomp+installateur+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:48 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+warmtepomp+installateur+nederland&limit=1 200
+11:27:49 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+warmtepomp+installateur+nederland&web=1&searchid=7582848 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+warmtepomp+installateur+nederland 403
+11:27:50 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 21 post-URLs voor q='site:bouwinfo.be warmtepomp installateur nederland' (filtered)
+11:27:50 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be warmtepomp installateur nederland' -> 21 posts in 2.0s
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+warmtepomp+prijs+nederland 403
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20warmtepomp%20prijs%20nederland 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=UhiZ97DbEsDJE_X2sL8N1yhU;_ylu=2lYgmqL3o4sAKRiu5w6KjMdn_WGIPHqKcrq9cfdS5DrC4yQ?p=site%3Abouwinfo.be+warmtepomp+prijs+nederland 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/search?q=site%3Abouwinfo.be+warmtepomp+prijs+nederland&filter=1&start=0&hl=nl-NL&lr=lang_nl&cr=countryNL 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+warmtepomp+prijs+nederland&limit=1 200
+11:27:50 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+warmtepomp+prijs+nederland&web=1&searchid=1600641 200
+11:27:51 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+warmtepomp+prijs+nederland&source=web 429
+11:27:51 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:27:51 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:27:51 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 23 post-URLs voor q='site:bouwinfo.be warmtepomp prijs nederland' (filtered)
+11:27:51 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be warmtepomp prijs nederland' -> 23 posts in 1.6s
+11:27:52 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 21 listings voor q='warmtepomp installateur gezocht'
+11:27:52 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp installateur gezocht' -> 21 posts in 0.5s
+11:27:54 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 16 listings voor q='warmtepomp installateur gevraagd'
+11:27:54 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp installateur gevraagd' -> 16 posts in 2.2s
+11:27:57 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 22 listings voor q='warmtepomp installatie gezocht'
+11:27:57 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp installatie gezocht' -> 22 posts in 2.7s
+11:28:00 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 16 listings voor q='warmtepomp aansluiten gevraagd'
+11:28:00 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp aansluiten gevraagd' -> 16 posts in 2.8s
+11:28:02 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 15 listings voor q='warmtepomp monteur gezocht'
+11:28:02 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp monteur gezocht' -> 15 posts in 2.6s
+11:28:05 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 13 listings voor q='vakman warmtepomp gezocht'
+11:28:05 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='vakman warmtepomp gezocht' -> 13 posts in 2.4s
+11:28:08 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='warmtepomp laten plaatsen'
+11:28:08 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp laten plaatsen' -> 25 posts in 3.4s
+11:28:10 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 18 listings voor q='warmtepomp specialist gezocht'
+11:28:10 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp specialist gezocht' -> 18 posts in 2.1s
+11:28:12 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='hybride warmtepomp installateur'
+11:28:12 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='hybride warmtepomp installateur' -> 25 posts in 2.0s
+11:28:14 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 15 listings voor q='warmtepomp opdrachtgever zoekt'
+11:28:14 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='warmtepomp opdrachtgever zoekt' -> 15 posts in 1.9s
+11:28:17 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 4 listings voor q='warmtepomp installateur antwerpen'
+11:28:17 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp installateur antwerpen' -> 4 posts in 2.9s
+11:28:19 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 1 listings voor q='warmtepomp installateur gent'
+11:28:19 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp installateur gent' -> 1 posts in 2.3s
+11:28:21 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp installateur brussel'
+11:28:21 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp installateur brussel' -> 0 posts in 1.4s
+11:28:23 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp installateur leuven'
+11:28:23 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp installateur leuven' -> 0 posts in 2.7s
+11:28:25 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp installateur hasselt'
+11:28:25 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp installateur hasselt' -> 0 posts in 1.9s
+11:28:27 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp aanleg gezocht'
+11:28:27 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp aanleg gezocht' -> 0 posts in 1.8s
+11:28:30 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp premie vlaanderen'
+11:28:30 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp premie vlaanderen' -> 0 posts in 2.7s
+11:28:32 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='warmtepomp Mijn VerbouwPremie'
+11:28:32 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp Mijn VerbouwPremie' -> 0 posts in 2.2s
+11:28:34 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 3 listings voor q='warmtepomp specialist vraag'
+11:28:34 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp specialist vraag' -> 3 posts in 1.7s
+11:28:35 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='hybride warmtepomp BE'
+11:28:35 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='hybride warmtepomp BE' -> 0 posts in 1.6s
+11:28:38 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 25 listings voor q='wie kan warmtepomp'
+11:28:38 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='wie kan warmtepomp' -> 25 posts in 2.6s
+11:28:40 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 25 listings voor q='warmtepomp plaatsen prijs'
+11:28:40 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='warmtepomp plaatsen prijs' -> 25 posts in 2.6s
+11:28:42 [INFO] consumer.cli [run=a1837730-ccd]: [warmtepomp] raw=801 -> leads=0 (promo=116 oud=53 low=293 hardblock=51 fuzzy=34 llm_calls=0 author_calls=0)
+11:28:42 [INFO] consumer.output.exporter [run=a1837730-ccd]: CSV geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_warmtepomp_2026-05-18.csv (0 leads)
+11:28:42 [INFO] consumer.output.exporter [run=a1837730-ccd]: JSON geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_warmtepomp_2026-05-18.json
+11:28:42 [INFO] consumer.cli [run=a1837730-ccd]: [progress] 1/5 done | niche=warmtepomp | elapsed=328s | eta=1315s
+11:28:42 [INFO] consumer.cli [run=a1837730-ccd]: === airco @ nederland | sources=['reddit_new', 'tweakers', 'bouwinfo', 'bouwinfo_forum', 'klusidee_forum', 'ouders_forum'] limit=25 min_score=60 max_age_days=7 ===
+11:28:42 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 396 eerder gehashte posts (threshold=0.70)
+11:28:42 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/r/Klussers/new.json — gaf op
+11:28:42 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Klussers' -> 0 posts in 0.2s
+11:28:44 [INFO] consumer.sources.reddit_new [run=a1837730-ccd]: Reddit /r/Offertes/new: 25 posts
+11:28:44 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Offertes' -> 25 posts in 2.3s
+11:28:47 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:47 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20installateur%20gezocht 200
+11:28:47 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+installateur+gezocht&limit=1 200
+11:28:48 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+installateur+gezocht&source=web 429
+11:28:48 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=kQPxwGCDhjjteGLtmUaHp4gF;_ylu=AN9C6xoYor_w8LwEUfAL5K_c1IO-4N7xoZ6qHpO64InpsE0?p=site%3Agathering.tweakers.net+airco+installateur+gezocht 200
+11:28:48 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+installateur+gezocht&web=1&searchid=1165878 200
+11:28:48 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:28:48 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+installateur+gezocht 403
+11:28:48 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 16 post-URLs voor q='site:gathering.tweakers.net airco installateur gezocht' (filtered)
+11:28:48 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 16 posts voor q='airco installateur gezocht'
+11:28:48 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco installateur gezocht' -> 16 posts in 3.6s
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+installateur+nodig 403
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+installateur+nodig&limit=1 200
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+installateur+nodig&source=web 429
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20installateur%20nodig 200
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_a47d7152-f3d6-452f-8bfe-bba531ea8e63 200
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+installateur+nodig&web=1&searchid=4742405 200
+11:28:50 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:28:50 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 13 post-URLs voor q='site:gathering.tweakers.net airco installateur nodig' (filtered)
+11:28:50 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 13 posts voor q='airco installateur nodig'
+11:28:50 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco installateur nodig' -> 13 posts in 2.2s
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+laten+plaatsen&limit=1 200
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20laten%20plaatsen 200
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+laten+plaatsen&source=web 429
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Blaten%2Bplaatsen%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOTTq9AGIjAwUSJzgG1DwyEjreo6DgI42Pl3ULQkCZwHo4d5XZA5TH5QRlpUZu1FQPB6VscNxpoyAnJSWgFD 429
+11:28:52 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+laten+plaatsen&web=1&searchid=7895215 200
+11:28:53 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:28:53 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=oZUOXO0S6o5ERbduENGGIIPc;_ylu=gWzeVcXmtt97XMcq7kLnv4c84ifEDPRAI0G5dGnY9hTGWeE?p=site%3Agathering.tweakers.net+airco+laten+plaatsen 200
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+laten+plaatsen 403
+11:28:54 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net airco laten plaatsen' (filtered)
+11:28:54 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 15 posts voor q='airco laten plaatsen'
+11:28:54 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco laten plaatsen' -> 15 posts in 3.4s
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20laten%20installeren 200
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+laten+installeren&source=web 429
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+laten+installeren&limit=1 200
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Blaten%2Binstalleren%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGObTq9AGIjD9oz25iWXPcKaD-XojlDqHsxtKcM-AQm46I1H2nySvS4UdB_0QOJQhdx82pQKYGLEyAnJSWgFD 429
+11:28:54 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_eca65c1a-cb28-4d38-bdd0-3d220fdbccca 200
+11:28:55 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+laten+installeren&web=1&searchid=1012116 200
+11:28:55 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+laten+installeren 403
+11:28:55 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:55 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:28:55 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 13 post-URLs voor q='site:gathering.tweakers.net airco laten installeren' (filtered)
+11:28:55 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 13 posts voor q='airco laten installeren'
+11:28:55 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco laten installeren' -> 13 posts in 1.8s
+11:28:56 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+plaatsen+prijs 403
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20plaatsen%20prijs 200
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+plaatsen+prijs&source=web 429
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+plaatsen+prijs&limit=1 200
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Bplaatsen%2Bprijs%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOjTq9AGIjDwuMNazyaN55jguTyDEGHXJFtepwKMfvu0rahaHcnLQEHBz3BkM-6ddTMhEGxyKxEyAnJSWgFD 429
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+plaatsen+prijs&web=1&searchid=5962687 200
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:28:57 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_4188c3f9-8222-4b20-94fe-328d36c1cbbc 200
+11:28:57 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:gathering.tweakers.net airco plaatsen prijs' (filtered)
+11:28:57 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 14 posts voor q='airco plaatsen prijs'
+11:28:57 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco plaatsen prijs' -> 14 posts in 2.0s
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20offerte 200
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+offerte&source=web 429
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=pSsn5oQMV15kutdx-0trn-VU;_ylu=gTcbWei7K7jX6YYml6IP5Q6YK2lmbBbQgVkvQ7OBzVzZJJc?p=site%3Agathering.tweakers.net+airco+offerte 200
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+offerte&limit=1 200
+11:28:59 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Bofferte%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOvTq9AGIjBwQ40oeRoZacpkfSXD9YwaITHOf6ggu9tl0ogySb8dJW7ETjKpybCHg25GpsQy38YyAnJSWgFD 429
+11:29:00 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+offerte&web=1&searchid=5421849 200
+11:29:00 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:00 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+offerte 403
+11:29:00 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 11 post-URLs voor q='site:gathering.tweakers.net airco offerte' (filtered)
+11:29:00 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 11 posts voor q='airco offerte'
+11:29:00 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco offerte' -> 11 posts in 2.6s
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20offerte%20nodig 200
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+offerte+nodig&source=web 429
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Bofferte%2Bnodig%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGO3Tq9AGIjDiBcLc1qQS_-swwj8H9J5h53LcW9Ty67qzxSwHDYg7ciTWSUJ4mmfwDZTsI044tpcyAnJSWgFD 429
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+offerte+nodig&limit=1 200
+11:29:01 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+offerte+nodig&web=1&searchid=9606767 200
+11:29:02 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:02 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+offerte+nodig 403
+11:29:02 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=t0HDImVd5AZ-zu7vypfGaQeV;_ylu=TzbE0EHQDfICjyZJs9gVGej6gmRrOU2zicYCh-fms_lE2qQ?p=site%3Agathering.tweakers.net+airco+offerte+nodig 200
+11:29:03 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:gathering.tweakers.net airco offerte nodig' (filtered)
+11:29:03 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 14 posts voor q='airco offerte nodig'
+11:29:03 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco offerte nodig' -> 14 posts in 2.7s
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+advies+nodig 403
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20advies%20nodig 200
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+advies+nodig&limit=1 200
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Badvies%2Bnodig%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPDTq9AGIjCG2cUnlYNutvzUSTf210YFwiuFNVttvh7DA-QOUnd_VuBgM6EgLkz9regYI-_VB4kyAnJSWgFD 429
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_cda734f3-031d-418a-9705-14f57e7c660c 200
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+advies+nodig&web=1&searchid=7651203 200
+11:29:04 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:05 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+advies+nodig&source=web 429
+11:29:05 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net airco advies nodig' (filtered)
+11:29:05 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 15 posts voor q='airco advies nodig'
+11:29:05 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='airco advies nodig' -> 15 posts in 1.7s
+11:29:06 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+wie+kan+airco+plaatsen 403
+11:29:06 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+wie+kan+airco+plaatsen&limit=1 200
+11:29:06 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20wie%20kan%20airco%20plaatsen 200
+11:29:06 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+wie+kan+airco+plaatsen&source=web 429
+11:29:06 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bwie%2Bkan%2Bairco%2Bplaatsen%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPLTq9AGIjDZGi6PLL36p9mf7aQUMkbGv1fYz3TlDl7g6UG-Kse7ZI28uGhdYC05CXC4vivc1iMyAnJSWgFD 429
+11:29:07 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+wie+kan+airco+plaatsen&web=1&searchid=2616545 200
+11:29:07 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_c4c48fbc-eaef-4d1e-8cc4-8bfa2fc89631 200
+11:29:07 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:08 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:08 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net wie kan airco plaatsen' (filtered)
+11:29:08 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 15 posts voor q='wie kan airco plaatsen'
+11:29:08 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan airco plaatsen' -> 15 posts in 3.8s
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+wie+kan+airco+installeren 403
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20wie%20kan%20airco%20installeren 200
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+wie+kan+airco+installeren&source=web 429
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+wie+kan+airco+installeren&limit=1 200
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_10d04cfd-6b98-4a92-88ac-1b5bd12ddc77 200
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+wie+kan+airco+installeren&web=1&searchid=1973334 200
+11:29:09 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:09 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net wie kan airco installeren' (filtered)
+11:29:09 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 15 posts voor q='wie kan airco installeren'
+11:29:09 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan airco installeren' -> 15 posts in 1.2s
+11:29:11 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+split+airco+aanleg 403
+11:29:11 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20split%20airco%20aanleg 200
+11:29:11 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:12 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+split+airco+aanleg&limit=1 200
+11:29:12 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_4ddc44ac-d159-45f3-be10-2106ab7ce408 200
+11:29:12 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bsplit%2Bairco%2Baanleg%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPfTq9AGIjAvIguctAMRDJV7hX1fmdaoifMpF-sPyOGgomlrljXSv8ut2rQtgcOUqYiSn9nlh7AyAnJSWgFD 429
+11:29:12 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:12 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+split+airco+aanleg&source=web 429
+11:29:13 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+split+airco+aanleg&web=1&searchid=3971956 200
+11:29:13 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:gathering.tweakers.net split airco aanleg' (filtered)
+11:29:13 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 14 posts voor q='split airco aanleg'
+11:29:13 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='split airco aanleg' -> 14 posts in 3.4s
+11:29:13 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+split+airco+installateur 403
+11:29:13 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20split%20airco%20installateur 200
+11:29:13 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+split+airco+installateur&source=web 429
+11:29:14 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=vh0rN4fN7YQzuYYHYHxOyi_7;_ylu=-jiJgofD3fuVfGYp--ZDHFrPSFkBZSor394hhic__QhFMTQ?p=site%3Agathering.tweakers.net+split+airco+installateur 200
+11:29:14 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+split+airco+installateur&limit=1 200
+11:29:14 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+split+airco+installateur&web=1&searchid=5239518 200
+11:29:15 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bsplit%2Bairco%2Binstallateur%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPrTq9AGIjC3WuM2jT41RU0y7t0JN8NrefxaR7dX-QcxiP3VM1zmR9VXXaENb2uTAhHXlOpH6xMyAnJSWgFD 429
+11:29:15 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:29:16 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:29:16 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 18 post-URLs voor q='site:gathering.tweakers.net split airco installateur' (filtered)
+11:29:16 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 18 posts voor q='split airco installateur'
+11:29:16 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='split airco installateur' -> 18 posts in 2.9s
+11:29:20 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco installateur gezocht'
+11:29:20 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco installateur gezocht' -> 6 posts in 4.2s
+11:29:25 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco installateur nodig'
+11:29:25 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco installateur nodig' -> 6 posts in 5.2s
+11:29:31 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco laten plaatsen'
+11:29:31 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco laten plaatsen' -> 6 posts in 5.6s
+11:29:36 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco laten installeren'
+11:29:36 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco laten installeren' -> 6 posts in 5.5s
+11:29:43 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco plaatsen prijs'
+11:29:43 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco plaatsen prijs' -> 6 posts in 6.3s
+11:29:49 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco offerte'
+11:29:49 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco offerte' -> 6 posts in 6.1s
+11:29:55 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco offerte nodig'
+11:29:55 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco offerte nodig' -> 6 posts in 6.2s
+11:30:00 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='airco advies nodig'
+11:30:00 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='airco advies nodig' -> 6 posts in 5.5s
+11:30:07 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan airco plaatsen'
+11:30:07 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan airco plaatsen' -> 6 posts in 6.3s
+11:30:13 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan airco installeren'
+11:30:13 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan airco installeren' -> 6 posts in 6.1s
+11:30:18 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='split airco aanleg'
+11:30:18 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='split airco aanleg' -> 6 posts in 5.6s
+11:30:23 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='split airco installateur'
+11:30:23 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='split airco installateur' -> 6 posts in 4.9s
+11:30:25 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/verwarming-en-koeling
+11:30:25 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/verwarming-en-koeling' -> 6 posts in 1.9s
+11:30:27 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/ventilatie
+11:30:27 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/ventilatie' -> 6 posts in 2.1s
+11:30:29 [INFO] consumer.sources.klusidee_forum [run=a1837730-ccd]: Klusidee forum: 25 posts uit /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+11:30:29 [INFO] consumer.cli [run=a1837730-ccd]: [klusidee_forum] q='/Forum/forum/elektrisch-verlichting-en-ventilatie.11/' -> 25 posts in 1.6s
+11:30:31 [INFO] consumer.sources.ouders_forum [run=a1837730-ccd]: Ouders forum: 25 posts uit /forum/huis-tuin-en-keuken
+11:30:31 [INFO] consumer.cli [run=a1837730-ccd]: [ouders_forum] q='/forum/huis-tuin-en-keuken' -> 25 posts in 2.4s
+11:30:32 [INFO] consumer.cli [run=a1837730-ccd]: [airco] raw=332 -> leads=1 (promo=12 oud=0 low=166 hardblock=1 fuzzy=11 llm_calls=0 author_calls=0)
+11:30:32 [INFO] consumer.output.exporter [run=a1837730-ccd]: CSV geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_airco_2026-05-18.csv (1 leads)
+11:30:32 [INFO] consumer.output.exporter [run=a1837730-ccd]: JSON geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_airco_2026-05-18.json
+11:30:32 [INFO] consumer.cli [run=a1837730-ccd]: === airco @ nederland | sources=['reddit', 'google', 'marktplaats', '2dehands'] limit=25 min_score=60 max_age_days=7 ===
+11:30:32 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 397 eerder gehashte posts (threshold=0.70)
+11:30:32 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/search.json — gaf op
+11:30:35 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco installateur gezocht nederland' (subs=23)
+11:30:35 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco installateur gezocht nederland' -> 25 posts in 3.6s
+11:30:38 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco installateur nodig nederland' (subs=23)
+11:30:38 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco installateur nodig nederland' -> 25 posts in 2.6s
+11:30:42 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco laten plaatsen nederland' (subs=23)
+11:30:42 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco laten plaatsen nederland' -> 25 posts in 3.6s
+11:30:45 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco laten installeren nederland' (subs=23)
+11:30:45 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco laten installeren nederland' -> 25 posts in 3.4s
+11:30:47 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco plaatsen prijs nederland' (subs=23)
+11:30:47 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco plaatsen prijs nederland' -> 25 posts in 2.4s
+11:30:50 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco offerte nederland' (subs=23)
+11:30:50 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco offerte nederland' -> 25 posts in 3.1s
+11:30:57 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco offerte nodig nederland' (subs=23)
+11:30:57 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco offerte nodig nederland' -> 25 posts in 6.8s
+11:31:00 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='airco advies nodig nederland' (subs=23)
+11:31:00 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='airco advies nodig nederland' -> 25 posts in 2.6s
+11:31:02 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan airco plaatsen nederland' (subs=23)
+11:31:02 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan airco plaatsen nederland' -> 25 posts in 2.1s
+11:31:05 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan airco installeren nederland' (subs=23)
+11:31:05 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan airco installeren nederland' -> 25 posts in 2.7s
+11:31:08 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='split airco aanleg nederland' (subs=23)
+11:31:08 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='split airco aanleg nederland' -> 25 posts in 2.9s
+11:31:11 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='split airco installateur nederland' (subs=23)
+11:31:11 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='split airco installateur nederland' -> 25 posts in 3.1s
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+airco+installateur+nederland 403
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+airco+installateur+nederland&limit=1 200
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20airco%20installateur%20nederland 200
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bairco%2Binstallateur%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGO_Uq9AGIjDQg6HwiT7wrQf1vE4M5_KtijrJ-NW33B-OaPkygYuHh3zkkF9O_7wAgETNOGYMOCEyAnJSWgFD 429
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+airco+installateur+nederland&web=1&searchid=6197320 200
+11:31:11 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:12 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=eZeSSI3iAvZTUl73JYg1Hg_l;_ylu=vCLfpDb__sGG74dgwDpyP1I_hw7xO0gqLvguSHO4Opbwm_I?p=site%3Areddit.com+airco+installateur+nederland 200
+11:31:12 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+airco+installateur+nederland&source=web 429
+11:31:12 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 21 post-URLs voor q='site:reddit.com airco installateur nederland' (filtered)
+11:31:12 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com airco installateur nederland' -> 21 posts in 1.8s
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+airco+offerte+nederland 403
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20airco%20offerte%20nederland 200
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+airco+offerte+nederland&limit=1 200
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bairco%2Bofferte%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPHUq9AGIjBRzvviNq7G9VXb1Dkrc6PuFy4Cp8y2ugGF2h78gLXpPKQ-5Yfpc5PJsRRhgRz5CqEyAnJSWgFD 429
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+airco+offerte+nederland&web=1&searchid=3672863 200
+11:31:13 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:14 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=oh1tVWY_EyxBN_yS0h9hGxsz;_ylu=Qk_kbk56QJLh9hSFBjoElmkGt4Rh9qqbGw41c2BASEXx71s?p=site%3Areddit.com+airco+offerte+nederland 200
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+airco+offerte+nederland&source=web 429
+11:31:15 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 16 post-URLs voor q='site:reddit.com airco offerte nederland' (filtered)
+11:31:15 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com airco offerte nederland' -> 16 posts in 2.2s
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+airco+plaatsen+nederland 403
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20airco%20plaatsen%20nederland 200
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+airco+plaatsen+nederland&source=web 429
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+airco+plaatsen+nederland&limit=1 200
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bairco%2Bplaatsen%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPPUq9AGIjA8tbYruAgnW2TktA2dwFjVaDHwEqUUMrz-jURm99dmxXNfYH6NJp5dEyTtKvdZse4yAnJSWgFD 429
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+airco+plaatsen+nederland&web=1&searchid=7014301 200
+11:31:15 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:16 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=Cxpg0INdQuWcR0RkBcb0hisF;_ylu=ATpy1p4WUD8UEcrGKS3dAyhD3WalRy9XcBSjO0RMbhDUvFQ?p=site%3Areddit.com+airco+plaatsen+nederland 200
+11:31:16 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 20 post-URLs voor q='site:reddit.com airco plaatsen nederland' (filtered)
+11:31:16 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com airco plaatsen nederland' -> 20 posts in 1.7s
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+split+airco+nederland 403
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20split%20airco%20nederland 200
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+split+airco+nederland&limit=1 200
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_7c6bcc9f-edcb-48a2-b199-230dd4eb792d 200
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+split+airco+nederland&web=1&searchid=9940480 200
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bsplit%2Bairco%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPTUq9AGIjDHFgWLyaHL1_bf6W63AnFds76yA7LC6TSf0ZIWuoCL8K3ztnWc3nRbDVJNZio_d2EyAnJSWgFD 429
+11:31:17 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+split+airco+nederland&source=web 429
+11:31:18 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:reddit.com split airco nederland' (filtered)
+11:31:18 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com split airco nederland' -> 14 posts in 1.2s
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+installateur+nederland 403
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+installateur+nederland&limit=1 200
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20installateur%20nederland 200
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=5cZxRkLyFnYwH8HYc5SqKEPK;_ylu=CVi_Ef8-47ajyO4v0MrDT50syFnx8H86jbwQJWhx3I9sipw?p=site%3Agathering.tweakers.net+airco+installateur+nederland 200
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:18 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Binstallateur%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPbUq9AGIjAxyA759glQbG1NI2l7mWebrnUVR0HBWJPLjkJia-MCPUGGzupYZWJEeueJG764Y-wyAnJSWgFD 429
+11:31:19 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:19 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+installateur+nederland&web=1&searchid=4783757 200
+11:31:19 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+installateur+nederland&source=web 429
+11:31:19 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 17 post-URLs voor q='site:gathering.tweakers.net airco installateur nederland' (filtered)
+11:31:19 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net airco installateur nederland' -> 17 posts in 1.8s
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+offerte+nederland 403
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20offerte%20nederland 200
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+offerte+nederland&limit=1 200
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Bofferte%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPfUq9AGIjCIHmsoX1W9liVvRQ2n2aAz0692S0czSyCoAurS37wkeP5GkQm49S7uJg6zoYJ2LrsyAnJSWgFD 429
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_d277f33e-c23d-4dcc-823d-4fa91774b5c8 200
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+offerte+nederland&web=1&searchid=6878466 200
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+offerte+nederland&source=web 429
+11:31:20 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:21 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 12 post-URLs voor q='site:gathering.tweakers.net airco offerte nederland' (filtered)
+11:31:21 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net airco offerte nederland' -> 12 posts in 1.6s
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+split+airco+nederland&limit=1 200
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20split%20airco%20nederland 200
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+split+airco+nederland&source=web 429
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bsplit%2Bairco%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPnUq9AGIjCXyiMr6jrzWJtcPHHIt8kTAXqyXlFu963sQfXA0G8SsVKs9l-WG7iRtvzguh_2srIyAnJSWgFD 429
+11:31:21 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_b71fcd3d-8b09-4748-9031-502529b8b18f 200
+11:31:22 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+split+airco+nederland&web=1&searchid=8727869 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+split+airco+nederland 403
+11:31:23 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net split airco nederland' (filtered)
+11:31:23 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net split airco nederland' -> 15 posts in 1.7s
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+airco+advies+nederland 403
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20airco%20advies%20nederland 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bairco%2Badvies%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPvUq9AGIjAl90_Lk61t3M9Z7jLcvLwx5Tp1xofIkG1uOTBsuKGyWsi-RYZaB7lh8XBQo84H9aQyAnJSWgFD 429
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+airco+advies+nederland&limit=1 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_7570a309-fa76-4009-b81c-5a9754179f8a 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+airco+advies+nederland&web=1&searchid=7955321 200
+11:31:23 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+airco+advies+nederland&source=web 429
+11:31:24 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 14 post-URLs voor q='site:gathering.tweakers.net airco advies nederland' (filtered)
+11:31:24 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net airco advies nederland' -> 14 posts in 1.0s
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+airco+installateur+nederland 403
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20airco%20installateur%20nederland 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+airco+installateur+nederland&source=web 429
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_de614af2-a208-4148-b745-56b1116c8701 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+airco+installateur+nederland&limit=1 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:24 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+airco+installateur+nederland&web=1&searchid=3103927 200
+11:31:24 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:bouwinfo.be airco installateur nederland' (filtered)
+11:31:24 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be airco installateur nederland' -> 15 posts in 0.7s
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+airco+prijs+nederland 403
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+airco+prijs+nederland&limit=1 200
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+airco+prijs+nederland&source=web 429
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20airco%20prijs%20nederland 200
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=FAickxUqHeakI4k0GC7CbRWo;_ylu=uB7tQEU4xO3CN7yDLUNbpO5rzd0Ngoj2GXOKM6-OzOr7EfQ?p=site%3Abouwinfo.be+airco+prijs+nederland 200
+11:31:25 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+airco+prijs+nederland&web=1&searchid=1336048 200
+11:31:26 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 17 post-URLs voor q='site:bouwinfo.be airco prijs nederland' (filtered)
+11:31:26 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be airco prijs nederland' -> 17 posts in 1.6s
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=%22installateur+gezocht%22+airco+nederland 403
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=%22installateur+gezocht%22+airco+nederland&limit=1 200
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22installateur%20gezocht%22%20airco%20nederland 200
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=%22installateur+gezocht%22+airco+nederland&source=web 429
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=%22installateur+gezocht%22+airco+nederland&web=1&searchid=1674223 200
+11:31:26 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_917b1a6a-d2bd-4e3a-91e4-1a2fadb839e3 200
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:27 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 1 post-URLs voor q='"installateur gezocht" airco nederland' (filtered)
+11:31:27 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='"installateur gezocht" airco nederland' -> 1 posts in 0.8s
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=%22airco+installateur+nodig%22+nederland 403
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22airco%20installateur%20nodig%22%20nederland 200
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3D%2522airco%2Binstallateur%2Bnodig%2522%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGP_Uq9AGIjBMg-g3rg5XwOvNdnt8LRaivmdPVw-1o6Ndqxy_9qOoNFsFI80wHl6r9e6Ffc6Go6kyAnJSWgFD 429
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_02acb830-3352-4a4c-98a9-1744da568050 200
+11:31:27 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=%22airco+installateur+nodig%22+nederland&limit=1 200
+11:31:28 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=%22airco+installateur+nodig%22+nederland&web=1&searchid=4929881 200
+11:31:28 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=%22airco+installateur+nodig%22+nederland&source=web 429
+11:31:28 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:31:28 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:31:29 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 0 post-URLs voor q='"airco installateur nodig" nederland' (filtered)
+11:31:29 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='"airco installateur nodig" nederland' -> 0 posts in 1.6s
+11:31:29 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 21 listings voor q='airco installateur gezocht'
+11:31:29 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco installateur gezocht' -> 21 posts in 0.6s
+11:31:32 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 15 listings voor q='airco installateur gevraagd'
+11:31:32 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco installateur gevraagd' -> 15 posts in 2.8s
+11:31:34 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='airco plaatsen gezocht'
+11:31:34 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco plaatsen gezocht' -> 25 posts in 2.1s
+11:31:36 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 15 listings voor q='airco aanleg gevraagd'
+11:31:36 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco aanleg gevraagd' -> 15 posts in 2.3s
+11:31:39 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='airco monteur gezocht'
+11:31:39 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco monteur gezocht' -> 25 posts in 2.8s
+11:31:41 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 16 listings voor q='vakman airco gezocht'
+11:31:41 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='vakman airco gezocht' -> 16 posts in 1.9s
+11:31:44 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='split airco installateur'
+11:31:44 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='split airco installateur' -> 25 posts in 3.0s
+11:31:47 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='airco laten plaatsen'
+11:31:47 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco laten plaatsen' -> 25 posts in 2.8s
+11:31:50 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 20 listings voor q='airco specialist gezocht'
+11:31:50 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco specialist gezocht' -> 20 posts in 2.9s
+11:31:52 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='wie kan airco plaatsen'
+11:31:52 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='wie kan airco plaatsen' -> 25 posts in 2.5s
+11:31:55 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 14 listings voor q='airco montage gevraagd'
+11:31:55 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='airco montage gevraagd' -> 14 posts in 2.6s
+11:31:57 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 18 listings voor q='cassette airco installateur'
+11:31:57 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='cassette airco installateur' -> 18 posts in 2.0s
+11:31:59 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 2 listings voor q='airco installateur antwerpen'
+11:31:59 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco installateur antwerpen' -> 2 posts in 1.8s
+11:32:00 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 1 listings voor q='airco installateur gent'
+11:32:00 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco installateur gent' -> 1 posts in 1.7s
+11:32:02 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 1 listings voor q='airco installateur brussel'
+11:32:02 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco installateur brussel' -> 1 posts in 2.0s
+11:32:04 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='airco installateur leuven'
+11:32:04 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco installateur leuven' -> 0 posts in 1.8s
+11:32:06 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 5 listings voor q='airco plaatsen vlaanderen'
+11:32:06 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco plaatsen vlaanderen' -> 5 posts in 2.0s
+11:32:09 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 1 listings voor q='split airco montage BE'
+11:32:09 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='split airco montage BE' -> 1 posts in 2.4s
+11:32:10 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='airco premie BE'
+11:32:10 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='airco premie BE' -> 0 posts in 1.6s
+11:32:12 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: 2dehands: 0 listings voor q='cassette airco installateur antwerpen'
+11:32:12 [INFO] consumer.cli [run=a1837730-ccd]: [2dehands] q='cassette airco installateur antwerpen' -> 0 posts in 2.1s
+11:32:13 [INFO] consumer.cli [run=a1837730-ccd]: [airco] raw=716 -> leads=0 (promo=111 oud=86 low=196 hardblock=72 fuzzy=30 llm_calls=0 author_calls=0)
+11:32:13 [INFO] consumer.output.exporter [run=a1837730-ccd]: CSV geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_airco_2026-05-18.csv (0 leads)
+11:32:13 [INFO] consumer.output.exporter [run=a1837730-ccd]: JSON geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_airco_2026-05-18.json
+11:32:13 [INFO] consumer.output.sheets [run=a1837730-ccd]: opening spreadsheet id=1CwtxxS1XPWzz54nLV3ndVuHPrwidocXCpZG1h9_yEOU credentials=/Users/claudebot/Lead generator/lead-radar/.credentials/google_sheets.json
+11:32:18 [INFO] consumer.output.sheets [run=a1837730-ccd]: Sheets: +1 leads in 'OPPORTUNITIES'
+11:32:20 [INFO] consumer.cli [run=a1837730-ccd]: [progress] 2/5 done | niche=airco | elapsed=546s | eta=820s
+11:32:20 [INFO] consumer.cli [run=a1837730-ccd]: === zonnepanelen @ nederland | sources=['reddit_new', 'tweakers', 'bouwinfo', 'bouwinfo_forum', 'klusidee_forum', 'ouders_forum'] limit=25 min_score=60 max_age_days=7 ===
+11:32:20 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 397 eerder gehashte posts (threshold=0.70)
+11:32:20 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/r/Klussers/new.json — gaf op
+11:32:20 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Klussers' -> 0 posts in 0.2s
+11:32:23 [INFO] consumer.sources.reddit_new [run=a1837730-ccd]: Reddit /r/Offertes/new: 25 posts
+11:32:23 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='Offertes' -> 25 posts in 3.0s
+11:32:26 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 404 on https://www.reddit.com/r/duurzaam/new.json — gaf op
+11:32:26 [INFO] consumer.cli [run=a1837730-ccd]: [reddit_new] q='duurzaam' -> 0 posts in 2.7s
+11:32:30 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen installateur gezocht'
+11:32:30 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen installateur gezocht' -> 1 posts in 4.2s
+11:32:35 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen installateur nodig'
+11:32:35 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen installateur nodig' -> 1 posts in 4.7s
+11:32:40 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen laten plaatsen'
+11:32:40 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen laten plaatsen' -> 1 posts in 4.8s
+11:32:44 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen plaatsen prijs'
+11:32:44 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen plaatsen prijs' -> 1 posts in 4.6s
+11:32:48 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen offerte'
+11:32:48 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen offerte' -> 1 posts in 4.3s
+11:32:53 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='zonnepanelen offerte nodig'
+11:32:53 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen offerte nodig' -> 1 posts in 4.6s
+11:33:02 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 5 posts voor q='zonnepanelen advies nodig'
+11:33:02 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='zonnepanelen advies nodig' -> 5 posts in 8.8s
+11:33:06 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='wie kan zonnepanelen plaatsen'
+11:33:06 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan zonnepanelen plaatsen' -> 1 posts in 4.4s
+11:33:11 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='wie kan zonnepanelen installeren'
+11:33:11 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='wie kan zonnepanelen installeren' -> 1 posts in 4.7s
+11:33:15 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='thuisbatterij installateur'
+11:33:15 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='thuisbatterij installateur' -> 1 posts in 4.4s
+11:33:19 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='thuisbatterij gezocht'
+11:33:19 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='thuisbatterij gezocht' -> 1 posts in 4.3s
+11:33:25 [INFO] consumer.sources.tweakers [run=a1837730-ccd]: Tweakers: 1 posts voor q='omvormer installeren'
+11:33:25 [INFO] consumer.cli [run=a1837730-ccd]: [tweakers] q='omvormer installeren' -> 1 posts in 5.3s
+11:33:31 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen installateur gezocht'
+11:33:31 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen installateur gezocht' -> 6 posts in 6.6s
+11:33:37 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen installateur nodig'
+11:33:37 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen installateur nodig' -> 6 posts in 5.8s
+11:33:42 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen laten plaatsen'
+11:33:42 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen laten plaatsen' -> 6 posts in 5.2s
+11:33:48 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen plaatsen prijs'
+11:33:48 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen plaatsen prijs' -> 6 posts in 5.5s
+11:33:54 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen offerte'
+11:33:54 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen offerte' -> 6 posts in 6.5s
+11:34:00 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen offerte nodig'
+11:34:00 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen offerte nodig' -> 6 posts in 5.8s
+11:34:05 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='zonnepanelen advies nodig'
+11:34:05 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='zonnepanelen advies nodig' -> 6 posts in 4.9s
+11:34:10 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan zonnepanelen plaatsen'
+11:34:10 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan zonnepanelen plaatsen' -> 6 posts in 5.4s
+11:34:15 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='wie kan zonnepanelen installeren'
+11:34:15 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='wie kan zonnepanelen installeren' -> 6 posts in 5.1s
+11:34:21 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='thuisbatterij installateur'
+11:34:21 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='thuisbatterij installateur' -> 6 posts in 5.4s
+11:34:27 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='thuisbatterij gezocht'
+11:34:27 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='thuisbatterij gezocht' -> 6 posts in 6.1s
+11:34:32 [INFO] consumer.sources.bouwinfo [run=a1837730-ccd]: Bouwinfo: 6 posts voor q='omvormer installeren'
+11:34:32 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo] q='omvormer installeren' -> 6 posts in 5.6s
+11:34:34 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/elektriciteit/zonne-energie
+11:34:34 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/elektriciteit/zonne-energie' -> 6 posts in 1.6s
+11:34:36 [INFO] consumer.sources.bouwinfo_forum [run=a1837730-ccd]: Bouwinfo forum: 6 posts uit /categories/technieken/elektriciteit
+11:34:36 [INFO] consumer.cli [run=a1837730-ccd]: [bouwinfo_forum] q='/categories/technieken/elektriciteit' -> 6 posts in 1.6s
+11:34:38 [INFO] consumer.sources.klusidee_forum [run=a1837730-ccd]: Klusidee forum: 25 posts uit /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+11:34:38 [INFO] consumer.cli [run=a1837730-ccd]: [klusidee_forum] q='/Forum/forum/elektrisch-verlichting-en-ventilatie.11/' -> 25 posts in 2.4s
+11:34:41 [INFO] consumer.sources.ouders_forum [run=a1837730-ccd]: Ouders forum: 25 posts uit /forum/huis-tuin-en-keuken
+11:34:41 [INFO] consumer.cli [run=a1837730-ccd]: [ouders_forum] q='/forum/huis-tuin-en-keuken' -> 25 posts in 2.6s
+11:34:41 [INFO] consumer.cli [run=a1837730-ccd]: [zonnepanelen] raw=175 -> leads=0 (promo=8 oud=0 low=74 hardblock=1 fuzzy=10 llm_calls=0 author_calls=0)
+11:34:41 [INFO] consumer.output.exporter [run=a1837730-ccd]: CSV geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_zonnepanelen_2026-05-18.csv (0 leads)
+11:34:41 [INFO] consumer.output.exporter [run=a1837730-ccd]: JSON geschreven: /Users/claudebot/Lead generator/lead-radar/data/leads/consumer/leads_zonnepanelen_2026-05-18.json
+11:34:41 [INFO] consumer.cli [run=a1837730-ccd]: === zonnepanelen @ nederland | sources=['reddit', 'google', 'marktplaats', '2dehands'] limit=25 min_score=60 max_age_days=7 ===
+11:34:41 [INFO] consumer.cli [run=a1837730-ccd]: Fuzzy dedup-store: 397 eerder gehashte posts (threshold=0.70)
+11:34:41 [INFO] consumer.utils [run=a1837730-ccd]: Non-200 403 on https://www.reddit.com/search.json — gaf op
+11:34:43 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen installateur gezocht nederland' (subs=23)
+11:34:43 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen installateur gezocht nederland' -> 25 posts in 2.5s
+11:34:46 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen installateur nodig nederland' (subs=23)
+11:34:46 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen installateur nodig nederland' -> 25 posts in 2.4s
+11:34:49 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen laten plaatsen nederland' (subs=23)
+11:34:49 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen laten plaatsen nederland' -> 25 posts in 3.1s
+11:34:52 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen plaatsen prijs nederland' (subs=23)
+11:34:52 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen plaatsen prijs nederland' -> 25 posts in 2.8s
+11:34:55 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen offerte nederland' (subs=23)
+11:34:55 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen offerte nederland' -> 25 posts in 3.1s
+11:34:58 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen offerte nodig nederland' (subs=23)
+11:34:58 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen offerte nodig nederland' -> 25 posts in 3.2s
+11:35:00 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='zonnepanelen advies nodig nederland' (subs=23)
+11:35:00 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='zonnepanelen advies nodig nederland' -> 25 posts in 2.1s
+11:35:03 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan zonnepanelen plaatsen nederland' (subs=23)
+11:35:03 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan zonnepanelen plaatsen nederland' -> 25 posts in 2.5s
+11:35:05 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='wie kan zonnepanelen installeren nederland' (subs=23)
+11:35:05 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='wie kan zonnepanelen installeren nederland' -> 25 posts in 2.7s
+11:35:09 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='thuisbatterij installateur nederland' (subs=23)
+11:35:09 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='thuisbatterij installateur nederland' -> 25 posts in 3.3s
+11:35:11 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='thuisbatterij gezocht nederland' (subs=23)
+11:35:11 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='thuisbatterij gezocht nederland' -> 25 posts in 2.2s
+11:35:14 [INFO] consumer.sources.reddit [run=a1837730-ccd]: Reddit: 25 posts voor query='omvormer installeren nederland' (subs=23)
+11:35:14 [INFO] consumer.cli [run=a1837730-ccd]: [reddit] q='omvormer installeren nederland' -> 25 posts in 3.1s
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+zonnepanelen+installateur+nederland 403
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20zonnepanelen%20installateur%20nederland 200
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+zonnepanelen+installateur+nederland&source=web 429
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+zonnepanelen+installateur+nederland&limit=1 200
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bzonnepanelen%2Binstallateur%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOLWq9AGIjATPNa6Dr4V5NOD7E7nnuQW60TxjkMXFQVWhtcebo2a-xed9cMMYw3TTj1EI1NoZw4yAnJSWgFD 429
+11:35:14 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:15 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+zonnepanelen+installateur+nederland&web=1&searchid=2778253 200
+11:35:15 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=vTYiyFFsANceMO3mSapxWysP;_ylu=AGRS8Asg7XOX4yoNiKwBmW-zaCYY1O2ITdXz0NEYLOpR40Y?p=site%3Areddit.com+zonnepanelen+installateur+nederland 200
+11:35:16 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 16 post-URLs voor q='site:reddit.com zonnepanelen installateur nederland' (filtered)
+11:35:16 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com zonnepanelen installateur nederland' -> 16 posts in 2.0s
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+zonnepanelen+offerte+nederland 403
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+zonnepanelen+offerte+nederland&source=web 429
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20zonnepanelen%20offerte%20nederland 200
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bzonnepanelen%2Bofferte%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOTWq9AGIjDAO4SWKJwQCA8PWMYNM3J_z_LP6SQMVtPhfPaFByvu0ukiuNDMJgLUq3_j9yCec8MyAnJSWgFD 429
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+zonnepanelen+offerte+nederland&limit=1 200
+11:35:16 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+zonnepanelen+offerte+nederland&web=1&searchid=9004130 200
+11:35:17 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_3cf7676c-e6fa-49b2-a482-40a3681eb3d8 200
+11:35:17 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:17 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:17 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:reddit.com zonnepanelen offerte nederland' (filtered)
+11:35:17 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com zonnepanelen offerte nederland' -> 15 posts in 1.6s
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+zonnepanelen+advies+nederland 403
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+zonnepanelen+advies+nederland&limit=1 200
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20zonnepanelen%20advies%20nederland 200
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=t-uuunNH6N6W2uK4_9-vH3jO;_ylu=BstBJWeWKgcpcdNAGBPxq6tcf1fpQsIRJ12bHd-xhHyI9PU?p=site%3Areddit.com+zonnepanelen+advies+nederland 200
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+zonnepanelen+advies+nederland&source=web 429
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bzonnepanelen%2Badvies%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGObWq9AGIjBYFNEHVsA2ZIicinGicdWSTFdbpMiJgsu3InOXIjtOrq1E5Bvf4408icOOEkUY9pkyAnJSWgFD 429
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+zonnepanelen+advies+nederland&web=1&searchid=4798074 200
+11:35:18 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:19 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:19 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 17 post-URLs voor q='site:reddit.com zonnepanelen advies nederland' (filtered)
+11:35:19 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com zonnepanelen advies nederland' -> 17 posts in 1.7s
+11:35:19 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Areddit.com+thuisbatterij+nederland 403
+11:35:19 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Areddit.com%20thuisbatterij%20nederland 200
+11:35:19 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Areddit.com+thuisbatterij+nederland&source=web 429
+11:35:20 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Areddit.com%2Bthuisbatterij%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOfWq9AGIjDURIAo1vMprk5HhoSInRJNteq1XH7_XH5yjnB-zcpxiEc98haLR0smPiMLQQTv4XQyAnJSWgFD 429
+11:35:20 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Areddit.com+thuisbatterij+nederland&limit=1 200
+11:35:20 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_549da76d-3d34-4c38-8852-a0ad4c8d6e0a 200
+11:35:20 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Areddit.com+thuisbatterij+nederland&web=1&searchid=5882555 200
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:21 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:reddit.com thuisbatterij nederland' (filtered)
+11:35:21 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:reddit.com thuisbatterij nederland' -> 15 posts in 1.7s
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+zonnepanelen+installateur+nederland 403
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20zonnepanelen%20installateur%20nederland 200
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bzonnepanelen%2Binstallateur%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOnWq9AGIjA7EhOApnKgVE24YLGp9W2S5aeUN1-Gp5ZLT-FozVhKqaX0BLUgktbgzxPcd9koOgMyAnJSWgFD 429
+11:35:21 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+zonnepanelen+installateur+nederland&limit=1 200
+11:35:22 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+zonnepanelen+installateur+nederland&web=1&searchid=9551905 200
+11:35:22 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:22 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+zonnepanelen+installateur+nederland&source=web 429
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_530322d3-bdb8-49cb-b7ac-84fe0e83e4ff 200
+11:35:23 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:gathering.tweakers.net zonnepanelen installateur nederland' (filtered)
+11:35:23 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net zonnepanelen installateur nederland' -> 15 posts in 1.9s
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+zonnepanelen+offerte+nederland 403
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20zonnepanelen%20offerte%20nederland 200
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+zonnepanelen+offerte+nederland&source=web 429
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+zonnepanelen+offerte+nederland&limit=1 200
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+zonnepanelen+offerte+nederland&web=1&searchid=9584339 200
+11:35:23 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bzonnepanelen%2Bofferte%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGOvWq9AGIjB_dcH-AaOtxIjQTYOeShA7nquyIoV7DyTFHRnDWjyksd47i-x6Hn50o1DPyMjCvRcyAnJSWgFD 429
+11:35:24 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:24 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=8Lb4y6vNLVK2j9hjB1gtxa_-;_ylu=XoAzbPRqgVfAmcD5acXsVbATEFaW5JZL4YSWd6BAfnC8uds?p=site%3Agathering.tweakers.net+zonnepanelen+offerte+nederland 200
+11:35:25 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 21 post-URLs voor q='site:gathering.tweakers.net zonnepanelen offerte nederland' (filtered)
+11:35:25 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net zonnepanelen offerte nederland' -> 21 posts in 2.3s
+11:35:25 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+thuisbatterij+nederland 403
+11:35:25 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20thuisbatterij%20nederland 200
+11:35:25 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=R5jzicc2kCqRjAG7VZ9iBb3j;_ylu=JzARt5L9LQuLr8ZAcl5g9aX7RlnvFOBZ3Drg22rjfYHTaYE?p=site%3Agathering.tweakers.net+thuisbatterij+nederland 200
+11:35:26 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+thuisbatterij+nederland&limit=1 200
+11:35:26 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bthuisbatterij%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGO3Wq9AGIjDiGyip9aiHhiHYciQWwgVlV0R0-E9Yy-LF68P3B2_AAWMxg0zbYNy4bKUrZsypls8yAnJSWgFD 429
+11:35:26 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+thuisbatterij+nederland&web=1&searchid=2199357 200
+11:35:26 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:27 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:27 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+thuisbatterij+nederland&source=web 429
+11:35:27 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 19 post-URLs voor q='site:gathering.tweakers.net thuisbatterij nederland' (filtered)
+11:35:27 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net thuisbatterij nederland' -> 19 posts in 2.2s
+11:35:27 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Agathering.tweakers.net+omvormer+nederland 403
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Agathering.tweakers.net+omvormer+nederland&limit=1 200
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Agathering.tweakers.net%20omvormer%20nederland 200
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Agathering.tweakers.net+omvormer+nederland&source=web 429
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=pdCjVrvb171PSzKcHLVhbJTF;_ylu=6QGR8isoBt-nGxs3IDc1IB65DTUlzi-M0v7JCcSTQh9MRKU?p=site%3Agathering.tweakers.net+omvormer+nederland 200
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Agathering.tweakers.net%2Bomvormer%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGO_Wq9AGIjDsz2Eg4aju1WylpLlNAMixQcWVLhRKlRK79EtA7GjUXoHQ6M18SJ3nC_BuFHZ9poYyAnJSWgFD 429
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Agathering.tweakers.net+omvormer+nederland&web=1&searchid=1344208 200
+11:35:28 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:29 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:29 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 18 post-URLs voor q='site:gathering.tweakers.net omvormer nederland' (filtered)
+11:35:29 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:gathering.tweakers.net omvormer nederland' -> 18 posts in 1.8s
+11:35:29 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+zonnepanelen+installateur+nederland 403
+11:35:29 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+zonnepanelen+installateur+nederland&limit=1 200
+11:35:29 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20zonnepanelen%20installateur%20nederland 200
+11:35:29 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:30 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsite%253Abouwinfo.be%2Bzonnepanelen%2Binstallateur%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPHWq9AGIjAI4cfNPVilu2SFNKI0IuC8j2LcOuEzj5IGlMtjZNTe0A35wQVb1BJkB8zrFFSoUusyAnJSWgFD 429
+11:35:30 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_b8cab0fa-a272-4977-b396-a1fc4988ba6d 200
+11:35:30 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:30 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+zonnepanelen+installateur+nederland&source=web 429
+11:35:31 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+zonnepanelen+installateur+nederland&web=1&searchid=1200680 200
+11:35:31 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 15 post-URLs voor q='site:bouwinfo.be zonnepanelen installateur nederland' (filtered)
+11:35:31 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be zonnepanelen installateur nederland' -> 15 posts in 1.9s
+11:35:31 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=site%3Abouwinfo.be+zonnepanelen+prijs+nederland 403
+11:35:31 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:31 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=site%3Abouwinfo.be%20zonnepanelen%20prijs%20nederland 200
+11:35:31 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=site%3Abouwinfo.be+zonnepanelen+prijs+nederland&limit=1 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://consent.yahoo.com/v2/collectConsent?sessionId=3_cc-session_e6808430-07ef-4a6c-9430-432df2b39d12 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=site%3Abouwinfo.be+zonnepanelen+prijs+nederland&web=1&searchid=2055714 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=site%3Abouwinfo.be+zonnepanelen+prijs+nederland&source=web 429
+11:35:32 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 16 post-URLs voor q='site:bouwinfo.be zonnepanelen prijs nederland' (filtered)
+11:35:32 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='site:bouwinfo.be zonnepanelen prijs nederland' -> 16 posts in 1.0s
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22installateur%20gezocht%22%20zonnepanelen%20nederland 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=%22installateur+gezocht%22+zonnepanelen+nederland&source=web 429
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=7gi9RgPx2Y43Yfyz617VO63C;_ylu=VziD0_TwMLPInL_OiBrf0XAyUZ8wI5Cfsb85Jy1eBtgQhNU?p=%22installateur+gezocht%22+zonnepanelen+nederland 200
+11:35:32 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=%22installateur+gezocht%22+zonnepanelen+nederland&limit=1 200
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3D%2522installateur%2Bgezocht%2522%2Bzonnepanelen%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPTWq9AGIjAGb6qEr7v1vyYbxmcEEVNH8j39jnzvldvHxYKkH1GtEyWlp6ZkSSxOYbipIJDDWkcyAnJSWgFD 429
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=%22installateur+gezocht%22+zonnepanelen+nederland&web=1&searchid=1330891 200
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=%22installateur+gezocht%22+zonnepanelen+nederland 403
+11:35:33 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 3 post-URLs voor q='"installateur gezocht" zonnepanelen nederland' (filtered)
+11:35:33 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='"installateur gezocht" zonnepanelen nederland' -> 3 posts in 1.0s
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://www.mojeek.com/search?q=%22zonnepanelen+installateur+nodig%22+nederland 403
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://nl.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22zonnepanelen%20installateur%20nodig%22%20nederland 200
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://grokipedia.com/api/typeahead?query=%22zonnepanelen+installateur+nodig%22+nederland&limit=1 200
+11:35:33 [INFO] primp [run=a1837730-ccd]: response: https://search.yahoo.com/search;_ylt=-Su_joYIPyfVRKEEZW8NWH8w;_ylu=6EtOpzbYEGYAYGi-R30DFdKQfpgKNXyOCza5RecrUnEddb0?p=%22zonnepanelen+installateur+nodig%22+nederland 200
+11:35:34 [INFO] primp [run=a1837730-ccd]: response: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3D%2522zonnepanelen%2Binstallateur%2Bnodig%2522%2Bnederland%26filter%3D1%26start%3D0%26hl%3Dnl-NL%26lr%3Dlang_nl%26cr%3DcountryNL&hl=nl-NL&q=EgS5ODdlGPXWq9AGIjBtYJmZmiNoD5MTkWRV-bps_nYFj7UrwrQ-Som63X32M0wK69ti2OuJy4lZ-XTqsz4yAnJSWgFD 429
+11:35:34 [INFO] primp [run=a1837730-ccd]: response: https://yandex.com/search/site/?text=%22zonnepanelen+installateur+nodig%22+nederland&web=1&searchid=3514891 200
+11:35:34 [INFO] primp [run=a1837730-ccd]: response: https://search.brave.com/search?q=%22zonnepanelen+installateur+nodig%22+nederland&source=web 429
+11:35:34 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/ 200
+11:35:35 [INFO] primp [run=a1837730-ccd]: response: https://www.startpage.com/sp/search 200
+11:35:35 [INFO] consumer.sources.google [run=a1837730-ccd]: Google/DDG: 0 post-URLs voor q='"zonnepanelen installateur nodig" nederland' (filtered)
+11:35:35 [INFO] consumer.cli [run=a1837730-ccd]: [google] q='"zonnepanelen installateur nodig" nederland' -> 0 posts in 2.2s
+11:35:36 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 23 listings voor q='zonnepanelen installateur gezocht'
+11:35:36 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen installateur gezocht' -> 23 posts in 0.7s
+11:35:38 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 15 listings voor q='zonnepanelen installateur gevraagd'
+11:35:38 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen installateur gevraagd' -> 15 posts in 2.0s
+11:35:40 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='zonnepanelen plaatsen gezocht'
+11:35:40 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen plaatsen gezocht' -> 25 posts in 2.0s
+11:35:43 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 18 listings voor q='zonnepanelen monteur gezocht'
+11:35:43 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen monteur gezocht' -> 18 posts in 2.7s
+11:35:45 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 11 listings voor q='zonnepanelen vakman gezocht'
+11:35:45 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen vakman gezocht' -> 11 posts in 2.6s
+11:35:48 [INFO] consumer.sources.marktplaats [run=a1837730-ccd]: marktplaats: 25 listings voor q='zonnepanelen laten plaatsen'
+11:35:48 [INFO] consumer.cli [run=a1837730-ccd]: [marktplaats] q='zonnepanelen laten plaatsen' -> 25 posts in 3.0s
