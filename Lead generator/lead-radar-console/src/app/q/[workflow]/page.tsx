@@ -6,6 +6,7 @@ import { isWorkflowKilled } from '@/lib/db/kill-state';
 import { whyString } from '@/lib/why-string/generator';
 import { RoutingCard } from '@/components/routing/RoutingCard';
 import { ClassificationCard } from '@/components/classification/ClassificationCard';
+import { ConversionCard } from '@/components/conversion/ConversionCard';
 import { getActiveOverrideCategories } from '@/lib/db/override-categories';
 
 const LABELS: Record<string, string> = {
@@ -82,11 +83,18 @@ export default async function QueuePage({ params }: { params: Promise<{ workflow
           categories={categories.map(c => ({ categoryKey: c.categoryKey, displayLabel: c.displayLabel }))}
         />
       )}
-      {workflow !== 'lead_delivery_routing' && workflow !== 'signal_classification_ambiguous_band' && (
-        <div className="p-8">
-          <p className="text-zinc-400">[{LABELS[workflow]}] queue rendering pending.</p>
-          <a href="/triage" className="underline text-sm">Back to triage</a>
-        </div>
+      {workflow === 'conversion_registration' && (
+        <ConversionCard
+          decision={{
+            decisionId: current.decisionId,
+            inputsHash: current.inputsHash,
+            inputsPayload: current.inputsPayload as Record<string, unknown>,
+            agentRecommendation: current.agentRecommendation as Record<string, unknown> | null,
+            leadId: current.leadId,
+          }}
+          position={{ current: 1, total: items.length }}
+          whyText={why}
+        />
       )}
     </main>
   );

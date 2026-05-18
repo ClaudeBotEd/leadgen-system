@@ -234,6 +234,20 @@ const fixtures = [
     agentConfidence: 0.52,
     signalId: 'sig-c-003',
   },
+  {
+    decisionId: '00000000-0000-0000-0000-000002000001',
+    workflowId: 'conversion_registration', profileVersion: 1, tierAtDecision: 'T1',
+    inputsHash: 'fixture-conv-001',
+    inputsPayload: {
+      outcome_confirmation_pending: true,
+      history: { leadId: 'lead-7423', deliveredAt: '2026-05-01', installer: 'HVAC Schoonebeek BV', followupAt: '2026-05-15', repliedAt: '2026-05-16 14:32' },
+      reply: '"Hi, klant heeft inderdaad bij ons getekend op 12 mei. Hybride lucht-water systeem, installatie staat gepland voor 15 juni. Bedrag: 14.500 incl BTW. Bedankt voor de doorverwijzing!"',
+      parsed: { outcome: 'won', valueBand: '5-15k', install: 'likely', attribution: 'high' },
+      parseConfidence: 0.94,
+    },
+    agentRecommendation: { parsedFields: { outcome: 'won', valueBand: '5-15k', install: 'likely', attribution: 'high' } },
+    agentConfidence: 0.94, leadId: 'lead-7423',
+  },
 ];
 
 async function main() {
