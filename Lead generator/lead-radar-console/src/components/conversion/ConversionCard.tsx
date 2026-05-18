@@ -130,7 +130,11 @@ export function ConversionCard({ decision, position, whyText }: Props) {
         <p className="text-sm text-zinc-300">{payload.reply}</p>
       </section>
       <section>
-        <h2 className="text-xs uppercase text-zinc-500 mb-2">Agent&apos;s parsed fields (parse confidence {(parseConfidence * 100).toFixed(0)}%)</h2>
+        {/* Doctrine §03.5 + A19: parse-confidence percentage removed —
+            reviewer cognition must not be anchored on the model's
+            confidence number (rubber-stamping). The numeric value is
+            still used internally to gate the save hotkey. */}
+        <h2 className="text-xs uppercase text-zinc-500 mb-2">Agent&apos;s parsed fields</h2>
         <div className="space-y-2 text-sm">
           <div>Outcome: {OUTCOMES.map(o => (<label key={o} className="inline-flex items-center gap-1 mr-3"><input type="radio" name="outcome" disabled={!editing} checked={outcome === o} onChange={() => setOutcome(o)} />{o}</label>))}</div>
           <div>Value band: {VALUE_BANDS.map(v => (<label key={v} className="inline-flex items-center gap-1 mr-3"><input type="radio" name="v" disabled={!editing} checked={valueBand === v} onChange={() => setValueBand(v)} />&euro;{v}</label>))}</div>
