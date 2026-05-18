@@ -6,12 +6,13 @@ which keeps its canonical name so it can be shared with other tooling.
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Literal
+from typing import Annotated, List, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -42,7 +43,7 @@ class Settings(BaseSettings):
     )
 
     # --- CORS ---
-    cors_origins: List[str] = Field(
+    cors_origins: Annotated[List[str], NoDecode] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://localhost:3000",
@@ -57,7 +58,7 @@ class Settings(BaseSettings):
     )
 
     # --- Models ---
-    council_models: List[str] = Field(
+    council_models: Annotated[List[str], NoDecode] = Field(
         default_factory=lambda: [
             "openai/gpt-4.1-mini",
             "google/gemini-2.5-flash",
@@ -87,8 +88,19 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", "council_models", mode="before")
     @classmethod
     def _split_csv(cls, v):
+        """Accept JSON array, CSV, or single value from env or .env files."""
+        if v is None or v == "":
+            return v
         if isinstance(v, str):
-            return [item.strip() for item in v.split(",") if item.strip()]
+            s = v.strip()
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    parsed = json.loads(s)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if str(item).strip()]
+                except json.JSONDecodeError:
+                    pass
+            return [item.strip() for item in s.split(",") if item.strip()]
         return v
 
     @property
