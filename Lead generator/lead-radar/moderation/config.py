@@ -112,5 +112,5 @@ def get_config() -> ModerationConfig:
         approved_path=Path(approved_path_str),
         webhook_url=os.getenv("LEAD_RADAR_MODERATION_WEBHOOK_URL") or None,
         webhook_event=os.getenv("LEAD_RADAR_MODERATION_WEBHOOK_EVENT", "lead.approved"),
-        fail_open=_env_bool("LEAD_RADAR_MODERATION_FAIL_OPEN", default=True),
+        fail_open=_env_bool("LEAD_RADAR_MODERATION_FAIL_OPEN", default=False),
     )

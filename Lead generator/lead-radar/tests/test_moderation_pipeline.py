@@ -386,3 +386,24 @@ def test_export_leads_forwards_post_shaped_rows(tmp_path, monkeypatch):
     )
     assert called["candidates"] is not None
     assert called["candidates"][0]["source_url"].endswith("/t/42")
+
+
+def test_default_config_is_fail_closed(monkeypatch):
+    """Doctrine §00.4: default behavior must be fail-closed.
+
+    Without explicit LEAD_RADAR_MODERATION_FAIL_OPEN=1, a council outage
+    must not silently approve. The default ModerationConfig must report
+    fail_open=False.
+    """
+    monkeypatch.delenv("LEAD_RADAR_MODERATION_FAIL_OPEN", raising=False)
+    from moderation.config import get_config
+    cfg = get_config()
+    assert cfg.fail_open is False
+
+
+def test_explicit_fail_open_opt_in(monkeypatch):
+    """Operators can still opt in explicitly for known-noisy council periods."""
+    monkeypatch.setenv("LEAD_RADAR_MODERATION_FAIL_OPEN", "1")
+    from moderation.config import get_config
+    cfg = get_config()
+    assert cfg.fail_open is True
