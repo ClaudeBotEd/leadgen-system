@@ -19,6 +19,7 @@ def _lead(**overrides) -> Lead:
         intent="hot",
         breakdown={},
         niche="warmtepomp",
+        captured_at="2026-05-18T09:00:00+02:00",
         author="someuser",
         created_at="2026-05-18T09:00:00+02:00",
     )

@@ -39,6 +39,7 @@ def test_lead_source_id_defaults_to_source():
         intent="warm",
         breakdown={},
         niche="warmtepomp",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     assert lead.source_id == "marktplaats"
 
@@ -57,6 +58,7 @@ def test_lead_source_id_can_be_explicit():
         intent="hot",
         breakdown={},
         niche="renovatie",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     assert lead.source_id == "marktplaats:diensten/gent"
     assert lead.source == "marktplaats"

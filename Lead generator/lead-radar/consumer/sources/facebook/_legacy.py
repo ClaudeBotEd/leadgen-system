@@ -82,6 +82,7 @@ def analyze_manual_posts(posts: list[str], *, platform: str = "facebook",
             intent=intent,
             breakdown=breakdown,
             niche=niche,
+            captured_at=raw.created_at,
             author=raw.author,
             created_at=raw.created_at,
         ))

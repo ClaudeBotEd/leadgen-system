@@ -82,6 +82,7 @@ def test_pipeline_produces_lead_object() -> None:
         city=cleaned["city"], score=score,
         intent=intent_from_score(score), breakdown=breakdown,
         niche="cv",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     assert lead.score >= 70
     assert lead.intent == "hot"

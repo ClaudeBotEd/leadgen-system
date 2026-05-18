@@ -399,6 +399,13 @@ def _process_post(
     author_store = author_store or (data_dir / "author_signature.jsonl")
     keywords = niche_keywords or [niche]
 
+    # Doctrine §00.5: we never fabricate captured_at. A post without a
+    # verifiable source timestamp cannot become a Lead — there is nothing
+    # to anchor provenance against.
+    if not raw.created_at:
+        log.info("rejecting raw post %s/%s: no created_at", raw.source, raw.id)
+        return None
+
     # Step 1: clean + regex score
     cleaned = clean_post(raw)
     score, breakdown = score_post(
@@ -458,6 +465,7 @@ def _process_post(
         intent=intent_from_score(score),
         breakdown=breakdown,
         niche=niche,
+        captured_at=raw.created_at,
         author=raw.author,
         created_at=raw.created_at,
     )

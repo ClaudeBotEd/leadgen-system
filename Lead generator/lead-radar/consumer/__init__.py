@@ -6,7 +6,6 @@ sources/, processor/ en output/ los van elkaar staan en testbaar blijven.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 import hashlib
@@ -78,11 +77,9 @@ class Lead:
     intent: str  # 'hot' | 'warm' | 'cold'
     breakdown: dict[str, Any]
     niche: str
+    captured_at: str  # required: ISO-8601 UTC, sourced from RawPost.created_at
     author: str | None = None
     created_at: str | None = None
-    captured_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
-    )
     source_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -100,7 +97,7 @@ class Lead:
             elif isinstance(v, float):
                 coerced[k] = int(v) if v.is_integer() else v
             else:
-                coerced[k] = v  # strings, None, nested dict/list — pass through unchanged
+                coerced[k] = v
         d["breakdown"] = coerced
         return d
 

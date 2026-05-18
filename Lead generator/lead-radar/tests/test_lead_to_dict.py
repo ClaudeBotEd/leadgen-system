@@ -24,6 +24,7 @@ def _make_lead(breakdown: dict) -> Lead:
         intent="warm",
         breakdown=breakdown,
         niche="warmtepomp",
+        captured_at="2026-05-16T06:00:00+02:00",
         author="someuser",
         created_at="2026-05-16T06:00:00+02:00",
     )
