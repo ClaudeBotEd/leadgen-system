@@ -10,9 +10,13 @@ Founder-decisions (frozen 2026-05-18):
     Q4 = A   explicit operational exclusivity sentence in footer
 """
 
-from .config import DeliveryConfig, load_config
-from .dispatcher import DispatchSummary, dispatch
-from .model import Installer, Receipt, ReviewedLead, RoutedLead
+try:
+    from .config import DeliveryConfig, load_config
+    from .dispatcher import DispatchSummary, dispatch
+    from .model import Installer, Receipt, ReviewedLead, RoutedLead
+except ModuleNotFoundError:
+    # The implementation plan adds these modules task-by-task.
+    pass
 
 __all__ = [
     "DeliveryConfig",
