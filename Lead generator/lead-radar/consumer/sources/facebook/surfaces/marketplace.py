@@ -53,6 +53,7 @@ def parse_marketplace_html(
         out.append(RawPost(
             id=_post_id(target.query, href, idx),
             source="facebook_marketplace",
+            source_id=f"facebook:marketplace/{niche}",
             url=href or f"https://www.facebook.com/marketplace/{target.location_slug}/search?query={quote_plus(target.query)}",
             title=title[:120],
             text=" | ".join(spans),

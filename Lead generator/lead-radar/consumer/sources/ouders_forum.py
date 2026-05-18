@@ -74,6 +74,7 @@ def _parse_subforum_page(html: str) -> list[RawPost]:
         out.append(RawPost(
             id=rid,
             source=SOURCE_NAME,
+            source_id=f"ouders_forum:{sub}",
             url=f"{BASE}{href}",
             title=title,
             text="",

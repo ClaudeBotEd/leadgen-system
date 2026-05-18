@@ -51,6 +51,21 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         log.warning("reddit_new: invalid JSON van r/%s: %s", sub, e)
         return []
 
-    posts = _reddit_search._parse_listing(data)[:limit]
+    raw = _reddit_search._parse_listing(data)[:limit]
+    # Override source and source_id: this feed is reddit_new, not reddit.
+    posts = [
+        RawPost(
+            id=p.id,
+            source="reddit_new",
+            source_id=f"reddit_new:r/{sub}",
+            url=p.url,
+            title=p.title,
+            text=p.text,
+            author=p.author,
+            created_at=p.created_at,
+            metadata=p.metadata,
+        )
+        for p in raw
+    ]
     log.info("Reddit /r/%s/new: %d posts", sub, len(posts))
     return posts

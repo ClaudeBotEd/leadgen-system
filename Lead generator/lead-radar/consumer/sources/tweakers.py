@@ -79,6 +79,7 @@ def _parse_search(html: str, query_terms: list[str] | None = None) -> list[RawPo
         out.append(RawPost(
             id=rid,
             source="tweakers",
+            source_id="tweakers:keywords",
             url=url,
             title=title,
             text="",
@@ -188,6 +189,7 @@ def _google_site_fallback(q: str, limit: int) -> list[RawPost]:
         rebadged.append(RawPost(
             id=f"tweakers:{thread_id}",
             source="tweakers",
+            source_id="tweakers:keywords",
             url=p.url,
             title=p.title,
             text=p.text,

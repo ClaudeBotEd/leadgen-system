@@ -55,6 +55,7 @@ def _parse_listing(json_data: dict) -> list[RawPost]:
         out.append(RawPost(
             id=post_id,
             source="reddit",
+            source_id=f"reddit:r/{sub}" if sub else "reddit",
             url=url,
             title=title,
             text=body,

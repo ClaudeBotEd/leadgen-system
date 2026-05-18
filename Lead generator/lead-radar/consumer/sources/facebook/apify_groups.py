@@ -130,6 +130,7 @@ def map_item_to_rawpost(
     return RawPost(
         id=_post_id(target.id, post_url, idx),
         source="facebook_groups",
+        source_id=f"facebook:{target.id}",
         url=post_url or f"https://www.facebook.com/groups/{target.id}/",
         title=title,
         text=text,

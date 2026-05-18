@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from typing import Iterable
+from urllib.parse import urlsplit
 
 from .. import RawPost
 
@@ -135,9 +136,11 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
             skipped += 1
             continue
         rid = f"google:{_short_hash(url)}"
+        host = urlsplit(url).netloc.lower().removeprefix("www.")
         out.append(RawPost(
             id=rid,
             source="google",
+            source_id=f"google:{host}",
             url=url,
             title=title,
             text=body,

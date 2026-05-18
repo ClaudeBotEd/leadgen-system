@@ -78,6 +78,7 @@ def parse_groups_feed_html(
         out.append(RawPost(
             id=_post_id(target.id, post_url or f"idx-{idx}", idx),
             source="facebook_groups",
+            source_id=f"facebook:{target.id}",
             url=post_url or f"https://www.facebook.com/groups/{target.id}/",
             title=title,
             text=text,
@@ -258,6 +259,7 @@ def parse_groups_graphql_response(
         out.append(RawPost(
             id=_post_id(target.id, url, idx),
             source="facebook_groups",
+            source_id=f"facebook:{target.id}",
             url=url,
             title=title,
             text=text,

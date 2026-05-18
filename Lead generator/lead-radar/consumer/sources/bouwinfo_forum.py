@@ -38,7 +38,7 @@ SOURCE_NAME = "bouwinfo"  # zelfde namespace als search-source voor dedup
 THREAD_PATH_RE = re.compile(r"(?:https?://[^/]+)?/bouwforum/threads/(\d+)")
 
 
-def _parse_category_page(html: str) -> list[RawPost]:
+def _parse_category_page(html: str, *, subforum_slug: str = "unknown") -> list[RawPost]:
     """Plukt thread-anchors uit een /categories/-pagina.
 
     Robuust tegen HTML-wijzigingen: we selecteren op URL-pattern in
@@ -71,6 +71,7 @@ def _parse_category_page(html: str) -> list[RawPost]:
         out.append(RawPost(
             id=rid,
             source=SOURCE_NAME,
+            source_id=f"bouwinfo_forum:{subforum_slug}",
             url=f"{BASE}{href}",
             title=title,
             text="",
@@ -93,11 +94,15 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         log.debug("bouwinfo_forum: skipping non-category query %r", query)
         return []
 
+    # Derive a slug from the last non-empty path segment of `query`.
+    # e.g. "/categories/technieken/verwarming-en-koeling/warmtepompen" -> "warmtepompen"
+    slug = next((s for s in reversed(query.rstrip("/").split("/")) if s), "unknown")
+
     sess = session or PoliteSession(HttpConfig(request_delay=3.0))
     url = f"{BASE}{query}"
     resp = sess.get(url)
     if resp is None:
         return []
-    posts = _parse_category_page(resp.text)[:limit]
+    posts = _parse_category_page(resp.text, subforum_slug=slug)[:limit]
     log.info("Bouwinfo forum: %d posts uit %s", len(posts), query)
     return posts
