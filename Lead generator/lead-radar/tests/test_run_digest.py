@@ -104,3 +104,37 @@ def test_digest_omits_apify_line_when_cap_zero():
     )
     msg = format_run_digest(stats)
     assert "Apify spend" not in msg
+
+
+def test_send_run_digest_uses_plain_text_not_markdownv2(monkeypatch):
+    """Digest must not trigger Telegram MarkdownV2 parse errors on reserved chars.
+
+    send_run_digest must explicitly pass parse_mode=None to _post_to_telegram
+    to override the default 'MarkdownV2'. Without this, the Telegram API returns
+    HTTP 400 'can't parse entities' on the reserved chars in digest text.
+    """
+    from consumer.output import telegram as tg
+
+    calls = []
+
+    def fake_post(chat_id, text, *, parse_mode="MarkdownV2", **kwargs):
+        """Mirror _post_to_telegram's real signature to capture the effective parse_mode."""
+        calls.append({"chat_id": chat_id, "text": text, "parse_mode": parse_mode})
+        return True
+
+    monkeypatch.setattr(tg, "_post_to_telegram", fake_post)
+    monkeypatch.setenv("CONSUMER_TELEGRAM_CHAT_ID", "999")
+
+    stats = tg.RunStats(
+        timestamp="2026-05-18T13:00:00+02:00",
+        per_source=[tg.SourceStat(source="bouwinfo", posts=0, leads=0, hot=0, dead=True)],
+        apify_spend_used_usd=1.85,
+        apify_spend_cap_usd=5.00,
+    )
+    assert tg.send_run_digest(stats) is True
+    assert calls, "send_run_digest must call _post_to_telegram"
+    # parse_mode must be None — MarkdownV2 would reject the colons/parens in digest text
+    assert calls[0]["parse_mode"] is None, (
+        f"send_run_digest passed parse_mode={calls[0]['parse_mode']!r}; "
+        "must pass parse_mode=None to prevent Telegram 400 errors on reserved chars"
+    )

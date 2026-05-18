@@ -279,7 +279,10 @@ def send_run_digest(stats: RunStats, *, channel: str = "consumer") -> bool:
     if not chat_id:
         return False
     text = format_run_digest(stats)
-    return _post_to_telegram(chat_id=chat_id, text=text)
+    # Digest text contains reserved MarkdownV2 chars (':', '(', ')', '.', '-', '!', '→').
+    # Sending with MarkdownV2 parse_mode triggers Telegram API HTTP 400
+    # "can't parse entities". Use plain text (parse_mode=None) for digests.
+    return _post_to_telegram(chat_id=chat_id, text=text, parse_mode=None)
 
 
 __all__ = [
