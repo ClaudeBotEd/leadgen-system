@@ -285,3 +285,19 @@ locations:
     - oostende
     - aalst
     - sint-niklaas
+
+# Source-credibility multipliers, applied before HOT/WARM/OPP threshold.
+# >1.0 boosts (premium-intent sources), <1.0 demotes (noisier sources).
+# See: docs/superpowers/specs/2026-05-17-supply-expansion-design.md §6
+source_weights:
+  bouwinfo_forum: 1.10
+  klusidee_forum: 1.10
+  marktplaats:    1.05
+  2dehands:       1.05
+  reddit_new:     1.00
+  reddit:         1.00
+  facebook:       1.00
+  tweakers:       0.95
+  ouders_forum:   0.95
+  bouwinfo:       0.95
+  google:         0.85

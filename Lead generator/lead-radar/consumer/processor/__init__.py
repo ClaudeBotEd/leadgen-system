@@ -26,6 +26,7 @@ from .author_signature_dedup import (
     prune_author_store,
     SOURCES_WITH_AUTHOR,
 )
+from .source_weight import apply_source_weight, load_source_weights
 
 __all__ = [
     "clean_post", "smart_summary", "has_urgency",
@@ -36,4 +37,5 @@ __all__ = [
     "TextSignatureStore", "shingles", "jaccard",
     "is_cross_run_duplicate", "record_lead_signature", "prune_cross_run_store",
     "is_author_repeat", "record_author_post", "prune_author_store", "SOURCES_WITH_AUTHOR",
+    "apply_source_weight", "load_source_weights",
 ]
