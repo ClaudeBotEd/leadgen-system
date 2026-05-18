@@ -1,0 +1,46 @@
+{
+  "name": "lead-radar-console",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "latest",
+    "drizzle-orm": "latest",
+    "next": "15.5.18",
+    "next-auth": "beta",
+    "postgres": "latest",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "resend": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "latest",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitest/ui": "latest",
+    "dotenv": "latest",
+    "drizzle-kit": "latest",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.18",
+    "tailwindcss": "^4",
+    "tsx": "latest",
+    "typescript": "^5",
+    "vitest": "latest"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}
