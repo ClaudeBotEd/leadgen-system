@@ -7,3 +7,7 @@ data/apify_spend.json
 
 # Runtime logs (launchd, scrape runs, daily runs).
 logs/
+
+# Receipt delivery - runtime data
+data/reviewed/
+data/delivery_log.jsonl
