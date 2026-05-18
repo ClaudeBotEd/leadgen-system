@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from 'react';
 import { CardShell } from '@/components/card/CardShell';
 import { useKeyboardShortcuts } from '@/lib/keyboard/useKeyboardShortcuts';
 import { OverrideInlineForm } from '@/components/override/OverrideInlineForm';
+import { AuditChainView } from '@/components/audit/AuditChainView';
 
 type Cat = { categoryKey: string; confidence: number; reasoning?: string };
 
@@ -38,6 +39,7 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [qualifierMode, setQualifierMode] = useState<Qualifier>('confident');
   const [primaryPick, setPrimaryPick] = useState<string | null>(null);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const rec = decision.agentRecommendation as AgentRec | null;
   const candidates: Cat[] = rec?.candidates ?? [];
@@ -101,12 +103,14 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
     'N': () => { void save('no_intent', 'confident'); },
     'O': () => setOverrideOpen(true),
     'H': () => { void save(candidates[0]?.categoryKey ?? 'no_intent', 'uncertain'); },
+    'V': () => setAuditOpen(true),
     'Escape': () => {
+      if (auditOpen) { setAuditOpen(false); return; }
       if (overrideOpen) { setOverrideOpen(false); return; }
       router.push('/triage');
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [candidates, qualifierMode, primaryPick, overrideOpen]);
+  }), [candidates, qualifierMode, primaryPick, auditOpen, overrideOpen]);
   useKeyboardShortcuts(shortcuts);
 
   return (
@@ -123,6 +127,7 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
         { key: 'N', label: 'No intent (confident negative)' },
         { key: 'O', label: 'Override' },
         { key: 'H', label: 'Hold' },
+        { key: 'V', label: 'View audit chain' },
       ]}
       actions={[
         { key: '1/2/3', label: 'Pick', onClick: () => {} },
@@ -131,6 +136,7 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
         { key: 'T', label: 'Tax gap', onClick: () => { void save('taxonomy_gap', 'taxonomy_gap'); } },
         { key: 'N', label: 'No intent', onClick: () => { void save('no_intent', 'confident'); } },
         { key: 'O', label: 'Override', onClick: () => setOverrideOpen(true) },
+        { key: 'V', label: 'View audit', onClick: () => setAuditOpen(true) },
       ]}
     >
       <section className="mb-6">
@@ -162,6 +168,12 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
           categories={categories}
           onSubmit={(key, reason) => { void submitOverride(key, reason); }}
           onCancel={() => setOverrideOpen(false)}
+        />
+      )}
+      {auditOpen && decision.signalId && (
+        <AuditChainView
+          leadId={decision.signalId}
+          onClose={() => setAuditOpen(false)}
         />
       )}
     </CardShell>

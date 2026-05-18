@@ -3,6 +3,7 @@ import { useState, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardShell } from '@/components/card/CardShell';
 import { useKeyboardShortcuts } from '@/lib/keyboard/useKeyboardShortcuts';
+import { AuditChainView } from '@/components/audit/AuditChainView';
 
 const OUTCOMES = ['won', 'lost', 'unclear'] as const;
 const VALUE_BANDS = ['<5k', '5-15k', '15-30k', '>30k'] as const;
@@ -41,6 +42,7 @@ export function ConversionCard({ decision, position, whyText }: Props) {
   const [notes, setNotes] = useState('');
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
   const parseConfidence = payload.parseConfidence ?? 0;
 
   async function save() {
@@ -84,9 +86,15 @@ export function ConversionCard({ decision, position, whyText }: Props) {
     },
     'E': () => setEditing(true),
     'F': () => flagDispute(),
-    'Escape': () => { setEditing(false); setConfirming(false); router.push('/triage'); },
+    'V': () => setAuditOpen(true),
+    'Escape': () => {
+      if (auditOpen) { setAuditOpen(false); return; }
+      setEditing(false);
+      setConfirming(false);
+      router.push('/triage');
+    },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [parseConfidence, editing, confirming, outcome, valueBand, installStatus, attribution, notes]);
+  }), [parseConfidence, editing, confirming, auditOpen, outcome, valueBand, installStatus, attribution, notes]);
   useKeyboardShortcuts(shortcuts, { allowInInputs: true });
 
   const h = payload.history;
@@ -101,11 +109,13 @@ export function ConversionCard({ decision, position, whyText }: Props) {
         { key: 'S', label: 'Save (are-you-sure first)' },
         { key: 'E', label: 'Edit fields' },
         { key: 'F', label: 'Flag dispute' },
+        { key: 'V', label: 'View audit chain' },
       ]}
       actions={[
         { key: 'S', label: confirming ? 'Confirm save?' : 'Save', onClick: save },
         { key: 'E', label: 'Edit', onClick: () => setEditing(true) },
         { key: 'F', label: 'Flag dispute', onClick: flagDispute },
+        { key: 'V', label: 'View audit', onClick: () => setAuditOpen(true) },
       ]}
     >
       <section className="mb-4">
@@ -130,6 +140,12 @@ export function ConversionCard({ decision, position, whyText }: Props) {
           {confirming && <div className="text-xs text-yellow-500">Confirm save? Press S again (dataset-defining, irreversible in UI).</div>}
         </div>
       </section>
+      {auditOpen && decision.leadId && (
+        <AuditChainView
+          leadId={decision.leadId}
+          onClose={() => setAuditOpen(false)}
+        />
+      )}
     </CardShell>
   );
 }

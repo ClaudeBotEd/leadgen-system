@@ -5,6 +5,7 @@ import { CardShell } from '@/components/card/CardShell';
 import { InstallerRecommendation } from './InstallerRecommendation';
 import { OverrideInlineForm } from '@/components/override/OverrideInlineForm';
 import { useKeyboardShortcuts } from '@/lib/keyboard/useKeyboardShortcuts';
+import { AuditChainView } from '@/components/audit/AuditChainView';
 
 type InstallerShape = {
   name: string;
@@ -51,6 +52,7 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [pickAltOpen, setPickAltOpen] = useState(false);
   const [pickedAltIdx, setPickedAltIdx] = useState(0);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const lead = (decision.inputsPayload as Record<string, unknown>).lead as LeadShape | undefined;
   const rec = decision.agentRecommendation as AgentRec | null;
@@ -122,16 +124,18 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
     'O': () => setOverrideOpen(true),
     'H': () => { void submit('hold'); },
     'N': () => { void submit('next'); },
+    'V': () => setAuditOpen(true),
     '1': () => { if (pickAltOpen) setPickedAltIdx(0); },
     '2': () => { if (pickAltOpen) setPickedAltIdx(1); },
     'Enter': () => { if (pickAltOpen) { void submitPickAlt(); } },
     'Escape': () => {
+      if (auditOpen) { setAuditOpen(false); return; }
       if (overrideOpen) { setOverrideOpen(false); return; }
       if (pickAltOpen) { setPickAltOpen(false); return; }
       router.push('/triage');
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [overrideOpen, pickAltOpen, pickedAltIdx]);
+  }), [auditOpen, overrideOpen, pickAltOpen, pickedAltIdx]);
 
   useKeyboardShortcuts(shortcuts);
 
@@ -147,7 +151,8 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
         { key: 'O', label: 'Override' },
         { key: 'H', label: 'Hold' },
         { key: 'N', label: 'Next without action' },
-        { key: 'Esc', label: overrideOpen ? 'Close override' : pickAltOpen ? 'Close picker' : 'Back to triage' },
+        { key: 'V', label: 'View audit chain' },
+        { key: 'Esc', label: auditOpen ? 'Close audit' : overrideOpen ? 'Close override' : pickAltOpen ? 'Close picker' : 'Back to triage' },
       ]}
       actions={[
         { key: 'A', label: 'Approve & route', onClick: () => { void submit('approve'); } },
@@ -155,6 +160,7 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
         { key: 'O', label: 'Override', onClick: () => setOverrideOpen(true) },
         { key: 'H', label: 'Hold', onClick: () => { void submit('hold'); } },
         { key: 'N', label: 'Next', onClick: () => { void submit('next'); } },
+        { key: 'V', label: 'View audit', onClick: () => setAuditOpen(true) },
       ]}
     >
       <section className="mb-6">
@@ -192,6 +198,12 @@ export function RoutingCard({ decision, position, whyText, categories }: Props) 
           categories={categories}
           onSubmit={(key, reason) => { void submitOverride(key, reason); }}
           onCancel={() => setOverrideOpen(false)}
+        />
+      )}
+      {auditOpen && decision.leadId && (
+        <AuditChainView
+          leadId={decision.leadId}
+          onClose={() => setAuditOpen(false)}
         />
       )}
     </CardShell>
