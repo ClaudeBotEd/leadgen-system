@@ -28,6 +28,7 @@ from .author_signature_dedup import (
 )
 from .source_weight import apply_source_weight, load_source_weights
 from .sellability_gate import is_sellable, GateResult
+from .recency_boost import apply_recency_boost, AGED_OUT
 
 __all__ = [
     "clean_post", "smart_summary", "has_urgency",
@@ -40,4 +41,5 @@ __all__ = [
     "is_author_repeat", "record_author_post", "prune_author_store", "SOURCES_WITH_AUTHOR",
     "apply_source_weight", "load_source_weights",
     "is_sellable", "GateResult",
+    "apply_recency_boost", "AGED_OUT",
 ]
