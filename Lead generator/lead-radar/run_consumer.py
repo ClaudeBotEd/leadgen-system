@@ -403,7 +403,7 @@ def _process_post(
     # verifiable source timestamp cannot become a Lead — there is nothing
     # to anchor provenance against.
     if not raw.created_at:
-        log.info("rejecting raw post %s/%s: no created_at", raw.source, raw.id)
+        log.warning("rejecting raw post %s/%s: no created_at", raw.source, raw.id)
         return None
 
     # Step 1: clean + regex score
@@ -635,6 +635,7 @@ def run_one_niche(
         skipped_promo = skipped_low = skipped_old = 0
         skipped_hardblock = skipped_fuzzy_dup = 0
         skipped_aged_out = skipped_cross_run = skipped_author = 0
+        skipped_no_ts = 0
         llm_calls = author_calls = 0
 
         # Load source weights once per niche-run (file read; cached dict).
@@ -649,6 +650,16 @@ def run_one_niche(
             if fp in in_memory_seen:
                 continue
             in_memory_seen.add(fp)
+
+            # Doctrine §00.5: a post without a source-provenance timestamp
+            # cannot become a Lead. Attribute the drop to its own bucket so
+            # operators can see when a scraper goes to zero yield because of
+            # missing timestamps (vs low-score or too-old drops).
+            if not raw.created_at:
+                skipped_no_ts += 1
+                log.warning("dropping %s/%s: no created_at (no provenance anchor)",
+                            raw.source, raw.id)
+                continue
 
             if not _is_recent(raw.created_at, cutoff):
                 skipped_old += 1
@@ -782,10 +793,11 @@ def run_one_niche(
             ))
 
         log.info(
-            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
+            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d no_ts=%d hardblock=%d fuzzy=%d "
             "llm_calls=%d author_calls=%d)",
             niche, len(raw_total), len(leads), skipped_promo, skipped_old,
-            skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
+            skipped_low, skipped_no_ts, skipped_hardblock, skipped_fuzzy_dup,
+            llm_calls, author_calls,
         )
 
         export_leads(leads, niche=niche, outdir=args.outdir)

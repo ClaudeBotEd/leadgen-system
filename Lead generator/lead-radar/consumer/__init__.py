@@ -97,6 +97,7 @@ class Lead:
             elif isinstance(v, float):
                 coerced[k] = int(v) if v.is_integer() else v
             else:
+                # strings, None, nested dict/list — pass through unchanged
                 coerced[k] = v
         d["breakdown"] = coerced
         return d
