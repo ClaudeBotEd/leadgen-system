@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from typing import Literal
 from urllib.parse import quote
 
 import requests
@@ -28,6 +29,21 @@ DEFAULT_HOT_THRESHOLD = 80
 API_BASE = "https://api.telegram.org"
 
 _MD_V2_ESCAPE = "_*[]()~`>#+-=|{}.!"
+
+
+def resolve_chat_id(channel: Literal["consumer", "default"] = "default") -> str | None:
+    """Resolve which Telegram chat to send to.
+
+    - channel='consumer': prefer CONSUMER_TELEGRAM_CHAT_ID, fall back to TELEGRAM_CHAT_ID
+    - channel='default': always TELEGRAM_CHAT_ID
+    Returns None if neither var is set or both are blank.
+    """
+    if channel == "consumer":
+        consumer = (os.environ.get("CONSUMER_TELEGRAM_CHAT_ID") or "").strip()
+        if consumer:
+            return consumer
+    default = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
+    return default or None
 
 
 @dataclass
