@@ -50,3 +50,6 @@ pytest-asyncio>=0.23.0
 # Apify cloud scrapers — primary FB groups collector.
 # Self-hosted Playwright stack above remains as cold-storage fallback.
 apify-client>=1.7.0
+
+# Layer-2 dedup: MinHash for cross-run duplicate detection
+datasketch>=1.0.0
