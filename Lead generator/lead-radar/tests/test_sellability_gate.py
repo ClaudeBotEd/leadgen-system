@@ -46,7 +46,29 @@ def test_short_summary_blocks():
 
 
 def test_truncation_marker_in_summary_blocks():
-    result = is_sellable(_lead(summary="something interesting that goes on for a while..."))
+    """A summary that contains 'read more' or 'see full post' mid-text indicates source-side truncation."""
+    result = is_sellable(_lead(summary="Wie kan warmtepomp installeren read more in Amsterdam"))
+    assert result.ok is False
+    assert "summary" in result.missing
+
+
+def test_summary_ending_with_ellipsis_from_make_summary_is_sellable():
+    """make_summary appends trailing '…' on auto-summarized text. That's fine."""
+    long_summary = "Wie kan een warmtepomp installeren in Amsterdam-Zuid spoed nodig…"
+    result = is_sellable(_lead(summary=long_summary))
+    assert result.ok is True, f"Trailing … from make_summary should not block: {result.missing}"
+
+
+def test_summary_ending_with_three_dots_from_make_summary_is_sellable():
+    long_summary = "Wie kan een warmtepomp installeren in Amsterdam-Zuid spoed nodig..."
+    result = is_sellable(_lead(summary=long_summary))
+    assert result.ok is True
+
+
+def test_mid_text_truncation_still_blocks():
+    """If 'see full post' or 'read more' is INSIDE the summary, that's a real signal."""
+    bad_summary = "Wie zoekt een warmtepomp installateur in see full post Amsterdam-Zuid"
+    result = is_sellable(_lead(summary=bad_summary))
     assert result.ok is False
     assert "summary" in result.missing
 

@@ -22,6 +22,17 @@ class GateResult:
     missing: list[str]
 
 
+def _has_mid_text_truncation(summary: str) -> bool:
+    """Return True only if a truncation marker appears mid-text (not at the end).
+
+    make_summary appends a trailing "…" or "..." after natural sentence cuts,
+    which is fine. We only want to flag summaries where truncation markers
+    suggest the SOURCE post was already cut off (e.g. "wat zijn de... show more").
+    """
+    s = summary.lower().rstrip(".… \t\n")
+    return any(m in s for m in TRUNCATION_MARKERS)
+
+
 def is_sellable(lead: Lead) -> GateResult:
     missing: list[str] = []
 
@@ -30,7 +41,7 @@ def is_sellable(lead: Lead) -> GateResult:
 
     if not lead.summary or len(lead.summary) < MIN_SUMMARY_LEN:
         missing.append("summary")
-    elif any(m in lead.summary.lower() for m in TRUNCATION_MARKERS):
+    elif _has_mid_text_truncation(lead.summary):
         missing.append("summary")
 
     if not lead.city:
