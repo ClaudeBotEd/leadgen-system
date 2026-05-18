@@ -67,6 +67,15 @@ class ReviewedLead:
             "reviewer_email",
         ):
             _require(getattr(self, name), name)
+        # Header-safety guard for reviewer_name — flows into the From: header
+        # (delivery/send.py:29). RFC 5322 injection via CRLF / <>: doctrine
+        # §00.4 — humans are accountable, so the name field must be safe.
+        forbidden = {"\n", "\r", "\x00", "<", ">"}
+        if any(ch in self.reviewer_name for ch in forbidden):
+            raise ValueError(
+                f"reviewer_name contains forbidden characters (CRLF/null/<>): "
+                f"{self.reviewer_name!r}"
+            )
         if not _URL_RE.match(self.source_url):
             raise ValueError(f"source_url must be http(s) URL, got {self.source_url!r}")
         if not _EMAIL_RE.match(self.reviewer_email):
