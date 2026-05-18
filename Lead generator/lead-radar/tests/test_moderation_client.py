@@ -25,6 +25,7 @@ def _config(**overrides: Any) -> ModerationConfig:
         min_confidence_band="high",
         require_provenance=("verified",),
         approved_path=Path("/tmp/never-written-moderation"),
+        archive_dir=Path("/tmp/never-written-moderation-archive"),
         webhook_url=None,
         webhook_event="lead.approved",
         fail_open=False,

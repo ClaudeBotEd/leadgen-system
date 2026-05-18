@@ -71,6 +71,7 @@ class ModerationConfig:
     require_provenance: Tuple[str, ...]
 
     approved_path: Path
+    archive_dir: Path
 
     webhook_url: Optional[str]
     webhook_event: str                 # default "lead.approved"
@@ -82,6 +83,10 @@ def get_config() -> ModerationConfig:
     approved_path_str = (
         os.getenv("LEAD_RADAR_MODERATION_APPROVED_PATH")
         or str(DEFAULT_APPROVED_PATH)
+    )
+    archive_dir_str = (
+        os.getenv("LEAD_RADAR_MODERATION_ARCHIVE_DIR")
+        or str(HERE / "data" / "moderation" / "archive")
     )
     approved_temps = tuple(
         s.strip().upper()
@@ -110,6 +115,7 @@ def get_config() -> ModerationConfig:
         ).lower(),
         require_provenance=require_provenance or ("verified",),
         approved_path=Path(approved_path_str),
+        archive_dir=Path(archive_dir_str),
         webhook_url=os.getenv("LEAD_RADAR_MODERATION_WEBHOOK_URL") or None,
         webhook_event=os.getenv("LEAD_RADAR_MODERATION_WEBHOOK_EVENT", "lead.approved"),
         fail_open=_env_bool("LEAD_RADAR_MODERATION_FAIL_OPEN", default=False),

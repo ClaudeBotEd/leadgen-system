@@ -40,6 +40,7 @@ def _config(tmp_path: Path, **overrides: Any) -> ModerationConfig:
         min_confidence_band="high",
         require_provenance=("verified",),
         approved_path=tmp_path / "approved.jsonl",
+        archive_dir=tmp_path / "archive",
         webhook_url=None,
         webhook_event="lead.approved",
         fail_open=False,
@@ -156,7 +157,28 @@ def test_approval_gate_rejects_when_review_required(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_save_approved_writes_v2_schema(tmp_path):
+def test_save_approved_writes_v2_schema(tmp_path, monkeypatch):
+    """save_approved persists v2-schema record with archive embedded.
+
+    Stub archive_source so the test stays offline.
+    """
+    from moderation import crm_store
+    from moderation.archive import ArchiveRecord
+
+    def fake_archive(candidate_id, source_url, output_dir):
+        return ArchiveRecord(
+            candidate_id=candidate_id,
+            source_url=source_url,
+            archived_at="2026-05-18T08:00:00+00:00",
+            status="ok",
+            http_status=200,
+            sha256="deadbeef",
+            bytes=42,
+            path=str(output_dir / candidate_id / "source.html"),
+            error=None,
+        )
+
+    monkeypatch.setattr(crm_store, "archive_source", fake_archive)
     config = _config(tmp_path)
     save_approved(
         {
@@ -178,6 +200,57 @@ def test_save_approved_writes_v2_schema(tmp_path):
     assert rec["metadata"]["schema_version"] == 2
     assert rec["metadata"]["model"] == "openai/gpt-4.1"
     assert rec["saved_at"].endswith("Z")
+
+
+def test_save_approved_invokes_archive(tmp_path, monkeypatch):
+    """save_approved must call archive_source and embed the record.
+
+    Doctrine §01.3: every approved lead has an archive entry. Even when
+    fetch fails (status='failed'), the gap is recorded — never absent.
+    """
+    from moderation import crm_store
+    from moderation.archive import ArchiveRecord
+    captured = {}
+
+    def fake_archive(candidate_id, source_url, output_dir):
+        captured["candidate_id"] = candidate_id
+        captured["source_url"] = source_url
+        captured["output_dir"] = output_dir
+        return ArchiveRecord(
+            candidate_id=candidate_id,
+            source_url=source_url,
+            archived_at="2026-05-18T08:00:00+00:00",
+            status="ok",
+            http_status=200,
+            sha256="deadbeef",
+            bytes=42,
+            path=str(output_dir / candidate_id / "source.html"),
+            error=None,
+        )
+
+    monkeypatch.setattr(crm_store, "archive_source", fake_archive)
+    config = _config(tmp_path)
+    save_approved(
+        {
+            "candidate_id": "cap_arch",
+            "source_url": "https://example.test/p/arch",
+            "snippet": "x",
+            "captured_at": "2026-05-18T10:00:00Z",
+        },
+        _hot_review(),
+        config=config,
+    )
+    assert captured["candidate_id"] == "cap_arch"
+    assert captured["source_url"] == "https://example.test/p/arch"
+    assert captured["output_dir"] == config.archive_dir
+
+    lines = config.approved_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    rec = json.loads(lines[0])
+    assert "archive" in rec
+    assert rec["archive"]["status"] == "ok"
+    assert rec["archive"]["sha256"] == "deadbeef"
+    assert rec["archive"]["candidate_id"] == "cap_arch"
 
 
 # ---------------------------------------------------------------------------
