@@ -136,3 +136,52 @@ def test_sellability_gate_demotes_hot_when_city_missing(tmp_path: Path):
     )
     if lead is not None and lead.score >= 80 and (lead.city in (None, "")):
         assert lead.intent != "hot", "Lead missing city must be demoted from hot"
+
+
+def test_digest_reports_dead_source_with_zero_leads(tmp_path: Path, monkeypatch):
+    """A source that ran but produced zero leads must appear in the digest as DEAD or alive-zero.
+
+    This is the canary test for the dead-source attribution bug found in
+    final code review of Plan A.
+    """
+    from consumer.output import telegram as tg
+    from consumer.sources import mark_source_yield, reset_source_health
+
+    # Mark a source as having had 3 consecutive 0-yield runs (dead threshold)
+    reset_source_health()
+    for _ in range(3):
+        mark_source_yield("test_dead_source", 0)
+
+    # Construct a minimal RunStats / SourceStat directly to verify the digest renders.
+    stats = tg.RunStats(
+        timestamp="2026-05-18T13:00:00+02:00",
+        per_source=[
+            tg.SourceStat(source="test_dead_source", posts=0, leads=0, hot=0, dead=True),
+            tg.SourceStat(source="reddit", posts=12, leads=3, hot=1, dead=False),
+        ],
+    )
+    msg = tg.format_run_digest(stats)
+    assert "test_dead_source" in msg
+    assert "DEAD" in msg
+    assert "reddit" in msg
+    assert "✓" in msg and "✗" in msg
+
+
+def test_run_daily_includes_zero_yield_sources_in_digest_counters(tmp_path: Path, monkeypatch):
+    """run_daily must report sources that produced 0 leads (the dead-source case)."""
+    import run_consumer
+
+    if not hasattr(run_consumer, "_build_run_stats"):
+        pytest.skip("_build_run_stats helper not yet extracted from run_daily")
+
+    per_source_counts = {
+        "reddit": {"posts": 10, "leads": 2, "hot": 1},
+        "marktplaats": {"posts": 0, "leads": 0, "hot": 0},  # ran, found nothing
+    }
+    stats = run_consumer._build_run_stats(
+        timestamp="2026-05-18T13:00:00+02:00",
+        per_source_counts=per_source_counts,
+    )
+    source_names = {s.source for s in stats.per_source}
+    assert "reddit" in source_names
+    assert "marktplaats" in source_names, "Zero-yield source must appear in digest"

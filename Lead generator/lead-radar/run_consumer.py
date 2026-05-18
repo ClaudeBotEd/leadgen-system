@@ -496,6 +496,7 @@ def run_one_niche(
     location_override: str | None = None,
     sources_override: list[str] | None = None,
     fb_extra_posts: list[RawPost] | None = None,
+    per_source_counts: "dict[str, dict[str, int]] | None" = None,
 ) -> list[Lead]:
     """Run pipeline voor 1 niche en returnt de Lead-list.
 
@@ -600,6 +601,9 @@ def run_one_niche(
                     source_yield += 1
             # Mark source-health (cumulatief over niche-loc combos in deze run)
             mark_source_yield(source_name, source_yield)
+            # Track raw post counts for run-digest (keyed by base source name).
+            if per_source_counts is not None and source_name in per_source_counts:
+                per_source_counts[source_name]["posts"] += source_yield
             # Zero-yield detection: vangt silent breakage van een source af.
             if source_yield == 0:
                 log.warning(
@@ -714,6 +718,14 @@ def run_one_niche(
             if fuzzy_store is not None:
                 fuzzy_store.add(fp, cleaned["full"])
 
+            # Track per-source lead/hot counts for run-digest (base source name).
+            if per_source_counts is not None:
+                _lead_src = lead.source or "unknown"
+                if _lead_src in per_source_counts:
+                    per_source_counts[_lead_src]["leads"] += 1
+                    if lead.score >= HOT_ALERT_THRESHOLD:
+                        per_source_counts[_lead_src]["hot"] += 1
+
             score = lead.score
             if score >= HOT_ALERT_THRESHOLD:
                 stad = (lead.city or "—").title()
@@ -814,6 +826,37 @@ def _drain_fb_queue_once(outdir: str | Path) -> list[RawPost]:
     return drained
 
 
+def _build_run_stats(
+    timestamp: str,
+    per_source_counts: "dict[str, dict[str, int]]",
+    apify_spend_used_usd: float = 0.0,
+    apify_spend_cap_usd: float = 0.0,
+) -> "RunStats":
+    """Build a RunStats for the end-of-run Telegram digest.
+
+    Iterates all entries in per_source_counts (including zero-yield ones),
+    looks up dead-source status by base registry name, and returns a RunStats
+    ready for format_run_digest / send_run_digest.
+
+    Extracted so it can be unit-tested without running a full daily loop.
+    """
+    return RunStats(
+        timestamp=timestamp,
+        per_source=[
+            SourceStat(
+                source=src,
+                posts=counts["posts"],
+                leads=counts["leads"],
+                hot=counts["hot"],
+                dead=is_source_dead(src),  # base name — matches _source_health keys
+            )
+            for src, counts in sorted(per_source_counts.items())
+        ],
+        apify_spend_used_usd=apify_spend_used_usd,
+        apify_spend_cap_usd=apify_spend_cap_usd,
+    )
+
+
 def run_daily(args: argparse.Namespace) -> int:
     """Run alle niches, push naar Sheets.
 
@@ -909,6 +952,13 @@ def run_daily(args: argparse.Namespace) -> int:
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
+    # Per-source counters for run-digest: initialise every requested source to zero
+    # so that sources with zero output (dead candidates) still appear in the digest.
+    # Keyed by base registry name (no ':' subcontext) to match is_source_dead().
+    _digest_per_source: dict[str, dict[str, int]] = {
+        src: {"posts": 0, "leads": 0, "hot": 0} for src in requested_for_split
+    }
+
     # Wall-clock budget: stop met nieuwe niches starten zodra elapsed
     # > budget.  Geen abort midden in niche — sheets-sync per niche
     # zorgt dat tussen-resultaten al gepersist zijn.
@@ -947,6 +997,7 @@ def run_daily(args: argparse.Namespace) -> int:
                 location_override=locations[0],
                 sources_override=national_subset,
                 fb_extra_posts=fb_for_niche,
+                per_source_counts=_digest_per_source,
             )
             niche_leads.extend(leads)
             fb_for_niche = None  # already consumed
@@ -958,6 +1009,7 @@ def run_daily(args: argparse.Namespace) -> int:
                     location_override=loc,
                     sources_override=loc_aware_subset,
                     fb_extra_posts=fb_for_niche,
+                    per_source_counts=_digest_per_source,
                 )
                 niche_leads.extend(leads)
                 fb_for_niche = None  # only first call gets FB posts
@@ -1021,30 +1073,12 @@ def run_daily(args: argparse.Namespace) -> int:
     # Run-digest: Telegram summary van de dagelijkse run (per-source yield, dode
     # sources, totalen).  Alleen bij --daily en tenzij --no-telegram.
     if not getattr(args, "no_telegram", False):
-        # Aggregate per-source counts from grand_total leads.
-        from collections import defaultdict
-        per_source_counts: dict[str, dict[str, int]] = defaultdict(
-            lambda: {"posts": 0, "leads": 0, "hot": 0}
-        )
-        for _lead in grand_total:
-            _src = _lead.source_id or _lead.source or "unknown"
-            per_source_counts[_src]["leads"] += 1
-            if _lead.score >= HOT_ALERT_THRESHOLD:
-                per_source_counts[_src]["hot"] += 1
-        digest_stats = RunStats(
+        # _digest_per_source was initialised for ALL requested sources (including
+        # zero-yield ones) and populated incrementally during run_one_niche calls.
+        # _build_run_stats iterates all entries so dead/zero-yield sources appear.
+        digest_stats = _build_run_stats(
             timestamp=run_start_iso,
-            per_source=[
-                SourceStat(
-                    source=src,
-                    posts=counts["leads"],   # posts not tracked separately; use leads count
-                    leads=counts["leads"],
-                    hot=counts["hot"],
-                    dead=is_source_dead(src),
-                )
-                for src, counts in sorted(per_source_counts.items())
-            ],
-            apify_spend_used_usd=0.0,
-            apify_spend_cap_usd=0.0,
+            per_source_counts=_digest_per_source,
         )
         try:
             send_run_digest(digest_stats, channel="consumer")
