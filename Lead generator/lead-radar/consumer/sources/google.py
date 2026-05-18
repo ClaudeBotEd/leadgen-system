@@ -111,19 +111,22 @@ def _is_post_url(url: str) -> bool:
     return any(p in u for p in _FORUM_URL_PATTERNS)
 
 
-def fetch(query: str, *, limit: int = 25, location: str | None = None,
-          **_: object) -> list[RawPost]:
-    if not _HAS_DDG:
-        log.warning("duckduckgo_search niet geinstalleerd — google source skipped")
-        return []
+def _parse_results(
+    raw: list[dict],
+    *,
+    limit: int = 25,
+    query: str = "",
+) -> list[RawPost]:
+    """Parse a list of DDG result dicts into RawPosts (testable offline).
 
-    q = query
-    if location and "{location}" in q:
-        q = q.replace("{location}", location)
-    elif location:
-        q = f"{q} {location}"
+    Each dict must contain at least one of: 'href'/'url' (URL), 'title',
+    'body'/'description'.  Applies the same _is_post_url filter as fetch().
 
-    raw = _ddg_search(q, max_results=limit * 3)  # over-fetch want we filteren ~70% weg
+    Args:
+        raw: List of result dicts as returned by DDGS.text().
+        limit: Maximum number of RawPosts to return.
+        query: Original query string — stored in metadata for traceability.
+    """
     out: list[RawPost] = []
     skipped = 0
     for r in raw:
@@ -145,10 +148,27 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
             title=title,
             text=body,
             created_at=None,
-            metadata={"query": q},
+            metadata={"query": query},
         ))
         if len(out) >= limit:
             break
+    log.debug("_parse_results: %d posts, %d skipped (non-forum)", len(out), skipped)
+    return out
 
-    log.info("Google/DDG: %d post-URLs voor q=%r (skipped %d non-forum)", len(out), q, skipped)
+
+def fetch(query: str, *, limit: int = 25, location: str | None = None,
+          **_: object) -> list[RawPost]:
+    if not _HAS_DDG:
+        log.warning("duckduckgo_search niet geinstalleerd — google source skipped")
+        return []
+
+    q = query
+    if location and "{location}" in q:
+        q = q.replace("{location}", location)
+    elif location:
+        q = f"{q} {location}"
+
+    raw = _ddg_search(q, max_results=limit * 3)  # over-fetch want we filteren ~70% weg
+    out = _parse_results(raw, limit=limit, query=q)
+    log.info("Google/DDG: %d post-URLs voor q=%r (filtered)", len(out), q)
     return out
