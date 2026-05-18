@@ -1,8 +1,9 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useTransition, useState, useMemo } from 'react';
 import { CardShell } from '@/components/card/CardShell';
 import { InstallerRecommendation } from './InstallerRecommendation';
+import { OverrideInlineForm } from '@/components/override/OverrideInlineForm';
 import { useKeyboardShortcuts } from '@/lib/keyboard/useKeyboardShortcuts';
 
 type InstallerShape = {
@@ -41,11 +42,13 @@ type Props = {
   position: { current: number; total: number };
   whyText: string;
   total: number;
+  categories: { categoryKey: string; displayLabel: string }[];
 };
 
-export function RoutingCard({ decision, position, whyText }: Props) {
+export function RoutingCard({ decision, position, whyText, categories }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [overrideOpen, setOverrideOpen] = useState(false);
 
   const lead = (decision.inputsPayload as Record<string, unknown>).lead as LeadShape | undefined;
   const rec = decision.agentRecommendation as AgentRec | null;
@@ -79,12 +82,43 @@ export function RoutingCard({ decision, position, whyText }: Props) {
     startTransition(() => router.refresh());
   }
 
-  useKeyboardShortcuts({
+  async function submitOverride(categoryKey: string, reason: string) {
+    const body = {
+      decisionId: decision.decisionId,
+      workflowId: 'lead_delivery_routing',
+      profileVersion: 1,
+      tierAtDecision: 'T1',
+      inputsHash: decision.inputsHash ?? 'unknown',
+      inputsPayload: decision.inputsPayload,
+      agentRecommendation: rec ?? undefined,
+      reviewerDecision: { action: 'override' },
+      agreement: 'N' as const,
+      overrideCategory: categoryKey,
+      overrideReason: reason,
+      leadId: decision.leadId ?? undefined,
+    };
+    await fetch('/api/decisions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setOverrideOpen(false);
+    startTransition(() => router.refresh());
+  }
+
+  const shortcuts = useMemo(() => ({
     'A': () => { void submit('approve'); },
+    'O': () => setOverrideOpen(true),
     'H': () => { void submit('hold'); },
     'N': () => { void submit('next'); },
-    'Escape': () => router.push('/triage'),
-  });
+    'Escape': () => {
+      if (overrideOpen) { setOverrideOpen(false); return; }
+      router.push('/triage');
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [overrideOpen]);
+
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <CardShell
@@ -94,12 +128,14 @@ export function RoutingCard({ decision, position, whyText }: Props) {
       whyText={whyText}
       helpEntries={[
         { key: 'A', label: 'Approve & route' },
+        { key: 'O', label: 'Override' },
         { key: 'H', label: 'Hold' },
         { key: 'N', label: 'Next without action' },
-        { key: 'Esc', label: 'Back to triage' },
+        { key: 'Esc', label: overrideOpen ? 'Close override' : 'Back to triage' },
       ]}
       actions={[
         { key: 'A', label: 'Approve & route', onClick: () => { void submit('approve'); } },
+        { key: 'O', label: 'Override', onClick: () => setOverrideOpen(true) },
         { key: 'H', label: 'Hold', onClick: () => { void submit('hold'); } },
         { key: 'N', label: 'Next', onClick: () => { void submit('next'); } },
       ]}
@@ -121,6 +157,13 @@ export function RoutingCard({ decision, position, whyText }: Props) {
         <h3 className="text-xs text-zinc-500 mb-1">Alternatives:</h3>
         {alts.map((a) => <InstallerRecommendation key={a.name} installer={a} />)}
       </section>
+      {overrideOpen && (
+        <OverrideInlineForm
+          categories={categories}
+          onSubmit={(key, reason) => { void submitOverride(key, reason); }}
+          onCancel={() => setOverrideOpen(false)}
+        />
+      )}
     </CardShell>
   );
 }

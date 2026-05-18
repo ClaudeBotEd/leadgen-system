@@ -5,6 +5,7 @@ import { getActiveProfile } from '@/lib/db/workflow-profiles';
 import { isWorkflowKilled } from '@/lib/db/kill-state';
 import { whyString } from '@/lib/why-string/generator';
 import { RoutingCard } from '@/components/routing/RoutingCard';
+import { getActiveOverrideCategories } from '@/lib/db/override-categories';
 
 const LABELS: Record<string, string> = {
   lead_delivery_routing: 'Routing',
@@ -38,6 +39,9 @@ export default async function QueuePage({ params }: { params: Promise<{ workflow
   const profile = await getActiveProfile(workflow);
   if (!profile) throw new Error(`No active profile for ${workflow}`);
 
+  const rawCategories = await getActiveOverrideCategories();
+  const categories = rawCategories.map(c => ({ categoryKey: c.categoryKey, displayLabel: c.displayLabel }));
+
   const current = items[0];
   const decisionForWhy = {
     tierAtDecision: current.tierAtDecision,
@@ -60,6 +64,7 @@ export default async function QueuePage({ params }: { params: Promise<{ workflow
           position={{ current: 1, total: items.length }}
           whyText={why}
           total={items.length}
+          categories={categories}
         />
       )}
       {workflow !== 'lead_delivery_routing' && (
