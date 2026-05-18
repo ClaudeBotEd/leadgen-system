@@ -258,7 +258,24 @@ def test_save_approved_invokes_archive(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_moderate_one_persists_clean_hot(tmp_path):
+def test_moderate_one_persists_clean_hot(tmp_path, monkeypatch):
+    from moderation import crm_store
+    from moderation.archive import ArchiveRecord
+
+    def fake_archive(candidate_id, source_url, output_dir):
+        return ArchiveRecord(
+            candidate_id=candidate_id,
+            source_url=source_url,
+            archived_at="2026-05-18T08:00:00+00:00",
+            status="ok",
+            http_status=200,
+            sha256="deadbeef",
+            bytes=42,
+            path=str(output_dir / candidate_id / "source.html"),
+            error=None,
+        )
+
+    monkeypatch.setattr(crm_store, "archive_source", fake_archive)
     config = _config(tmp_path)
     client = StubClient(config)
     result = moderate_one(
@@ -310,7 +327,24 @@ def test_moderate_one_handles_client_error(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_moderate_posts_aggregates_temperature_counts(tmp_path):
+def test_moderate_posts_aggregates_temperature_counts(tmp_path, monkeypatch):
+    from moderation import crm_store
+    from moderation.archive import ArchiveRecord
+
+    def fake_archive(candidate_id, source_url, output_dir):
+        return ArchiveRecord(
+            candidate_id=candidate_id,
+            source_url=source_url,
+            archived_at="2026-05-18T08:00:00+00:00",
+            status="ok",
+            http_status=200,
+            sha256="deadbeef",
+            bytes=42,
+            path=str(output_dir / candidate_id / "source.html"),
+            error=None,
+        )
+
+    monkeypatch.setattr(crm_store, "archive_source", fake_archive)
     config = _config(tmp_path)
     verdicts = {
         "cap_hot":  _hot_review(),
