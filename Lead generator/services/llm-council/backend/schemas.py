@@ -1,4 +1,10 @@
-"""Pydantic request / response schemas for the public API."""
+"""Pydantic request / response schemas for the public API.
+
+The council is a *moderation and verification* layer for public-intent
+posts. Every schema below is aligned with the trust-provenance-moderation
+doctrine: provenance > volume, HOT-only delivery, one lead one installer,
+no AI-leadgen framing, no marketplace framing.
+"""
 
 from __future__ import annotations
 
@@ -35,7 +41,7 @@ class Conversation(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Council stages
+# Council stages (generic 3-stage deliberation surface)
 # ---------------------------------------------------------------------------
 
 
@@ -84,11 +90,6 @@ class CouncilOutput(BaseModel):
     metadata: CouncilMetadata
 
 
-# ---------------------------------------------------------------------------
-# Domain endpoints: lead intelligence
-# ---------------------------------------------------------------------------
-
-
 class CouncilQueryRequest(BaseModel):
     """Generic council query — any prompt the caller wants 3-stage analysis on."""
 
@@ -98,92 +99,162 @@ class CouncilQueryRequest(BaseModel):
     )
 
 
-class LeadInput(BaseModel):
-    """Minimal lead shape — accepts any JSON-compatible record."""
-
-    model_config = ConfigDict(extra="allow")
-
-    name: Optional[str] = None
-    company: Optional[str] = None
-    title: Optional[str] = None
-    email: Optional[str] = None
-    domain: Optional[str] = None
-    location: Optional[str] = None
-    notes: Optional[str] = None
-    source: Optional[str] = None
-
-
-class AnalyzeLeadRequest(BaseModel):
-    lead: LeadInput
-    objective: str = Field(
-        default="qualify this lead for outbound outreach",
-        description="What the caller wants the council to decide.",
-    )
-    locale: str = Field(default="en", description="Output language (e.g. 'en', 'nl').")
-
-
-class GenerateOutreachRequest(BaseModel):
-    lead: LeadInput
-    angle: str = Field(
-        default="warm intro, value-led",
-        description="High-level positioning the council should reflect.",
-    )
-    channel: Literal["email", "linkedin", "sms"] = "email"
-    locale: str = "en"
-    tone: str = Field(default="professional, direct, friendly")
-    max_length_chars: int = Field(default=900, ge=100, le=4000)
+# ---------------------------------------------------------------------------
+# Source-quality review (generic, content-agnostic)
+# ---------------------------------------------------------------------------
 
 
 class ReviewScrapeRequest(BaseModel):
-    """Ask the council to review scraped records for quality and red flags."""
+    """Ask the council to review a scraped sample for source quality and red flags."""
 
     sample: List[Dict[str, Any]] = Field(..., min_length=1, max_length=50)
     source_name: str = Field(default="unspecified scrape source", max_length=200)
     criteria: Optional[str] = Field(
         default=None,
-        description="What 'good' looks like for this scrape (optional).",
+        description="What 'good' looks like for this source (optional).",
     )
 
 
 # ---------------------------------------------------------------------------
-# Lead intelligence — structured scoring + outreach sequence
+# Lead moderation — provenance + intent verification
 # ---------------------------------------------------------------------------
 
 
-class ScoreLeadRequest(BaseModel):
-    """Structured scoring request — single lead in, structured intel out."""
+# Doctrine-aligned controlled vocabularies.
 
-    lead: LeadInput
-    objective: str = Field(
-        default="qualify this lead for outbound AI-automation outreach",
-        max_length=400,
-    )
-    locale: str = Field(default="en", max_length=10)
-    strategy: Literal["fast", "council"] = Field(
-        default="fast",
-        description="'fast' = single chairman call. 'council' = full 3-stage deliberation.",
-    )
-    use_cache: bool = True
+LeadTemperature = Literal["HOT", "WARM", "OPP"]
+"""HOT = explicit purchase intent + verifiable identity hook.
+WARM = clear research intent, no immediate purchase signal.
+OPP = plausible signal needing investigation.
+(Doctrine §01.5; supersedes 'COLD' from generic SaaS scoring vocab.)"""
+
+ConfidenceBand = Literal["high", "medium", "low"]
+"""How confident the council is in its OWN classification (not a model_score).
+Reviewer band (§01.5) is assigned downstream by a human, not the council."""
+
+ProvenanceStatus = Literal["verified", "likely", "unverifiable", "rejected"]
+"""verified   = source resolves, snippet matches, author signals are intact
+likely     = mild gaps but on balance authentic homeowner intent
+unverifiable = cannot independently confirm the source; do not deliver
+rejected   = directory / marketplace / spam / non-homeowner — drop"""
+
+SignalType = Literal[
+    "INTENT_DIRECT",
+    "INTENT_RESEARCH",
+    "INTENT_QUOTE",
+    "INTENT_PROBLEM",
+    "INTENT_TIMELINE",
+    "NONE",
+]
+"""Doctrine §01.4 signal taxonomy v0. Conversion is tracked per signal type."""
+
+PurchaseWindow = Literal["<30 days", "30-90 days", "90+ days", "unknown"]
+ValueBand = Literal["<5k EUR", "5-15k EUR", "15-30k EUR", "30k+ EUR", "unknown"]
+SourceQuality = Literal["high", "medium", "low"]
+DuplicateRisk = Literal["low", "medium", "high"]
 
 
-class LeadIntelligence(BaseModel):
-    """Structured intelligence dict matching the lead-radar consumer contract."""
+class LeadCandidate(BaseModel):
+    """A captured public post the council is asked to moderate.
+
+    These are the five-thing fields (doctrine §00.2) plus optional context
+    a scraper may supply. Extra fields are allowed so source-specific
+    metadata (thread_id, votes, reply_count, …) is preserved.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    source_url: str = Field(..., max_length=2000)
+    snippet: str = Field(..., min_length=1, max_length=4000,
+                         description="Verbatim post text. Stored as-is; never paraphrased.")
+    captured_at: str = Field(..., description="ISO-8601 UTC timestamp of capture.")
+
+    source_platform: Optional[str] = Field(default=None, max_length=200)
+    posted_at: Optional[str] = None
+    snippet_lang: Optional[Literal["nl", "en", "other"]] = None
+    region: Optional[str] = Field(default=None, max_length=200)
+    niche: Optional[str] = Field(default=None, max_length=120)
+    author_handle: Optional[str] = Field(default=None, max_length=200)
+    candidate_id: Optional[str] = Field(default=None, max_length=120,
+                                        description="Opaque scraper-side id for traceability.")
+
+
+class LeadReview(BaseModel):
+    """The council's moderation verdict on a single public-intent post.
+
+    This is a *recommendation* surface. The accountable reviewer (doctrine
+    §00.4, §01.5) assigns the final delivery band; nothing here ships to
+    an installateur without human approval. Provenance > volume.
+    """
 
     model_config = ConfigDict(protected_namespaces=())
 
-    company_name: str = ""
-    lead_quality_score: int = Field(default=0, ge=0, le=10)
-    automation_fit_score: int = Field(default=0, ge=0, le=10)
-    estimated_budget: str = ""
-    urgency_score: int = Field(default=0, ge=0, le=10)
-    outbound_potential: int = Field(default=0, ge=0, le=10)
-    ai_opportunities: List[str] = Field(default_factory=list)
-    pain_points: List[str] = Field(default_factory=list)
-    recommended_offer: str = ""
-    best_outreach_angle: str = ""
-    recommended_channel: Literal["email", "linkedin", "sms", "phone"] = "email"
-    confidence_score: int = Field(default=0, ge=0, le=10)
-    rationale: str = ""
+    # --- Echoed-back provenance trail (five-thing rule, §00.2) ----------
+    source_url: str
+    verbatim_snippet: str = Field(
+        default="", description="Verbatim post text, canonicalized (never paraphrased)."
+    )
+    captured_at: str = ""
+
+    # --- Council classification -----------------------------------------
+    lead_temperature: LeadTemperature = "OPP"
+    confidence_band: ConfidenceBand = "low"
+    provenance_status: ProvenanceStatus = "unverifiable"
+    signal_type: SignalType = "NONE"
+
+    # --- Council interpretation (free text, never paraphrasing) ---------
+    intent_summary: str = Field(
+        default="",
+        description="One-sentence factual summary the reviewer could repeat.",
+    )
+    homeowner_motivation: str = Field(
+        default="",
+        description="What the homeowner is trying to solve, in their own framing.",
+    )
+
+    # --- Banded estimates (deterministic enums, not free-form numbers) --
+    estimated_purchase_window: PurchaseWindow = "unknown"
+    estimated_install_value_band: ValueBand = "unknown"
+
+    # --- Trust / quality flags ------------------------------------------
+    trust_flags: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Structured flags such as: directory_source, marketplace_source, "
+            "outdated_thread, non_homeowner, speculative_language, "
+            "unverifiable_author, decayed_url, spam_signals, off_topic."
+        ),
+    )
+    review_required: bool = Field(
+        default=True,
+        description="True unless the lead is unambiguously deliverable as HOT.",
+    )
+    duplicate_risk: DuplicateRisk = "low"
+    source_quality: SourceQuality = "low"
+
+    # --- Reviewer explainability ----------------------------------------
+    rejection_reason: str = Field(
+        default="",
+        description="Filled when the council declines to recommend delivery.",
+    )
+    reviewer_notes: str = Field(
+        default="",
+        description="Short note explaining the call (max 2 sentences).",
+    )
+
+
+class ModerateLeadRequest(BaseModel):
+    """Submit a single captured post for council moderation."""
+
+    candidate: LeadCandidate
+    locale: str = Field(default="nl", max_length=10,
+                        description="Output language for free-text fields.")
+    strategy: Literal["fast", "council"] = Field(
+        default="fast",
+        description=("'fast' = single chairman call; cheap and deterministic. "
+                     "'council' = full 3-stage deliberation; richer rationale."),
+    )
+    use_cache: bool = True
 
 
 class TokenUsage(BaseModel):
@@ -194,51 +265,12 @@ class TokenUsage(BaseModel):
     total_tokens: Optional[int] = None
 
 
-class ScoreLeadResponse(BaseModel):
+class ModerateLeadResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
-    lead_id: Optional[str] = None
-    intelligence: LeadIntelligence
+    candidate_id: Optional[str] = None
+    review: LeadReview
     strategy: Literal["fast", "council"]
-    model: str
-    elapsed_ms: int
-    json_parsed: bool
-    usage: Optional[TokenUsage] = None
-    error: Optional[ModelError] = None
-
-
-class FollowUpStep(BaseModel):
-    day: int = Field(default=3, ge=0, le=90)
-    channel: Literal["email", "linkedin", "sms", "phone"] = "email"
-    subject: str = ""
-    body: str = ""
-
-
-class ColdEmail(BaseModel):
-    subject: str = ""
-    body: str = ""
-
-
-class OutreachSequence(BaseModel):
-    cold_email: ColdEmail = Field(default_factory=ColdEmail)
-    linkedin_opener: str = ""
-    follow_up_sequence: List[FollowUpStep] = Field(default_factory=list)
-    cta_suggestions: List[str] = Field(default_factory=list)
-
-
-class GenerateSequenceRequest(BaseModel):
-    lead: LeadInput
-    analysis: LeadIntelligence
-    locale: str = "en"
-    tone: str = "professional, direct, friendly"
-    use_cache: bool = True
-
-
-class GenerateSequenceResponse(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())
-
-    lead_id: Optional[str] = None
-    sequence: OutreachSequence
     model: str
     elapsed_ms: int
     json_parsed: bool

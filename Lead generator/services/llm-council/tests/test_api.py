@@ -55,54 +55,42 @@ def test_council_query_endpoint(client, mock_openrouter):
     assert result["stage3"]["response"]
 
 
-def test_analyze_lead_endpoint(client, mock_openrouter):
-    r = client.post(
-        "/api/council/analyze-lead",
-        json={
-            "lead": {
-                "name": "Jane Cooper",
-                "company": "Acme Solar BV",
-                "title": "CFO",
-                "location": "Amsterdam",
-            },
-            "objective": "qualify for a discovery call",
-            "locale": "en",
-        },
-    )
-    assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["stage3"]["response"]
-
-
-def test_generate_outreach_endpoint(client, mock_openrouter):
-    r = client.post(
-        "/api/council/generate-outreach",
-        json={
-            "lead": {"company": "Acme Solar", "title": "CFO"},
-            "channel": "email",
-            "locale": "en",
-        },
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["stage3"]["response"]
-
-
 def test_review_scrape_endpoint(client, mock_openrouter):
     r = client.post(
         "/api/council/review-scrape",
         json={
-            "source_name": "test-scrape",
-            "criteria": "B2B solar installers in NL",
+            "source_name": "gathering-of-tweakers-warmtepomp",
+            "criteria": "credible upstream of homeowner-intent posts",
             "sample": [
-                {"name": "A", "company": "Acme", "email": "a@example.com"},
-                {"name": "B", "company": "Beta", "email": "b@example.com"},
+                {
+                    "source_url": "https://example.test/t/1",
+                    "snippet": "We willen een warmtepomp laten installeren in Utrecht.",
+                    "captured_at": "2026-05-18T10:00:00Z",
+                },
+                {
+                    "source_url": "https://example.test/t/2",
+                    "snippet": "Offerte aangevraagd voor warmtepomp, advies welkom.",
+                    "captured_at": "2026-05-18T10:01:00Z",
+                },
             ],
         },
     )
     assert r.status_code == 200
     body = r.json()
     assert body["stage3"]["response"]
+
+
+def test_deprecated_b2b_endpoints_return_404(client):
+    """The B2B SaaS endpoints were removed in the trust-provenance refactor.
+    Any caller still hitting them must see a clean 404, not a stack trace."""
+    for path in (
+        "/api/council/analyze-lead",
+        "/api/council/generate-outreach",
+        "/api/council/score-lead",
+        "/api/council/generate-sequence",
+    ):
+        r = client.post(path, json={})
+        assert r.status_code == 404, f"{path} should be removed"
 
 
 def test_validation_error_shape(client):

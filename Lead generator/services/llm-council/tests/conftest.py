@@ -35,6 +35,7 @@ def mock_openrouter(monkeypatch):
     """Stub query_model + query_models_parallel so tests never hit the network."""
 
     async def fake_query_model(model, messages, **kwargs):  # noqa: ARG001
+        import json as _json
         last_user = messages[-1]["content"] if messages else ""
         if "Title:" in last_user:
             return {
@@ -52,6 +53,30 @@ def mock_openrouter(monkeypatch):
                 ),
                 "reasoning_details": None,
                 "usage": None,
+            }
+        # Moderation prompts demand a strict JSON verdict — return a
+        # conservative WARM verdict so endpoint tests can round-trip.
+        if "moderation reviewer" in last_user or "lead_temperature" in last_user:
+            return {
+                "ok": True,
+                "content": _json.dumps({
+                    "lead_temperature": "WARM",
+                    "confidence_band": "medium",
+                    "provenance_status": "likely",
+                    "signal_type": "INTENT_RESEARCH",
+                    "intent_summary": "Homeowner asking for warmtepomp advice.",
+                    "homeowner_motivation": "Wil hun cv vervangen voor een warmtepomp.",
+                    "estimated_purchase_window": "30-90 days",
+                    "estimated_install_value_band": "5-15k EUR",
+                    "trust_flags": [],
+                    "review_required": True,
+                    "duplicate_risk": "low",
+                    "source_quality": "medium",
+                    "rejection_reason": "",
+                    "reviewer_notes": "Mocked verdict for tests.",
+                }),
+                "reasoning_details": None,
+                "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
             }
         return {
             "ok": True,

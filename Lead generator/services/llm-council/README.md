@@ -15,7 +15,7 @@ hardened and extended for production use inside this monorepo:
 - Rate limiting + optional bearer-token auth for n8n / CRM consumers
 - Central error contract `{error:{code,message,details}}`
 - Health / liveness / readiness endpoints
-- Domain endpoints: `/analyze-lead`, `/generate-outreach`, `/review-scrape`
+- Moderation endpoint: `/api/council/moderate-lead` + source-quality `/review-scrape`
 - Balanced cost model defaults (gpt-4.1-mini + gemini-2.5-flash + claude-3.5-haiku, chair: gpt-4.1)
 - Dockerfile + docker-compose + Makefile + smoke script
 
@@ -81,13 +81,15 @@ complete list. The most important ones:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/api/council/query` | Generic prompt → full council output |
+| POST | `/api/council/query` | Generic prompt → full 3-stage council output |
 | POST | `/api/council/query/stream` | Same, SSE |
-| POST | `/api/council/analyze-lead` | Qualify a lead (ICP score, signals, next action) — narrative output |
-| POST | `/api/council/generate-outreach` | Draft email / LinkedIn / SMS outreach — single channel |
-| POST | `/api/council/review-scrape` | QA report on a scraped sample |
-| POST | `/api/council/score-lead` | **Structured JSON intelligence dict** (lead-radar integration) |
-| POST | `/api/council/generate-sequence` | **Cold email + LinkedIn + 3-step follow-up + CTAs** (structured JSON) |
+| POST | `/api/council/review-scrape` | Provenance / source-quality QA on a scraped sample |
+| POST | `/api/council/moderate-lead` | **Structured moderation verdict** on a single captured public post |
+
+> The B2B SaaS endpoints (`/analyze-lead`, `/generate-outreach`,
+> `/score-lead`, `/generate-sequence`) were removed in the
+> trust-provenance refactor. The council is a moderation and
+> verification layer, not a sales automation engine.
 
 All endpoints return:
 
@@ -103,141 +105,94 @@ All endpoints return:
 }
 ```
 
-### Example: analyze a lead
-
-```bash
-curl -s -X POST http://localhost:8001/api/council/analyze-lead \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "lead": {
-      "name": "Jane Cooper",
-      "company": "Acme Solar BV",
-      "title": "CFO",
-      "location": "Amsterdam",
-      "domain": "acme-solar.nl",
-      "notes": "Expanded into NL last quarter, hired 4 engineers."
-    },
-    "objective": "qualify for a 30-min discovery call about lead-radar",
-    "locale": "nl"
-  }' | jq
-```
-
-### Example: draft outreach
-
-```bash
-curl -s -X POST http://localhost:8001/api/council/generate-outreach \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "lead": {"company": "Acme Solar", "title": "CFO", "name": "Jane Cooper"},
-    "angle": "lead-radar saves them 40% on cold list-building",
-    "channel": "email",
-    "tone": "professional, direct, friendly",
-    "locale": "nl",
-    "max_length_chars": 900
-  }' | jq
-```
-
-### Example: review a scrape
+### Example: source-quality review on a scraped sample
 
 ```bash
 curl -s -X POST http://localhost:8001/api/council/review-scrape \
   -H 'Content-Type: application/json' \
   -d '{
-    "source_name": "facebook-groups-installers-NL",
-    "criteria": "Solar installer companies in NL/BE with >1 employee",
+    "source_name": "gathering-of-tweakers-warmtepomp",
+    "criteria": "credible upstream of homeowner-intent posts",
     "sample": [
-      {"name": "...", "company": "...", "email": "..."},
-      {"name": "...", "company": "...", "email": "..."}
+      {"source_url": "https://forum.test/t/1", "snippet": "Ik wil een warmtepomp in Utrecht.", "captured_at": "2026-05-18T10:00:00Z"},
+      {"source_url": "https://forum.test/t/2", "snippet": "Offerte aangevraagd voor warmtepomp.", "captured_at": "2026-05-18T10:01:00Z"}
     ]
   }' | jq
 ```
 
-### Example: score a lead (structured JSON, lead-radar integration)
+### Example: moderate a single captured post
 
 ```bash
-curl -s -X POST http://localhost:8001/api/council/score-lead \
+curl -s -X POST http://localhost:8001/api/council/moderate-lead \
   -H 'Content-Type: application/json' \
   -d '{
-    "lead": {
-      "lead_id": "lr_00042",
-      "company_name": "Acme Solar",
-      "domain": "acme.nl",
-      "email": "info@acme.nl",
-      "notes": "Heat pump installer hiring engineers, quoting still manual"
+    "candidate": {
+      "candidate_id": "cap_00042",
+      "source_url": "https://gathering.tweakers.test/forum/thread/42",
+      "snippet": "Onze cv begeeft het, wie kan een warmtepomp plaatsen in Utrecht?",
+      "captured_at": "2026-05-18T10:00:00Z",
+      "posted_at": "2026-05-18T09:55:00Z",
+      "source_platform": "gathering-of-tweakers",
+      "region": "Utrecht",
+      "snippet_lang": "nl",
+      "niche": "warmtepomp"
     },
     "strategy": "fast",
-    "locale": "en"
+    "locale": "nl"
   }' | jq
 ```
 
-Returns:
+Returns (only HOT + verified + high + no flags + `review_required=false`
+clears the human-reviewer gate downstream):
 
 ```json
 {
-  "lead_id": "lr_00042",
-  "intelligence": {
-    "company_name": "Acme Solar",
-    "lead_quality_score": 7,
-    "automation_fit_score": 8,
-    "estimated_budget": "10-50k EUR",
-    "urgency_score": 6,
-    "outbound_potential": 7,
-    "ai_opportunities": ["Automated lead qualification", "AI-driven scheduling"],
-    "pain_points": ["Manual quoting", "Lead bottlenecks"],
-    "recommended_offer": "AI intake bot + scheduling automation",
-    "best_outreach_angle": "Unlock faster growth by automating customer journey",
-    "recommended_channel": "email",
-    "confidence_score": 7,
-    "rationale": "Strong automation signals; intent score 70; warm web data."
+  "candidate_id": "cap_00042",
+  "review": {
+    "source_url":         "https://gathering.tweakers.test/forum/thread/42",
+    "verbatim_snippet":   "Onze cv begeeft het, wie kan een warmtepomp plaatsen in Utrecht?",
+    "captured_at":        "2026-05-18T10:00:00Z",
+    "lead_temperature":   "HOT",
+    "confidence_band":    "high",
+    "provenance_status":  "verified",
+    "signal_type":        "INTENT_DIRECT",
+    "intent_summary":     "Homeowner asks installateurs to quote replacement.",
+    "homeowner_motivation": "CV is failing — needs replacement soon.",
+    "estimated_purchase_window":    "<30 days",
+    "estimated_install_value_band": "5-15k EUR",
+    "trust_flags":         [],
+    "review_required":     false,
+    "duplicate_risk":      "low",
+    "source_quality":      "high",
+    "rejection_reason":    "",
+    "reviewer_notes":      "Clear, recent, region given."
   },
   "strategy": "fast",
-  "model": "openai/gpt-4.1",
+  "model":    "openai/gpt-4.1",
   "elapsed_ms": 4351,
   "json_parsed": true,
-  "error": null
+  "usage":  {"prompt_tokens": 250, "completion_tokens": 120, "total_tokens": 370},
+  "error":  null
 }
 ```
-
-### Example: generate full outreach sequence
-
-```bash
-curl -s -X POST http://localhost:8001/api/council/generate-sequence \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "lead": {"company_name": "Acme Solar", "domain": "acme.nl"},
-    "analysis": {
-      "company_name": "Acme Solar",
-      "lead_quality_score": 7,
-      "automation_fit_score": 8,
-      "estimated_budget": "10-50k EUR",
-      "urgency_score": 6,
-      "outbound_potential": 7,
-      "ai_opportunities": ["Automated lead qualification"],
-      "pain_points": ["Manual quoting"],
-      "recommended_offer": "AI intake bot",
-      "best_outreach_angle": "Free intake audit",
-      "recommended_channel": "email",
-      "confidence_score": 7,
-      "rationale": "..."
-    }
-  }' | jq
-```
-
-Returns `{ cold_email{subject, body}, linkedin_opener, follow_up_sequence[], cta_suggestions[] }`.
 
 ---
 
 ## Lead-radar integration
 
-The `lead-radar` package consumes these endpoints via `lead-radar/intelligence/`.
-When `LEAD_RADAR_INTELLIGENCE_ENABLED=1` is set, every scrape automatically:
+The `lead-radar` package consumes the moderation endpoint via
+`lead-radar/moderation/`. When `LEAD_RADAR_MODERATION_ENABLED=1` is set
+and the scraper produces post-shaped rows (`source_url` + `snippet` +
+`captured_at`), each post is automatically moderated. Records that
+clear the HOT gate (HOT + `high` confidence + `verified` provenance +
+no `trust_flags` + not `review_required`) are appended to
+`lead-radar/data/moderation/approved_leads.jsonl` and an
+`event: lead.approved` webhook fires for downstream n8n automation.
 
-1. POSTs each lead to `/api/council/score-lead`
-2. For leads above `LEAD_RADAR_INTELLIGENCE_QUALITY_THRESHOLD` (default 6), POSTs to `/api/council/generate-sequence`
-3. Appends the qualified lead + intelligence + outreach to `lead-radar/data/crm/qualified_leads.jsonl`
-4. Optionally POSTs an `event: lead.qualified` webhook to `LEAD_RADAR_INTELLIGENCE_WEBHOOK_URL` (n8n-ready)
-
-See `lead-radar/README.md` for the full env-var reference.
+The council never generates outreach. Copy is humans-only. See the
+`lead-radar/README.md` "Moderation layer" section for env-var reference,
+schema, and the doctrine at
+`lead-radar/specs/doctrine/trust-provenance-moderation.md`.
 
 ---
 
@@ -254,10 +209,11 @@ backend/
 ├── api/
 │   ├── health.py
 │   ├── conversations.py
-│   └── council.py       # generic + analyze/outreach/review
+│   └── council.py       # generic query + review-scrape + moderate-lead
 ├── services/
 │   ├── openrouter.py    # async OpenRouter client + streaming
-│   ├── council.py       # 3-stage orchestration + lead-gen prompts
+│   ├── council.py       # 3-stage orchestration + source-quality prompt
+│   ├── lead_moderation.py  # provenance/intent moderation prompts + parsing
 │   └── storage.py       # async SQLAlchemy persistence
 └── db/
     ├── database.py      # engine + session factory

@@ -1,7 +1,11 @@
-"""n8n-ready webhook emitter for qualified leads.
+"""n8n-ready webhook emitter for approved leads.
 
 Best-effort POST with a small retry budget. Never raises into the caller —
 a broken webhook must not break the scrape pipeline.
+
+Doctrine: webhooks only fire for records that have already cleared the
+approval gate (HOT + high confidence + verified provenance + no flags +
+not review_required). The webhook caller does NOT re-implement the gate.
 """
 
 from __future__ import annotations
@@ -12,52 +16,51 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from .config import IntelligenceConfig, get_config
+from .config import ModerationConfig, get_config
 
-log = logging.getLogger("intelligence.webhooks")
+log = logging.getLogger("moderation.webhooks")
 
 
 def _payload(
-    lead: Dict[str, Any],
-    intelligence: Dict[str, Any],
-    sequence: Optional[Dict[str, Any]],
+    candidate: Dict[str, Any],
+    review: Dict[str, Any],
+    approval: Optional[Dict[str, Any]],
     metadata: Optional[Dict[str, Any]],
+    event: str,
 ) -> Dict[str, Any]:
     """Compose the JSON sent to n8n (or any webhook listener).
 
     Stable shape — downstream automations should be safe to depend on it.
     """
     return {
-        "event": "lead.qualified",
-        "schema_version": 1,
-        "lead_id": lead.get("lead_id"),
-        "lead": lead,
-        "intelligence": intelligence,
-        "sequence": sequence,
+        "event": event,
+        "schema_version": 2,
+        "candidate_id": candidate.get("candidate_id"),
+        "candidate": candidate,
+        "review": review,
+        "approval": approval or {},
         "metadata": metadata or {},
     }
 
 
 def emit_webhook(
-    lead: Dict[str, Any],
-    intelligence: Dict[str, Any],
-    sequence: Optional[Dict[str, Any]] = None,
+    candidate: Dict[str, Any],
+    review: Dict[str, Any],
     *,
+    approval: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
-    config: Optional[IntelligenceConfig] = None,
+    config: Optional[ModerationConfig] = None,
 ) -> bool:
-    """Fire the configured webhook. Returns True on 2xx, False otherwise.
+    """Fire the configured webhook for an approved lead.
 
-    Silent on misconfiguration (no URL) — returns False without logging.
+    Returns True on 2xx, False otherwise. Silent on misconfiguration
+    (no URL) — returns False without logging.
     """
     config = config or get_config()
     if not config.webhook_url:
         return False
-    score = int(intelligence.get("lead_quality_score") or 0)
-    if score < config.webhook_min_score:
-        return False
 
-    payload = _payload(lead, intelligence, sequence, metadata)
+    payload = _payload(candidate, review, approval, metadata, config.webhook_event)
     last_error: Optional[str] = None
     for attempt in range(max(1, config.max_retries + 1)):
         try:
@@ -65,14 +68,14 @@ def emit_webhook(
                 config.webhook_url,
                 json=payload,
                 timeout=min(config.request_timeout_seconds, 15.0),
-                headers={"User-Agent": "lead-radar/1.0 webhook"},
+                headers={"User-Agent": "lead-radar/1.0 moderation-webhook"},
             )
             if 200 <= r.status_code < 300:
                 log.info(
-                    "webhook_emitted status=%s lead_id=%s score=%s",
+                    "webhook_emitted status=%s candidate_id=%s event=%s",
                     r.status_code,
-                    lead.get("lead_id"),
-                    score,
+                    candidate.get("candidate_id"),
+                    config.webhook_event,
                 )
                 return True
             last_error = f"HTTP {r.status_code}: {r.text[:200]}"
@@ -82,8 +85,8 @@ def emit_webhook(
             time.sleep(0.5 * (2 ** attempt))
 
     log.warning(
-        "webhook_failed lead_id=%s error=%s",
-        lead.get("lead_id"),
+        "webhook_failed candidate_id=%s error=%s",
+        candidate.get("candidate_id"),
         last_error,
     )
     return False

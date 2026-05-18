@@ -1,8 +1,12 @@
-"""Sync HTTP client for the llm-council /api/council/* endpoints.
+"""Sync HTTP client for the llm-council moderation endpoint.
 
-Why sync: lead-radar's pipeline (scrapers + exporter) is sync; enrichment
-is fanned out via a ThreadPoolExecutor in `enrichment.py` for concurrency.
+Why sync: lead-radar's pipeline (scrapers + exporter) is sync; moderation
+is fanned out via a ThreadPoolExecutor in `moderation.py` for concurrency.
 Each worker thread holds one CouncilClient.
+
+This client exposes ONLY moderation. Outreach / sequence generation was
+removed in the trust-provenance refactor; the doctrine says the council
+must not produce sales copy.
 """
 
 from __future__ import annotations
@@ -14,9 +18,9 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from .config import IntelligenceConfig, get_config
+from .config import ModerationConfig, get_config
 
-log = logging.getLogger("intelligence.council_client")
+log = logging.getLogger("moderation.council_client")
 
 
 class CouncilClientError(RuntimeError):
@@ -43,13 +47,13 @@ def _backoff_seconds(attempt: int) -> float:
 
 
 class CouncilClient:
-    """Thin, retrying HTTP client for the llm-council service."""
+    """Thin, retrying HTTP client for the llm-council moderation surface."""
 
-    def __init__(self, config: Optional[IntelligenceConfig] = None):
+    def __init__(self, config: Optional[ModerationConfig] = None):
         self.config = config or get_config()
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "lead-radar/1.0 intelligence-client",
+            "User-Agent": "lead-radar/1.0 moderation-client",
         }
         if self.config.api_token:
             headers["Authorization"] = f"Bearer {self.config.api_token}"
@@ -62,43 +66,25 @@ class CouncilClient:
     def health(self) -> Dict[str, Any]:
         return self._request("GET", "/health")
 
-    def score_lead(
+    def moderate_lead(
         self,
-        lead: Dict[str, Any],
+        candidate: Dict[str, Any],
         *,
-        objective: Optional[str] = None,
         locale: Optional[str] = None,
         strategy: Optional[str] = None,
         use_cache: bool = True,
     ) -> Dict[str, Any]:
-        body: Dict[str, Any] = {
-            "lead": lead,
-            "strategy": strategy or self.config.score_strategy,
-            "locale": locale or self.config.locale,
-            "use_cache": use_cache,
-        }
-        if objective:
-            body["objective"] = objective
-        return self._request("POST", "/api/council/score-lead", json=body)
+        """POST a captured post to /api/council/moderate-lead.
 
-    def generate_sequence(
-        self,
-        lead: Dict[str, Any],
-        analysis: Dict[str, Any],
-        *,
-        locale: Optional[str] = None,
-        tone: Optional[str] = None,
-        use_cache: bool = True,
-    ) -> Dict[str, Any]:
+        Returns the council's verdict body verbatim.
+        """
         body: Dict[str, Any] = {
-            "lead": lead,
-            "analysis": analysis,
+            "candidate": candidate,
+            "strategy": strategy or self.config.strategy,
             "locale": locale or self.config.locale,
             "use_cache": use_cache,
         }
-        if tone:
-            body["tone"] = tone
-        return self._request("POST", "/api/council/generate-sequence", json=body)
+        return self._request("POST", "/api/council/moderate-lead", json=body)
 
     def close(self) -> None:
         self._client.close()

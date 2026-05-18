@@ -393,67 +393,8 @@ Title:"""
 
 
 # ---------------------------------------------------------------------------
-# Lead-generation domain prompts (reusable from the API layer)
+# Source-quality review (content-agnostic; aligned with provenance doctrine)
 # ---------------------------------------------------------------------------
-
-
-def _format_lead(lead: Dict[str, Any]) -> str:
-    """Render a lead dict as a readable bullet list for prompts."""
-    items = []
-    for key, value in lead.items():
-        if value in (None, "", []):
-            continue
-        items.append(f"- {key}: {value}")
-    return "\n".join(items) or "(no fields provided)"
-
-
-def build_analyze_lead_prompt(lead: Dict[str, Any], objective: str, locale: str) -> str:
-    return f"""You are a lead-qualification analyst for a B2B sales team.
-
-Lead record:
-{_format_lead(lead)}
-
-Objective: {objective}
-
-Respond in {locale}. Structure your answer with these sections:
-1. Fit summary (1-2 sentences)
-2. ICP score (0-100) with one-line justification
-3. Buying signals & risks (bullets)
-4. Recommended next action (single concrete step)
-5. Open questions for human follow-up
-Keep it concrete and actionable. Do not invent data not present in the record."""
-
-
-def build_outreach_prompt(
-    lead: Dict[str, Any],
-    angle: str,
-    channel: str,
-    locale: str,
-    tone: str,
-    max_length_chars: int,
-) -> str:
-    channel_hint = {
-        "email": "Format as: SUBJECT: ... then a blank line, then the body. No signature.",
-        "linkedin": "Format as a single LinkedIn DM, max ~3 short paragraphs.",
-        "sms": "Format as a single short SMS, <= 320 characters total.",
-    }[channel]
-    return f"""You are an outbound copywriter. Draft a single {channel} outreach message.
-
-Lead:
-{_format_lead(lead)}
-
-Positioning angle: {angle}
-Tone: {tone}
-Language: {locale}
-Hard length cap: ~{max_length_chars} characters.
-
-{channel_hint}
-
-Rules:
-- Open with something specific to the lead (do not invent facts).
-- One clear value hypothesis. No buzzwords.
-- One soft CTA at the end.
-- No emojis unless the tone explicitly requests them."""
 
 
 def build_review_scrape_prompt(
@@ -461,9 +402,21 @@ def build_review_scrape_prompt(
     source_name: str,
     criteria: str | None,
 ) -> str:
+    """Audit a scraped sample for provenance / source quality.
+
+    No B2B-SaaS / lead-scoring framing. The reviewer is checking whether
+    this source is a credible upstream of homeowner-intent posts the
+    moderation layer can later verify.
+    """
     rendered = json.dumps(sample[:20], ensure_ascii=False, indent=2)
-    crit = criteria or "general data quality + ICP relevance for B2B lead generation"
-    return f"""You are a data-quality reviewer. Inspect this scraped sample and produce a structured QA report.
+    crit = criteria or (
+        "is this source a credible upstream of homeowner-intent posts? "
+        "Check resolvability, freshness, authorship clarity, and absence "
+        "of marketplace / directory framing."
+    )
+    return f"""You are a source-quality reviewer for a public-intent verification service.
+You are NOT scoring B2B leads. You are NOT drafting outreach. You audit whether
+a captured sample is the kind of upstream the moderation layer can trust.
 
 Source: {source_name}
 Quality criteria: {crit}
@@ -471,9 +424,14 @@ Quality criteria: {crit}
 Sample (up to 20 rows):
 {rendered}
 
-Produce:
-1. Overall verdict: keep / fix / discard.
-2. Top 5 quality issues (with row index when applicable).
-3. Field-by-field assessment (completeness, plausibility).
-4. Recommended cleaning / enrichment steps.
-5. Estimated useful-yield % of this sample."""
+Produce, in plain text:
+1. Overall verdict: keep / fix / drop.
+2. Top 5 provenance issues with row index where applicable
+   (e.g. marketplace-framing, missing source_url, paraphrased snippet,
+   unverifiable author, stale captured_at, second-hand referral).
+3. Field-by-field assessment (resolvability, completeness, plausibility).
+4. Recommended remediation per issue.
+5. Estimated useful-yield % of this sample for the moderation layer.
+
+Be conservative: if a row reads like a directory listing, mark it.
+If a snippet looks paraphrased rather than verbatim, mark it."""
