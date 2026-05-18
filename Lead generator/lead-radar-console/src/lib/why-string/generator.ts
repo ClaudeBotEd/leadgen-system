@@ -1,6 +1,6 @@
-import { WHY_RULES, FALLBACK } from './rules';
+import { WHY_RULES, FALLBACK, type DecisionLike, type ProfileLike } from './rules';
 
-export function whyString(decision: { tierAtDecision: string; inputsPayload: any }, profile: { profile: any }): string {
+export function whyString(decision: DecisionLike, profile: ProfileLike): string {
   for (const r of WHY_RULES) if (r.matches(decision, profile)) return r.text;
   return FALLBACK;
 }

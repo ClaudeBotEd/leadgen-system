@@ -1,4 +1,21 @@
-type Rule = { matches: (d: any, p: any) => boolean; text: string };
+export type InputsPayload = {
+  cof_circuit_breaker_tripped?: boolean;
+  in_ambiguous_band?: boolean;
+  source_novelty_flag?: boolean;
+  outcome_confirmation_pending?: boolean;
+  [key: string]: unknown;
+};
+
+export type ProfileShape = {
+  risk_class?: string;
+  terminal_tier?: string;
+  [key: string]: unknown;
+};
+
+export type DecisionLike = { tierAtDecision: string; inputsPayload: InputsPayload };
+export type ProfileLike = { profile: ProfileShape };
+
+type Rule = { matches: (d: DecisionLike, p: ProfileLike) => boolean; text: string };
 
 export const WHY_RULES: Rule[] = [
   { matches: (d) => Boolean(d.inputsPayload?.cof_circuit_breaker_tripped), text: 'CoF circuit breaker tripped — forced T1' },
