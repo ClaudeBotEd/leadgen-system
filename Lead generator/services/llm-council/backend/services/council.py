@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..config import get_settings
 from ..logging import get_logger
@@ -19,19 +19,73 @@ log = get_logger("council")
 # ---------------------------------------------------------------------------
 
 
+def _is_ok(response: Any) -> bool:
+    """True if the openrouter call returned usable content.
+
+    Accepts both legacy success dicts (no `ok` key) and the new {ok: True} shape.
+    """
+    return isinstance(response, dict) and response.get("ok", True) and "content" in response
+
+
+def _summarize_failures(failures: List[Dict[str, Any]]) -> str:
+    """Compact human-readable summary of model failures for the UI."""
+    if not failures:
+        return ""
+    by_kind: Dict[str, List[str]] = defaultdict(list)
+    msg_by_kind: Dict[str, str] = {}
+    for f in failures:
+        err = f.get("error") or {}
+        kind = err.get("kind") or "unknown"
+        by_kind[kind].append(f["model"])
+        msg_by_kind.setdefault(kind, err.get("message") or "")
+    parts = []
+    for kind, models in by_kind.items():
+        m = msg_by_kind.get(kind, "")
+        parts.append(f"- {kind} ({', '.join(models)}): {m}" if m else f"- {kind} ({', '.join(models)})")
+    return "\n".join(parts)
+
+
 async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
-    """Parallel query to every council model. Survives partial failures."""
+    """Parallel query to every council model. Survives partial failures.
+
+    Returns successful responses only. Failures are logged but not included
+    so downstream stages can rank what actually has content.
+    """
+    successes, _failures = await _stage1_internal(user_query)
+    return successes
+
+
+async def _stage1_internal(
+    user_query: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     settings = get_settings()
     messages = [{"role": "user", "content": user_query}]
     responses = await query_models_parallel(settings.council_models, messages)
 
-    results: List[Dict[str, Any]] = []
+    successes: List[Dict[str, Any]] = []
+    failures: List[Dict[str, Any]] = []
     for model, response in responses.items():
-        if response is not None:
-            results.append({"model": model, "response": response.get("content", "")})
+        if _is_ok(response):
+            successes.append({"model": model, "response": response.get("content", "")})
         else:
-            log.warning("stage1_model_failed", model=model)
-    return results
+            err = response if isinstance(response, dict) else {}
+            log.warning(
+                "stage1_model_failed",
+                model=model,
+                error_kind=err.get("error_kind"),
+                status=err.get("status"),
+            )
+            failures.append(
+                {
+                    "model": model,
+                    "error": {
+                        "kind": err.get("error_kind") or "unknown",
+                        "status": err.get("status"),
+                        "message": err.get("message") or "model call failed",
+                    },
+                }
+            )
+    return successes, failures
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +146,14 @@ Now provide your evaluation and ranking:"""
 
     stage2: List[Dict[str, Any]] = []
     for model, response in responses.items():
-        if response is None:
-            log.warning("stage2_model_failed", model=model)
+        if not _is_ok(response):
+            err = response if isinstance(response, dict) else {}
+            log.warning(
+                "stage2_model_failed",
+                model=model,
+                error_kind=err.get("error_kind"),
+                status=err.get("status"),
+            )
             continue
         text = response.get("content", "")
         stage2.append(
@@ -115,6 +175,7 @@ async def stage3_synthesize_final(
     user_query: str,
     stage1_results: List[Dict[str, Any]],
     stage2_results: List[Dict[str, Any]],
+    label_to_model: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     settings = get_settings()
 
@@ -145,12 +206,64 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     messages = [{"role": "user", "content": chairman_prompt}]
     response = await query_model(settings.chairman_model, messages)
 
-    if response is None:
+    if _is_ok(response):
         return {
             "model": settings.chairman_model,
-            "response": "Error: Unable to generate final synthesis.",
+            "response": response.get("content", ""),
         }
-    return {"model": settings.chairman_model, "response": response.get("content", "")}
+
+    err = response if isinstance(response, dict) else {}
+    error_info = {
+        "kind": err.get("error_kind") or "unknown",
+        "status": err.get("status"),
+        "message": err.get("message") or "Chairman synthesis failed.",
+    }
+    log.warning(
+        "stage3_chairman_failed",
+        model=settings.chairman_model,
+        error_kind=error_info["kind"],
+        status=error_info["status"],
+    )
+
+    fallback = _pick_fallback(stage1_results, stage2_results, label_to_model)
+    if fallback is not None:
+        notice = (
+            f"_Chairman ({settings.chairman_model}) failed: "
+            f"**{error_info['kind']}** — {error_info['message']}._\n\n"
+            f"_Falling back to top-ranked council response from "
+            f"**{fallback['model']}**._\n\n---\n\n"
+        )
+        return {
+            "model": settings.chairman_model,
+            "response": notice + (fallback.get("response") or ""),
+            "error": {**error_info, "fallback_model": fallback["model"]},
+        }
+
+    return {
+        "model": settings.chairman_model,
+        "response": (
+            f"Council synthesis failed: **{error_info['kind']}** — {error_info['message']}"
+        ),
+        "error": error_info,
+    }
+
+
+def _pick_fallback(
+    stage1_results: List[Dict[str, Any]],
+    stage2_results: List[Dict[str, Any]],
+    label_to_model: Optional[Dict[str, str]],
+) -> Optional[Dict[str, Any]]:
+    """Choose the best Stage 1 response when the chairman can't synthesize."""
+    if not stage1_results:
+        return None
+    if stage2_results and label_to_model:
+        aggregate = calculate_aggregate_rankings(stage2_results, label_to_model)
+        if aggregate:
+            top_model = aggregate[0]["model"]
+            for r in stage1_results:
+                if r["model"] == top_model:
+                    return r
+    return stage1_results[0]
 
 
 # ---------------------------------------------------------------------------
@@ -207,21 +320,43 @@ async def run_full_council(
     """Run all 3 stages end-to-end. Returns (stage1, stage2, stage3, metadata)."""
     settings = get_settings()
 
-    stage1 = await stage1_collect_responses(user_query)
+    stage1, stage1_failures = await _stage1_internal(user_query)
     if not stage1:
+        summary = _summarize_failures(stage1_failures) or "no detail available"
+        # Most common kind across failures, for the structured error field.
+        kinds = [f["error"]["kind"] for f in stage1_failures if f.get("error")]
+        primary_kind = kinds[0] if kinds else "unknown"
+        primary_msg = (
+            stage1_failures[0]["error"]["message"]
+            if stage1_failures and stage1_failures[0].get("error")
+            else "All council models failed to respond."
+        )
+        log.error(
+            "council_all_stage1_failed",
+            primary_kind=primary_kind,
+            failure_count=len(stage1_failures),
+        )
         return (
             [],
             [],
             {
                 "model": "error",
-                "response": "All council models failed to respond. Please try again.",
+                "response": (
+                    f"**All council models failed.**\n\n"
+                    f"Primary cause: **{primary_kind}** — {primary_msg}\n\n"
+                    f"Details:\n{summary}"
+                ),
+                "error": {
+                    "kind": primary_kind,
+                    "message": primary_msg,
+                },
             },
-            {},
+            {"stage1_failures": stage1_failures},
         )
 
     stage2, label_to_model = await stage2_collect_rankings(user_query, stage1)
     aggregate = calculate_aggregate_rankings(stage2, label_to_model)
-    stage3 = await stage3_synthesize_final(user_query, stage1, stage2)
+    stage3 = await stage3_synthesize_final(user_query, stage1, stage2, label_to_model)
 
     log.info(
         "council_run_complete",
@@ -229,10 +364,13 @@ async def run_full_council(
         chairman=settings.chairman_model,
         stage1_count=len(stage1),
         stage2_count=len(stage2),
+        stage1_failed=len(stage1_failures),
+        stage3_fallback=bool(stage3.get("error")),
     )
     return stage1, stage2, stage3, {
         "label_to_model": label_to_model,
         "aggregate_rankings": aggregate,
+        "stage1_failures": stage1_failures,
     }
 
 
@@ -248,7 +386,7 @@ Title:"""
     response = await query_model(
         settings.title_model, [{"role": "user", "content": prompt}], timeout=30.0
     )
-    if response is None:
+    if not _is_ok(response):
         return "New Conversation"
     title = (response.get("content") or "New Conversation").strip().strip("\"'")
     return title[:47] + "..." if len(title) > 50 else title

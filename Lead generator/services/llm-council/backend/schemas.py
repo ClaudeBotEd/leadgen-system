@@ -39,11 +39,21 @@ class Conversation(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class ModelError(BaseModel):
+    """Structured upstream-error info attached to a failed council stage."""
+
+    kind: str
+    status: Optional[int] = None
+    message: str
+    fallback_model: Optional[str] = None
+
+
 class ModelResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model: str
     response: str
+    error: Optional[ModelError] = None
 
 
 class RankingResponse(BaseModel):

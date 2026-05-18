@@ -37,18 +37,27 @@ def mock_openrouter(monkeypatch):
     async def fake_query_model(model, messages, **kwargs):  # noqa: ARG001
         last_user = messages[-1]["content"] if messages else ""
         if "Title:" in last_user:
-            return {"content": "Test Title", "reasoning_details": None}
+            return {
+                "ok": True,
+                "content": "Test Title",
+                "reasoning_details": None,
+                "usage": None,
+            }
         if "FINAL RANKING" in last_user.upper() or "rank" in last_user.lower():
             return {
+                "ok": True,
                 "content": (
                     "Response A is great. Response B is OK.\n\n"
                     "FINAL RANKING:\n1. Response A\n2. Response B\n"
                 ),
                 "reasoning_details": None,
+                "usage": None,
             }
         return {
+            "ok": True,
             "content": f"[mock {model}] {last_user[:80]}",
             "reasoning_details": None,
+            "usage": None,
         }
 
     async def fake_query_models_parallel(models, messages, **kwargs):
