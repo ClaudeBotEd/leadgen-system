@@ -134,3 +134,53 @@ class TestSweepExpiredInventory:
             actor="cron",
         )
         assert result == ["lead-naive"]
+
+
+import subprocess
+import sys
+
+
+class TestCLI:
+    def test_dry_run_exits_zero(self, inventory_with_rows: tuple[Path, Path]):
+        inventory_path, lead_log_path = inventory_with_rows
+        result = subprocess.run(
+            [
+                sys.executable,
+                "run_inventory_sweep.py",
+                "--inventory", str(inventory_path),
+                "--lead-log", str(lead_log_path),
+                "--dry-run",
+            ],
+            cwd="/Users/claudebot/Lead generator/lead-radar",
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "DRY-RUN" in result.stdout
+        assert "lead-overdue" in result.stdout
+        if lead_log_path.exists():
+            with lead_log_path.open("r", encoding="utf-8") as f:
+                content = f.read()
+            assert "EXPIRED" not in content
+
+    def test_actual_run_writes_to_lead_log(
+        self, inventory_with_rows: tuple[Path, Path]
+    ):
+        inventory_path, lead_log_path = inventory_with_rows
+        result = subprocess.run(
+            [
+                sys.executable,
+                "run_inventory_sweep.py",
+                "--inventory", str(inventory_path),
+                "--lead-log", str(lead_log_path),
+            ],
+            cwd="/Users/claudebot/Lead generator/lead-radar",
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "1 expired" in result.stdout
+        with lead_log_path.open("r", encoding="utf-8") as f:
+            content = f.read()
+        assert "lead-overdue" in content
+        assert "EXPIRED" in content
