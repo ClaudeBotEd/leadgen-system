@@ -39,7 +39,9 @@ INVENTORY_FIELDS: list[str] = [
 def ensure_inventory_csv(path: str | Path) -> Path:
     """Maakt lead_inventory.csv aan met de juiste header indien afwezig.
 
-    Idempotent: bestaande bestanden worden niet aangeraakt.
+    Idempotent: bestaande bestanden met de juiste header worden niet aangeraakt.
+    Raises ValueError als een bestaande file een andere header heeft (geen
+    silent acceptance van schema-drift).
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -47,6 +49,15 @@ def ensure_inventory_csv(path: str | Path) -> Path:
         with path.open("w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=INVENTORY_FIELDS)
             writer.writeheader()
+        return path
+    # Existing file: validate header
+    with path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.reader(f)
+        header = next(reader, [])
+    if header != INVENTORY_FIELDS:
+        raise ValueError(
+            f"{path.name} header mismatch: expected {INVENTORY_FIELDS}, got {header}"
+        )
     return path
 
 
@@ -154,6 +165,13 @@ def sweep_expired_inventory(
     via pcs.append_transition. Idempotent: als er al een EXPIRED-rij
     bestaat voor dit lead_id, wordt 'm overgeslagen.
 
+    **Not safe for concurrent callers.** Two parallel sweeps can both
+    read 'no expired yet' and both write EXPIRED rows for the same lead.
+    The CLI wrapper (run_inventory_sweep.py) is the only intended caller;
+    serialize via a process-level lock if running outside the wrapper.
+
+    Naive (timezone-less) ISO strings in expires_at are treated as UTC.
+
     Returns: lijst van expired lead_ids (in volgorde).
     """
     now = now or datetime.now(timezone.utc)
@@ -183,6 +201,8 @@ def sweep_expired_inventory(
                 continue
             try:
                 expires_at = datetime.fromisoformat(expires_at_str)
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
             except ValueError:
                 continue
             if expires_at < now:

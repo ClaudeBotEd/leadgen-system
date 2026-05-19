@@ -39,10 +39,16 @@ class TestEnsureInventoryCSV:
         csv_path = tmp_path / "lead_inventory.csv"
         ensure_inventory_csv(csv_path)
         with csv_path.open("a", encoding="utf-8") as f:
-            f.write("lead-1,warmtepomp,utrecht|amersfoort,HOT,,,,,,,,,\n")
+            f.write("lead-1,warmtepomp,utrecht|amersfoort,HOT,,,,,,,,\n")
         ensure_inventory_csv(csv_path)
         content = csv_path.read_text(encoding="utf-8")
         assert "lead-1,warmtepomp" in content
+
+    def test_header_mismatch_raises(self, tmp_path: Path):
+        csv_path = tmp_path / "lead_inventory.csv"
+        csv_path.write_text("wrong,header,fields\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="header mismatch"):
+            ensure_inventory_csv(csv_path)
 
 
 class TestAppendInventoryRow:

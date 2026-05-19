@@ -436,12 +436,18 @@ inventory:
     ventilatie:
       HOT: 21
       WARM: 42
+    vloerverwarming:
+      HOT: 21
+      WARM: 42
     kozijnen:
       HOT: 21
       WARM: 42
     dakwerk:
       HOT: 10
       WARM: 21
+    hvac_generiek:
+      HOT: 14
+      WARM: 28
     renovatie:
       HOT: 7
       WARM: 14

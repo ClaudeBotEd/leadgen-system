@@ -110,3 +110,27 @@ class TestSweepExpiredInventory:
             actor="cron",
         )
         assert result == []
+
+    def test_naive_datetime_treated_as_utc(self, tmp_path: Path):
+        inventory_path = tmp_path / "data" / "lead_inventory.csv"
+        lead_log_path = tmp_path / "data" / "lead_log.csv"
+        now = datetime.now(timezone.utc)
+        # Naive datetime (no tzinfo) for expires_at — should not crash
+        overdue_naive = (now - timedelta(days=1)).replace(tzinfo=None).isoformat(timespec="seconds")
+        append_inventory_row(
+            inventory_path,
+            lead_id="lead-naive",
+            niche="warmtepomp",
+            region_nl="utrecht|utrecht",
+            intent_strength="HOT",
+            captured_at=(now - timedelta(days=15)).isoformat(timespec="seconds"),
+            approved_at=(now - timedelta(days=14)).isoformat(timespec="seconds"),
+            expires_at=overdue_naive,
+            source_class="apify_public",
+        )
+        result = sweep_expired_inventory(
+            inventory_path=inventory_path,
+            lead_log_path=lead_log_path,
+            actor="cron",
+        )
+        assert result == ["lead-naive"]
