@@ -138,6 +138,23 @@ def load_config(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
+def _load_llm_verifier_config(path: Path) -> dict:
+    """Read the llm_verifier section from config.yaml; {} if missing or empty.
+
+    Returning {} keeps argparse fallbacks (40/75) intact when the file or
+    section is absent, so the pipeline never crashes on a missing config.
+    """
+    if not path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        log.warning("config.yaml parse error (%s) — llm_verifier defaults used", exc)
+        return {}
+    section = data.get("llm_verifier")
+    return section if isinstance(section, dict) else {}
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Consumer lead radar — vindt high-intent NL/BE leads")
 
@@ -210,10 +227,12 @@ def parse_args() -> argparse.Namespace:
                    help="Jaccard threshold voor fuzzy dedup (default 0.70)")
     p.add_argument("--no-llm", action="store_true",
                    help="Skip Claude LLM-verifier op borderline scores")
-    p.add_argument("--llm-min-score", type=int, default=40,
-                   help="Min score voor LLM-verification (default 40)")
-    p.add_argument("--llm-max-score", type=int, default=75,
-                   help="Max score voor LLM-verification (default 75)")
+    p.add_argument("--llm-min-score", type=int, default=None,
+                   help="Min score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.min_score, fallback 40)")
+    p.add_argument("--llm-max-score", type=int, default=None,
+                   help="Max score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.max_score, fallback 75)")
     p.add_argument("--llm-max-eur", type=float, default=0.0,
                    help="LLM budget cap per run in EUR (default 0 = uit). "
                         "Bij overschrijden van geschatte spend: verdere "
@@ -243,6 +262,14 @@ def parse_args() -> argparse.Namespace:
 
     if not args.daily and not args.niche:
         p.error("Geef --niche <name> of --daily")
+
+    # Wire YAML llm_verifier thresholds: CLI > config.yaml > hardcoded fallback.
+    llm_cfg = _load_llm_verifier_config(HERE / "config.yaml")
+    if args.llm_min_score is None:
+        args.llm_min_score = int(llm_cfg.get("min_score", 40))
+    if args.llm_max_score is None:
+        args.llm_max_score = int(llm_cfg.get("max_score", 75))
+
     return args
 
 
