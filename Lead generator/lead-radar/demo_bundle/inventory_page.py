@@ -30,6 +30,8 @@ tr:last-child td{border-bottom:none;}
 .src-public{background:#e6efe6;color:#3f6b3f;}
 .src-closed{background:#ece6f4;color:#5b3f8a;}
 .src-paste{background:#eee;color:#555;}
+.attest{display:block;color:#6e6e6e;font-size:12px;margin-top:4px;
+  font-style:italic;}
 .empty{padding:48px;text-align:center;color:#6e6e6e;background:#fff;
   border:1px solid #d4d4d0;border-radius:6px;}
 footer{margin-top:32px;color:#6e6e6e;font-size:12px;}
@@ -102,6 +104,12 @@ def render_inventory_html(
     else:
         cells_html = []
         for r in rows:
+            attestation = r.get("reviewer_attestation", "")
+            attestation_html = (
+                f'<span class="attest">{escape(attestation)}</span>'
+                if attestation
+                else ""
+            )
             cells_html.append(
                 "<tr>"
                 f"<td><code>{escape(r.get('lead_id', ''))}</code></td>"
@@ -110,7 +118,7 @@ def render_inventory_html(
                 f"<td>{_intent_badge(r.get('intent_strength', ''))}</td>"
                 f"<td>{_humanize_relative(r.get('captured_at', ''), snapshot_at, future=False)}</td>"
                 f"<td>{_humanize_relative(r.get('expires_at', ''), snapshot_at, future=True)}</td>"
-                f"<td>{_source_badge(r.get('source_class', ''))}</td>"
+                f"<td>{_source_badge(r.get('source_class', ''))}{attestation_html}</td>"
                 "</tr>"
             )
         body_html = (
