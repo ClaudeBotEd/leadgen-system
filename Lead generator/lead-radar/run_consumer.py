@@ -107,7 +107,19 @@ def _check_env(args) -> tuple[bool, list[str]]:
     return (not errors, errors)
 
 # Defaults voor --daily mode (production usage)
-DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
+DAILY_NICHES = [
+    "warmtepomp",
+    "airco",
+    "zonnepanelen",
+    "cv",
+    "renovatie",
+    "isolatie",
+    "vloerverwarming",
+    "ventilatie",
+    "laadpaal",
+    "dakwerk",
+    "kozijnen",
+]
 DAILY_LOCATION = "nederland"
 DAILY_LIMIT = 25
 DAILY_MAX_QUERIES = 12  # hogere variatie -> meer raw posts -> meer leads

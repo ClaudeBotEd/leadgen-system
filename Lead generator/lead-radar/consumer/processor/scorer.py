@@ -289,8 +289,8 @@ def score_post(
 
     if niche_keywords:
         if not any(kw.lower() in lower for kw in niche_keywords):
-            total -= 30
-            breakdown["off_topic_penalty"] = -30
+            total -= 50
+            breakdown["off_topic_penalty"] = -50
 
     # HOT-tier gate: zonder hard koop-signal mag een soft-signal stack niet
     # HOT (>=70) bereiken. Voorkomt dat news-artikelen / discussies met
