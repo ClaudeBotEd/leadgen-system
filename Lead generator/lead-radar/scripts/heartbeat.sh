@@ -48,8 +48,12 @@ for i in 0 1; do
     continue
   fi
 
-  # macOS-compatible mtime in epoch seconds.
-  mtime_epoch="$(stat -f %m "$log_path")"
+  # Cross-platform mtime in epoch seconds (BSD/macOS: stat -f %m; GNU/Linux: stat -c %Y).
+  if [[ "$OSTYPE" == darwin* ]]; then
+    mtime_epoch="$(stat -f %m "$log_path")"
+  else
+    mtime_epoch="$(stat -c %Y "$log_path")"
+  fi
   age_s=$(( NOW_EPOCH - mtime_epoch ))
   age_h=$(( age_s / 3600 ))
 
