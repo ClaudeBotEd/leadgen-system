@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+import requests
+
 from moderation.archive import archive_source, ARCHIVE_MAX_BYTES
 
 
@@ -18,6 +20,12 @@ def _mock_response(status: int, body: bytes):
     resp = MagicMock()
     resp.status_code = status
     resp.iter_content = lambda chunk_size=8192: [body]
+
+    def _raise_for_status() -> None:
+        if 400 <= status < 600:
+            raise requests.exceptions.HTTPError(f"{status} mock error")
+
+    resp.raise_for_status = _raise_for_status
     return resp
 
 
@@ -88,3 +96,43 @@ def test_archive_creates_directory(tmp_path: Path):
             output_dir=tmp_path,
         )
     assert (tmp_path / "C-004").is_dir()
+
+
+def test_archive_http_error_records_status_failed(tmp_path: Path):
+    error_body = b"<html><body>404 Not Found</body></html>"
+    with patch(
+        "moderation.archive.requests.get",
+        return_value=_mock_response(404, error_body),
+    ):
+        record = archive_source(
+            candidate_id="C-404",
+            source_url="https://example.com/gone",
+            output_dir=tmp_path,
+        )
+    assert record.status == "failed"
+    assert record.sha256 is None
+    assert record.path is None
+    assert record.bytes is None
+    assert "404" in (record.error or "")
+    html_path = tmp_path / "C-404" / "source.html"
+    assert not html_path.exists(), "error-page body must not be archived as ok"
+    meta_path = tmp_path / "C-404" / "meta.json"
+    assert meta_path.exists()
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    assert meta["status"] == "failed"
+
+
+def test_archive_server_error_records_status_failed(tmp_path: Path):
+    error_body = b"<html>503 Service Unavailable</html>"
+    with patch(
+        "moderation.archive.requests.get",
+        return_value=_mock_response(503, error_body),
+    ):
+        record = archive_source(
+            candidate_id="C-503",
+            source_url="https://example.com/down",
+            output_dir=tmp_path,
+        )
+    assert record.status == "failed"
+    assert record.http_status is None
+    assert record.sha256 is None

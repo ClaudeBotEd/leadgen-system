@@ -61,6 +61,7 @@ def archive_source(
             timeout=ARCHIVE_TIMEOUT_SECONDS,
             stream=True,
         )
+        resp.raise_for_status()
         chunks: list[bytes] = []
         total = 0
         for chunk in resp.iter_content(chunk_size=8192):
