@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from consumer.inventory import INVENTORY_FIELDS, ensure_inventory_csv
+from consumer.inventory import INVENTORY_FIELDS, ensure_inventory_csv, append_inventory_row
 
 
 class TestInventorySchema:
@@ -43,3 +43,81 @@ class TestEnsureInventoryCSV:
         ensure_inventory_csv(csv_path)
         content = csv_path.read_text(encoding="utf-8")
         assert "lead-1,warmtepomp" in content
+
+
+class TestAppendInventoryRow:
+    def test_writes_all_fields(self, tmp_path: Path):
+        csv_path = tmp_path / "lead_inventory.csv"
+        append_inventory_row(
+            csv_path,
+            lead_id="lead-abc",
+            niche="warmtepomp",
+            region_nl="utrecht|amersfoort",
+            intent_strength="HOT",
+            captured_at="2026-05-19T08:00:00+00:00",
+            approved_at="2026-05-19T09:00:00+00:00",
+            expires_at="2026-06-02T08:00:00+00:00",
+            source_class="burner_closed",
+            reviewer_attestation="Gezien in groep X",
+        )
+        content = csv_path.read_text(encoding="utf-8")
+        lines = content.strip().splitlines()
+        assert len(lines) == 2
+        row = lines[1].split(",")
+        assert row[0] == "lead-abc"
+        assert row[1] == "warmtepomp"
+        assert row[2] == "utrecht|amersfoort"
+        assert row[3] == "HOT"
+        assert row[7] == "burner_closed"
+        assert row[8] == "Gezien in groep X"
+
+    def test_default_optional_fields_empty(self, tmp_path: Path):
+        csv_path = tmp_path / "lead_inventory.csv"
+        append_inventory_row(
+            csv_path,
+            lead_id="lead-xyz",
+            niche="isolatie",
+            region_nl="zuid-holland|rotterdam",
+            intent_strength="WARM",
+            captured_at="2026-05-19T08:00:00+00:00",
+            approved_at="2026-05-19T09:00:00+00:00",
+            expires_at="2026-06-30T08:00:00+00:00",
+            source_class="apify_public",
+        )
+        content = csv_path.read_text(encoding="utf-8")
+        lines = content.strip().splitlines()
+        row = lines[1].split(",")
+        assert row[8] == ""
+        assert row[9] == ""
+        assert row[10] == ""
+        assert row[11] == ""
+
+    def test_invalid_intent_strength_raises(self, tmp_path: Path):
+        csv_path = tmp_path / "lead_inventory.csv"
+        with pytest.raises(ValueError, match="intent_strength"):
+            append_inventory_row(
+                csv_path,
+                lead_id="lead-z",
+                niche="warmtepomp",
+                region_nl="utrecht|utrecht",
+                intent_strength="LUKEWARM",
+                captured_at="2026-05-19T08:00:00+00:00",
+                approved_at="2026-05-19T09:00:00+00:00",
+                expires_at="2026-06-02T08:00:00+00:00",
+                source_class="apify_public",
+            )
+
+    def test_invalid_source_class_raises(self, tmp_path: Path):
+        csv_path = tmp_path / "lead_inventory.csv"
+        with pytest.raises(ValueError, match="source_class"):
+            append_inventory_row(
+                csv_path,
+                lead_id="lead-z",
+                niche="warmtepomp",
+                region_nl="utrecht|utrecht",
+                intent_strength="HOT",
+                captured_at="2026-05-19T08:00:00+00:00",
+                approved_at="2026-05-19T09:00:00+00:00",
+                expires_at="2026-06-02T08:00:00+00:00",
+                source_class="reddit",
+            )
