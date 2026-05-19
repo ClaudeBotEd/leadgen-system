@@ -12,10 +12,12 @@ of truth voor state changes).
 from __future__ import annotations
 
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
+
+import pcs
 
 
 INVENTORY_FIELDS: list[str] = [
@@ -137,3 +139,63 @@ def compute_expires_at(
         )
     days = niche_windows[intent_strength]
     return captured_at + timedelta(days=days)
+
+
+def sweep_expired_inventory(
+    *,
+    inventory_path: str | Path,
+    lead_log_path: str | Path,
+    actor: str = "cron",
+    now: datetime | None = None,
+) -> list[str]:
+    """Vind leads met expires_at < now en die nog niet DELIVERED zijn.
+
+    Schrijft per overdue lead een EXPIRED-transitie naar lead_log_path
+    via pcs.append_transition. Idempotent: als er al een EXPIRED-rij
+    bestaat voor dit lead_id, wordt 'm overgeslagen.
+
+    Returns: lijst van expired lead_ids (in volgorde).
+    """
+    now = now or datetime.now(timezone.utc)
+    inventory_path = Path(inventory_path)
+    lead_log_path = Path(lead_log_path)
+
+    if not inventory_path.exists():
+        return []
+
+    already_expired: set[str] = set()
+    if lead_log_path.exists():
+        with lead_log_path.open("r", encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                if row.get("to_state") == "EXPIRED":
+                    already_expired.add(row["lead_id"])
+
+    expired_now: list[str] = []
+    with inventory_path.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            lead_id = row["lead_id"]
+            if lead_id in already_expired:
+                continue
+            if row.get("delivered_to"):
+                continue
+            expires_at_str = row.get("expires_at", "")
+            if not expires_at_str:
+                continue
+            try:
+                expires_at = datetime.fromisoformat(expires_at_str)
+            except ValueError:
+                continue
+            if expires_at < now:
+                expired_now.append(lead_id)
+
+    for lead_id in expired_now:
+        pcs.append_transition(
+            lead_id,
+            from_state="APPROVED",
+            to_state="EXPIRED",
+            actor=actor,
+            reason="inventory_sweep:decay_window_passed",
+            log_path=lead_log_path,
+        )
+
+    return expired_now
