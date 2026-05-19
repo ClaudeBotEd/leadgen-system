@@ -14,6 +14,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import yaml
+
 
 INVENTORY_FIELDS: list[str] = [
     "lead_id",
@@ -98,3 +100,18 @@ def append_inventory_row(
             "still_warm_checked_at": still_warm_checked_at,
         })
     return Path(path)
+
+
+def load_decay_windows(config_path: str | Path) -> dict[str, dict[str, int]]:
+    """Laad decay-windows uit config.yaml.
+
+    Schema: inventory.decay_windows.<niche>.<HOT|WARM> = aantal dagen.
+
+    Raises KeyError als de inventory sectie ontbreekt.
+    """
+    config_path = Path(config_path)
+    with config_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    if "inventory" not in data:
+        raise KeyError("config.yaml missing 'inventory' section")
+    return data["inventory"].get("decay_windows", {})

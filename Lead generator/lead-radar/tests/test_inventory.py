@@ -121,3 +121,35 @@ class TestAppendInventoryRow:
                 expires_at="2026-06-02T08:00:00+00:00",
                 source_class="reddit",
             )
+
+
+from consumer.inventory import load_decay_windows
+
+
+class TestDecayWindowsConfig:
+    def test_loads_windows_from_yaml(self, tmp_path: Path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            """
+inventory:
+  decay_windows:
+    warmtepomp:
+      HOT: 14
+      WARM: 28
+    isolatie:
+      HOT: 21
+      WARM: 42
+""",
+            encoding="utf-8",
+        )
+        windows = load_decay_windows(cfg)
+        assert windows["warmtepomp"]["HOT"] == 14
+        assert windows["warmtepomp"]["WARM"] == 28
+        assert windows["isolatie"]["HOT"] == 21
+        assert windows["isolatie"]["WARM"] == 42
+
+    def test_missing_inventory_section_raises(self, tmp_path: Path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("scrapers:\n  - foo\n", encoding="utf-8")
+        with pytest.raises(KeyError, match="inventory"):
+            load_decay_windows(cfg)
