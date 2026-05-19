@@ -20,6 +20,7 @@ def test_bron_uses_source_id_when_set():
         url="https://reddit.com/r/duurzaam/x",
         city="amsterdam", score=82, intent="hot",
         breakdown={}, niche="warmtepomp",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     row = _row_for(lead)
     bron_idx = sheets_mod.SHEET_COLUMNS.index("bron")
@@ -35,6 +36,7 @@ def test_bron_falls_back_to_source_when_source_id_missing():
         url="https://reddit.com/x",
         city="amsterdam", score=82, intent="hot",
         breakdown={}, niche="warmtepomp",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     row = _row_for(lead)
     bron_idx = sheets_mod.SHEET_COLUMNS.index("bron")

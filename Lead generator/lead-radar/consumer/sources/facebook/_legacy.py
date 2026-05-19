@@ -32,6 +32,12 @@ def _short_hash(s: str) -> str:
 def _to_raw(text: str, idx: int, platform: str = "facebook") -> RawPost:
     text = text.strip()
     rid = f"{platform}:{_short_hash(text)}-{idx}"
+    # Operator-paste-time captured_at is doctrinally distinct from scraper
+    # fabrication. Per doctrine §00.4 (humans accountable), when an operator
+    # manually pastes content, the operator vouches for the paste moment as
+    # the legitimate signal-observation time. This is the ONLY context in
+    # which datetime.now() is acceptable as captured_at. All scraped sources
+    # must extract the real post-creation timestamp.
     return RawPost(
         id=rid,
         source=platform,
@@ -82,6 +88,8 @@ def analyze_manual_posts(posts: list[str], *, platform: str = "facebook",
             intent=intent,
             breakdown=breakdown,
             niche=niche,
+            # captured_at = operator-paste-time (see _to_raw doctrinal note).
+            captured_at=raw.created_at,
             author=raw.author,
             created_at=raw.created_at,
         ))

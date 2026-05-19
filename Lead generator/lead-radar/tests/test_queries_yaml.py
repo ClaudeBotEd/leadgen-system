@@ -14,7 +14,19 @@ import yaml
 
 
 QUERIES_YAML = Path(__file__).resolve().parent.parent / "consumer" / "queries.yaml"
-EXPECTED_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
+EXPECTED_NICHES = [
+    "warmtepomp",
+    "airco",
+    "zonnepanelen",
+    "cv",
+    "renovatie",
+    "isolatie",
+    "vloerverwarming",
+    "ventilatie",
+    "laadpaal",
+    "dakwerk",
+    "kozijnen",
+]
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +49,7 @@ def test_defaults_reddit_subreddits_is_nonempty_list_of_strings(cfg: dict) -> No
 
 
 def test_all_expected_niches_present(cfg: dict) -> None:
-    """Daily mode loopt over deze 5 niches (DAILY_NICHES in run_consumer.py)."""
+    """Daily mode loopt over deze niches (DAILY_NICHES in run_consumer.py)."""
     niches = cfg.get("niches") or {}
     missing = [n for n in EXPECTED_NICHES if n not in niches]
     assert not missing, f"Niches ontbreken in queries.yaml: {missing}"

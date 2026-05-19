@@ -245,7 +245,7 @@ def score_post(
 
     `cleaned` is output van processor.cleaner.clean_post().
     `niche_keywords` is optioneel — als geen enkel keyword voorkomt drukken
-    we 30 punten af om totaal off-topic posts uit de top te houden.
+    we 50 punten af om totaal off-topic posts uit de top te houden.
     `created_at` (ISO-8601) activeert time-decay; `now` is voor testbaarheid.
     """
     text = cleaned.get("full_no_url", "") or cleaned.get("full", "")
@@ -289,8 +289,8 @@ def score_post(
 
     if niche_keywords:
         if not any(kw.lower() in lower for kw in niche_keywords):
-            total -= 30
-            breakdown["off_topic_penalty"] = -30
+            total -= 50
+            breakdown["off_topic_penalty"] = -50
 
     # HOT-tier gate: zonder hard koop-signal mag een soft-signal stack niet
     # HOT (>=70) bereiken. Voorkomt dat news-artikelen / discussies met

@@ -17,7 +17,7 @@ quality:
 
 llm_verifier:
   enabled: true              # Claude Haiku second-opinion
-  min_score: 40              # alleen scores in [min,max] krijgen verify
+  min_score: 30              # alleen scores in [min,max] krijgen verify (verlaagd van 40 zodat borderline buyer-intent posts second-opinion krijgen)
   max_score: 75
   model: "claude-haiku-4-5-20251001"
   timeout_s: 12
@@ -256,6 +256,116 @@ niches:
     sbi_codes:
       - "4322"
       - "4329"
+
+  isolatie:
+    keywords_primary:
+      - isolatie
+      - isoleren
+      - na-isolatie
+    keywords_secondary:
+      - spouwmuurisolatie
+      - dakisolatie
+      - vloerisolatie
+      - gevelisolatie
+      - ISDE
+    queries:
+      - "isolatie aannemer {location}"
+      - "spouwmuurisolatie bedrijf {location}"
+      - "dakisolatie installateur {location}"
+      - "vloerisolatie bedrijf {location}"
+    sbi_codes:
+      - "4329"
+      - "4339"
+
+  vloerverwarming:
+    keywords_primary:
+      - vloerverwarming
+      - vloer- en wandverwarming
+    keywords_secondary:
+      - infrezen
+      - retrofit
+      - verdelers
+      - combi warmtepomp
+    queries:
+      - "vloerverwarming installateur {location}"
+      - "vloerverwarming retrofit {location}"
+      - "vloerverwarming aanleg {location}"
+    sbi_codes:
+      - "4322"
+
+  ventilatie:
+    keywords_primary:
+      - ventilatie
+      - mechanische ventilatie
+      - balansventilatie
+      - WTW
+    keywords_secondary:
+      - MV box
+      - comfoair
+      - vraaggestuurd
+      - HVAC
+    queries:
+      - "ventilatie installateur {location}"
+      - "WTW installateur {location}"
+      - "balansventilatie bedrijf {location}"
+    sbi_codes:
+      - "4322"
+      - "4329"
+
+  laadpaal:
+    keywords_primary:
+      - laadpaal
+      - laadpunt
+      - EV laadpunt
+    keywords_secondary:
+      - wallbox
+      - groepenkast
+      - 11kW
+      - 22kW
+    queries:
+      - "laadpaal installateur {location}"
+      - "laadpunt installateur {location}"
+      - "EV laadpunt installatie {location}"
+    sbi_codes:
+      - "4321"
+
+  dakwerk:
+    keywords_primary:
+      - dakdekker
+      - dakwerk
+      - dakvervanging
+    keywords_secondary:
+      - dakkapel
+      - dakopbouw
+      - dakpannen
+      - EPDM
+      - bitumen
+    queries:
+      - "dakdekker {location}"
+      - "dakkapel installateur {location}"
+      - "dak vervangen aannemer {location}"
+    sbi_codes:
+      - "4391"
+
+  kozijnen:
+    keywords_primary:
+      - kozijnen
+      - kunststof kozijnen
+      - aluminium kozijnen
+      - houten kozijnen
+    keywords_secondary:
+      - HR++ glas
+      - HR+++ glas
+      - triple glas
+      - gevelrenovatie
+      - isolatieglas
+    queries:
+      - "kozijnen installateur {location}"
+      - "kunststof kozijnen bedrijf {location}"
+      - "HR++ glas installateur {location}"
+    sbi_codes:
+      - "4332"
+      - "4339"
 
 locations:
   nl:

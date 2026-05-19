@@ -57,6 +57,26 @@ def test_aged_out_post_is_dropped(tmp_path: Path):
     assert result is None
 
 
+def test_post_without_created_at_is_rejected(tmp_path: Path):
+    """Doctrine §00.5: a RawPost without created_at cannot become a Lead.
+
+    captured_at is a verifiability commitment sourced from the post's
+    source-provenance timestamp. No timestamp = no anchor = reject.
+    """
+    no_ts = _post(created_at=None)
+    result = run_consumer._process_post(
+        raw=no_ts,
+        niche="warmtepomp",
+        data_dir=tmp_path,
+        now=NOW,
+        no_llm=True,
+    )
+    assert result is None, (
+        "RawPost with created_at=None must be rejected; "
+        "we never fabricate captured_at."
+    )
+
+
 def test_cross_run_dup_is_dropped(tmp_path: Path):
     """Second near-identical post within 14d is dropped by Layer-2 dedup."""
     p1 = _post()

@@ -107,7 +107,19 @@ def _check_env(args) -> tuple[bool, list[str]]:
     return (not errors, errors)
 
 # Defaults voor --daily mode (production usage)
-DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
+DAILY_NICHES = [
+    "warmtepomp",
+    "airco",
+    "zonnepanelen",
+    "cv",
+    "renovatie",
+    "isolatie",
+    "vloerverwarming",
+    "ventilatie",
+    "laadpaal",
+    "dakwerk",
+    "kozijnen",
+]
 DAILY_LOCATION = "nederland"
 DAILY_LIMIT = 25
 DAILY_MAX_QUERIES = 12  # hogere variatie -> meer raw posts -> meer leads
@@ -124,6 +136,23 @@ def load_config(path: Path) -> dict:
         log.warning("queries.yaml niet gevonden: %s — gebruik defaults", path)
         return {"defaults": {}, "niches": {}}
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+
+def _load_llm_verifier_config(path: Path) -> dict:
+    """Read the llm_verifier section from config.yaml; {} if missing or empty.
+
+    Returning {} keeps argparse fallbacks (40/75) intact when the file or
+    section is absent, so the pipeline never crashes on a missing config.
+    """
+    if not path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        log.warning("config.yaml parse error (%s) — llm_verifier defaults used", exc)
+        return {}
+    section = data.get("llm_verifier")
+    return section if isinstance(section, dict) else {}
 
 
 def parse_args() -> argparse.Namespace:
@@ -198,10 +227,12 @@ def parse_args() -> argparse.Namespace:
                    help="Jaccard threshold voor fuzzy dedup (default 0.70)")
     p.add_argument("--no-llm", action="store_true",
                    help="Skip Claude LLM-verifier op borderline scores")
-    p.add_argument("--llm-min-score", type=int, default=40,
-                   help="Min score voor LLM-verification (default 40)")
-    p.add_argument("--llm-max-score", type=int, default=75,
-                   help="Max score voor LLM-verification (default 75)")
+    p.add_argument("--llm-min-score", type=int, default=None,
+                   help="Min score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.min_score, fallback 40)")
+    p.add_argument("--llm-max-score", type=int, default=None,
+                   help="Max score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.max_score, fallback 75)")
     p.add_argument("--llm-max-eur", type=float, default=0.0,
                    help="LLM budget cap per run in EUR (default 0 = uit). "
                         "Bij overschrijden van geschatte spend: verdere "
@@ -231,6 +262,14 @@ def parse_args() -> argparse.Namespace:
 
     if not args.daily and not args.niche:
         p.error("Geef --niche <name> of --daily")
+
+    # Wire YAML llm_verifier thresholds: CLI > config.yaml > hardcoded fallback.
+    llm_cfg = _load_llm_verifier_config(HERE / "config.yaml")
+    if args.llm_min_score is None:
+        args.llm_min_score = int(llm_cfg.get("min_score", 40))
+    if args.llm_max_score is None:
+        args.llm_max_score = int(llm_cfg.get("max_score", 75))
+
     return args
 
 
@@ -399,6 +438,13 @@ def _process_post(
     author_store = author_store or (data_dir / "author_signature.jsonl")
     keywords = niche_keywords or [niche]
 
+    # Doctrine §00.5: we never fabricate captured_at. A post without a
+    # verifiable source timestamp cannot become a Lead — there is nothing
+    # to anchor provenance against.
+    if not raw.created_at:
+        log.warning("rejecting raw post %s/%s: no created_at", raw.source, raw.id)
+        return None
+
     # Step 1: clean + regex score
     cleaned = clean_post(raw)
     score, breakdown = score_post(
@@ -458,6 +504,7 @@ def _process_post(
         intent=intent_from_score(score),
         breakdown=breakdown,
         niche=niche,
+        captured_at=raw.created_at,
         author=raw.author,
         created_at=raw.created_at,
     )
@@ -627,6 +674,7 @@ def run_one_niche(
         skipped_promo = skipped_low = skipped_old = 0
         skipped_hardblock = skipped_fuzzy_dup = 0
         skipped_aged_out = skipped_cross_run = skipped_author = 0
+        skipped_no_ts = 0
         llm_calls = author_calls = 0
 
         # Load source weights once per niche-run (file read; cached dict).
@@ -641,6 +689,16 @@ def run_one_niche(
             if fp in in_memory_seen:
                 continue
             in_memory_seen.add(fp)
+
+            # Doctrine §00.5: a post without a source-provenance timestamp
+            # cannot become a Lead. Attribute the drop to its own bucket so
+            # operators can see when a scraper goes to zero yield because of
+            # missing timestamps (vs low-score or too-old drops).
+            if not raw.created_at:
+                skipped_no_ts += 1
+                log.warning("dropping %s/%s: no created_at (no provenance anchor)",
+                            raw.source, raw.id)
+                continue
 
             if not _is_recent(raw.created_at, cutoff):
                 skipped_old += 1
@@ -774,10 +832,11 @@ def run_one_niche(
             ))
 
         log.info(
-            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
+            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d no_ts=%d hardblock=%d fuzzy=%d "
             "llm_calls=%d author_calls=%d)",
             niche, len(raw_total), len(leads), skipped_promo, skipped_old,
-            skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
+            skipped_low, skipped_no_ts, skipped_hardblock, skipped_fuzzy_dup,
+            llm_calls, author_calls,
         )
 
         export_leads(leads, niche=niche, outdir=args.outdir)

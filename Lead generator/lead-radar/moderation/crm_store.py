@@ -16,6 +16,12 @@ Schema (schema_version=2 — provenance-aligned):
         "min_confidence_band":   "high",
         "require_provenance":   ["verified"]
       },
+      "archive": {
+        "status":         "ok" | "failed",                   # doctrine §01.3
+        "sha256":         "<hex>" | null,
+        "path":           "<absolute path>" | null,
+        ...ArchiveRecord fields...
+      },
       "metadata": {
         "strategy":       "fast" | "council",
         "model":          "openai/gpt-4.1",
@@ -33,10 +39,12 @@ from __future__ import annotations
 
 import json
 import threading
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .archive import archive_source
 from .config import ModerationConfig, get_config
 
 _LOCK = threading.Lock()
@@ -113,12 +121,20 @@ def save_approved(
     path = config.approved_path
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    cid = candidate.get("candidate_id") or review.get("candidate_id")
+    archive_record = archive_source(
+        candidate_id=str(cid),
+        source_url=str(candidate.get("source_url") or review.get("source_url") or ""),
+        output_dir=config.archive_dir,
+    )
+
     record = {
         "saved_at": _now_iso(),
-        "candidate_id": candidate.get("candidate_id") or review.get("candidate_id"),
+        "candidate_id": cid,
         "candidate": candidate,
         "review": review,
         "approval": approval or evaluate_approval(review, config),
+        "archive": asdict(archive_record),
         "metadata": {
             "strategy": config.strategy,
             "schema_version": 2,
