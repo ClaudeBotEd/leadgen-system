@@ -1,11 +1,11 @@
 ---
 title: Trust, Provenance, and Moderation Doctrine
-version: v0.1
-date: 2026-05-18
+version: v0.2
+date: 2026-05-19
 status: frozen
 namespace: doctrine
 owner: lead-radar
-supersedes: none
+supersedes: v0.1
 ---
 
 # Trust, Provenance, and Moderation Doctrine
@@ -41,6 +41,17 @@ The doctrine is non-negotiable within a version. Operational defaults
 
 ## 00. First principles
 
+### 00.0 Moderation-filosofie
+
+Lead-radar's moderation-laag optimaliseert voor **commerciële bruikbaarheid + trust preservation**, niet voor perfecte waarheid-classificatie.
+
+De vijand is duidelijke garbage en trust erosion — niet imperfecte categorisatie. Twee asymmetrieën:
+
+1. **False-positives binnen de WARM-band zijn aanvaardbaar.** Een installateur die af en toe een minder scherpe WARM-lead krijgt, leert het systeem te lezen. Een installateur die geen volume krijgt, vertrekt.
+2. **False-negatives die bruikbaar volume onderdrukken zijn niet aanvaardbaar.** Conservatieve filtering die echte intent weggooit kost het systeem zijn levensvatbaarheid.
+
+Trust komt uit slimme provenance op de delivery-laag (citaat + bron + reviewer-attestation waar nodig), niet uit zware approval-bureaucratie. Multi-step approval, verplichte ≥N-karakter attestation, tweede-reviewer-gates: nee.
+
 ### 00.1 What we sell
 We do not sell leads. We do not sell AI.
 We sell verifiable public intent: a sentence written by a homeowner
@@ -62,6 +73,23 @@ A lead does not exist unless it carries all five:
 
 Missing any one → the lead cannot transition to DELIVERED.
 There is no "shipped with caveat."
+
+**Resolvable URL — twee modaliteiten (v0.2):**
+
+- (a) **Publicly resolvable:** elke lezer kan de URL openen en de oorspronkelijke post zien. Default voor Reddit, publieke FB-groepen, Marketplace, fora.
+- (b) **Member-resolvable:** URL alleen toegankelijk voor leden van een specifieke community (typisch closed Facebook groups). Toegestaan onder verplichte compenserende discipline — zie §00.2.b.
+
+### 00.2.b Closed-group provenance (member-resolvable URLs)
+
+Voor leads waarvan de bron-URL alleen voor groepsleden zichtbaar is (typisch closed Facebook groups), gelden drie compenserende disciplines:
+
+1. **Verplichte archive-bundle bij approval** — uitgebreid in §01.3. HTML-DOM + screenshot + SHA-256 hashes. Ontbrekende bundle = fail-closed in delivery (A32).
+
+2. **Group provenance metadata in delivery** — installateur ziet expliciet de groep-naam, ledenaantal, en een member-only disclaimer. Geen marketing-camouflage. Archive-snapshot beschikbaar op verzoek binnen 24u.
+
+3. **Reviewer-attestation** — vrije tekst (non-empty) door de reviewer toegevoegd: "Gezien in groep X, OP is actieve groepslid." Boilerplate-detectie via weekly review-rapport, geen UI-frictie.
+
+Alleen samen vormen deze drie disciplines een geldige provenance-modaliteit. Eén ontbreekt = lead mag NIET DELIVERED worden.
 
 ### 00.3 The verification invariant
 A lead must remain independently verifiable by the installateur
@@ -145,6 +173,8 @@ only when:
   only remaining trail).
 
 The archive is the auditor's safety net, not a customer surface.
+
+**v0.2 uitbreiding voor closed-group leads:** archive-capture bevat zowel HTML-DOM (`data/archives/<lead_id>.html`) als screenshot (`data/archives/<lead_id>.png`). SHA-256 hashes van beide worden opgenomen in `data/archives/archive_manifest.csv`. Ontbreekt één van de drie (html, png, manifest-entry) → fail-closed in delivery.
 
 ### 01.4 Signal taxonomy (v0)
 
@@ -259,6 +289,10 @@ We never display: "87% confidence", "high probability",
 
 **The band is the summary. The trail is the proof.**
 
+**v0.2 — intent-strength als geldige categorie:**
+
+HOT en WARM zijn beide eerste-klas inventory-categorieën, niet "high quality" vs "low quality". Een WARM-lead is een lead in een eerdere koper-fase met andere conversie-economie, niet een verzwakte HOT. Demo-tool en delivery tonen beide expliciet; copy mag WARM niet presenteren als "minder waardevol".
+
 ### 02.3 Vocabulary
 
 ```
@@ -277,6 +311,10 @@ installateur               customer / user
 Vocabulary changes require doctrine revision. Codex treats this
 table as linter input for UI copy. The full vocabulary lives in
 Appendix B.
+
+**v0.2 — source-class-aware vocab-lint:**
+
+Delivery-content voor leads met `source_class = burner_closed` mag NIET de termen "publieke bron", "publicly available", "openbare post" gebruiken. Dispatcher-lint (`consumer/output/dispatcher.py`) krijgt source-class-bewustzijn — zie Plan B implementatie.
 
 ### 02.4 Anti-AI tells (what we don't do)
 - Model names in the chrome ("Powered by GPT-4")
@@ -640,6 +678,10 @@ A30  Selling the corpus
 A31  Letting a week pass without contact
 ```
 
+### A32 — Closed-group lead delivered zonder volledige archive-bundle
+
+Een lead met `source_class = burner_closed` mag NOOIT DELIVERED worden als één van de archive-bundle items ontbreekt: HTML-DOM, screenshot, manifest-entry met SHA-256 hashes. Fail-closed — geen runtime override.
+
 ---
 
 ## Appendix B — Vocabulary
@@ -714,6 +756,9 @@ homeowner           the person whose public post became a signal
                     (never "lead", never "user", never "prospect")
 ```
 
+- **verifiable public intent** — homeowner's eigen sentence in een publicly resolvable bron (Reddit, publieke FB-groep, Marketplace, forum, page-comment). Default verifieerbaarheid-modaliteit.
+- **verifiable member-witnessed intent** (v0.2) — homeowner's eigen sentence in een member-resolvable bron (closed Facebook group). Sub-categorie van verifiable intent met verplichte archive-bundle + reviewer-attestation per §00.2.b.
+
 ### B.2 Terms we never use
 
 ```
@@ -774,3 +819,19 @@ decision:
 
 If the answer isn't a clear yes, the change is not aligned with
 doctrine, regardless of which section it appears to satisfy.
+
+---
+
+## Changelog
+
+### v0.2 — 2026-05-19
+
+Member-resolvable URL toegevoegd als geldige provenance-modaliteit voor closed Facebook groups. Drie compenserende disciplines: verplichte archive-bundle (HTML + screenshot + hash), group provenance metadata in delivery, reviewer-attestation.
+
+Toegevoegd: §00.0 Moderation-filosofie (commerciële bruikbaarheid + trust preservation als optimaliseringsdoelen, niet perfecte waarheid). §00.2.b Closed-group provenance. §01.3 screenshot-uitbreiding. §02.2 intent-strength HOT/WARM als gelijkwaardige delivery-categorieën. §02.3 source-class-aware vocab-lint. A32 fail-closed bij missing archive-bundle. B.1 verifiable member-witnessed intent.
+
+Geen breuk in §00.5 accountable reviewer pattern.
+
+### v0.1 — 2026-05-18
+
+Initiële frozen versie. Constitutionele rules, 31 anti-patterns (A1-A31), 19 canonical terms + 15 banned terms.
