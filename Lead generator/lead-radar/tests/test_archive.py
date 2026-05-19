@@ -136,3 +136,74 @@ def test_archive_server_error_records_status_failed(tmp_path: Path):
     assert record.status == "failed"
     assert record.http_status is None
     assert record.sha256 is None
+
+
+def test_archive_rejects_empty_candidate_id(tmp_path: Path):
+    """Empty candidate_id must produce a failed record with no disk writes."""
+    record = archive_source(
+        candidate_id="",
+        source_url="https://example.com/x",
+        output_dir=tmp_path,
+    )
+    assert record.status == "failed"
+    assert "candidate_id" in (record.error or "").lower()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_archive_rejects_none_string_candidate_id(tmp_path: Path):
+    """str(None) → 'None' must be rejected, not silently used as a dir name."""
+    record = archive_source(
+        candidate_id="None",
+        source_url="https://example.com/x",
+        output_dir=tmp_path,
+    )
+    assert record.status == "failed"
+    assert "candidate_id" in (record.error or "").lower()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_archive_rejects_path_traversal_candidate_id(tmp_path: Path):
+    """A candidate_id with '..' or '/' must not escape output_dir."""
+    record = archive_source(
+        candidate_id="../../../etc/passwd",
+        source_url="https://example.com/x",
+        output_dir=tmp_path,
+    )
+    assert record.status == "failed"
+    # Nothing must be created inside or beside output_dir.
+    assert list(tmp_path.iterdir()) == []
+    assert not (tmp_path.parent / "etc").exists()
+
+
+def test_archive_rejects_candidate_id_with_slash(tmp_path: Path):
+    record = archive_source(
+        candidate_id="abc/def",
+        source_url="https://example.com/x",
+        output_dir=tmp_path,
+    )
+    assert record.status == "failed"
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_archive_rejects_candidate_id_with_dot_only(tmp_path: Path):
+    record = archive_source(
+        candidate_id="..",
+        source_url="https://example.com/x",
+        output_dir=tmp_path,
+    )
+    assert record.status == "failed"
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_archive_accepts_uuid_style_candidate_id(tmp_path: Path):
+    """UUID-style IDs (alphanumeric + dashes) must still work end-to-end."""
+    body = b"<html>ok</html>"
+    valid_uuid = "550e8400-e29b-41d4-a716-446655440000"
+    with patch("moderation.archive.requests.get", return_value=_mock_response(200, body)):
+        record = archive_source(
+            candidate_id=valid_uuid,
+            source_url="https://example.com/x",
+            output_dir=tmp_path,
+        )
+    assert record.status == "ok"
+    assert (tmp_path / valid_uuid / "source.html").exists()
