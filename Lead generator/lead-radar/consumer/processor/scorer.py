@@ -245,7 +245,7 @@ def score_post(
 
     `cleaned` is output van processor.cleaner.clean_post().
     `niche_keywords` is optioneel — als geen enkel keyword voorkomt drukken
-    we 30 punten af om totaal off-topic posts uit de top te houden.
+    we 50 punten af om totaal off-topic posts uit de top te houden.
     `created_at` (ISO-8601) activeert time-decay; `now` is voor testbaarheid.
     """
     text = cleaned.get("full_no_url", "") or cleaned.get("full", "")
