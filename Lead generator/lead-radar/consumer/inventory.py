@@ -12,6 +12,7 @@ of truth voor state changes).
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -115,3 +116,24 @@ def load_decay_windows(config_path: str | Path) -> dict[str, dict[str, int]]:
     if "inventory" not in data:
         raise KeyError("config.yaml missing 'inventory' section")
     return data["inventory"].get("decay_windows", {})
+
+
+def compute_expires_at(
+    captured_at: datetime,
+    niche: str,
+    intent_strength: str,
+    decay_windows: dict[str, dict[str, int]],
+) -> datetime:
+    """Bereken expires_at als captured_at + decay_windows[niche][intent_strength] dagen.
+
+    Raises KeyError als niche of intent_strength niet in decay_windows zitten.
+    """
+    if niche not in decay_windows:
+        raise KeyError(f"niche {niche!r} not in decay_windows")
+    niche_windows = decay_windows[niche]
+    if intent_strength not in niche_windows:
+        raise KeyError(
+            f"intent_strength {intent_strength!r} not in decay_windows[{niche!r}]"
+        )
+    days = niche_windows[intent_strength]
+    return captured_at + timedelta(days=days)

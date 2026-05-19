@@ -153,3 +153,34 @@ inventory:
         cfg.write_text("scrapers:\n  - foo\n", encoding="utf-8")
         with pytest.raises(KeyError, match="inventory"):
             load_decay_windows(cfg)
+
+
+from datetime import datetime, timezone
+
+from consumer.inventory import compute_expires_at
+
+
+class TestComputeExpiresAt:
+    def test_warmtepomp_hot_14_days(self):
+        windows = {"warmtepomp": {"HOT": 14, "WARM": 28}}
+        captured = datetime(2026, 5, 19, 8, 0, 0, tzinfo=timezone.utc)
+        result = compute_expires_at(captured, "warmtepomp", "HOT", windows)
+        assert result == datetime(2026, 6, 2, 8, 0, 0, tzinfo=timezone.utc)
+
+    def test_isolatie_warm_42_days(self):
+        windows = {"isolatie": {"HOT": 21, "WARM": 42}}
+        captured = datetime(2026, 5, 19, 8, 0, 0, tzinfo=timezone.utc)
+        result = compute_expires_at(captured, "isolatie", "WARM", windows)
+        assert result == datetime(2026, 6, 30, 8, 0, 0, tzinfo=timezone.utc)
+
+    def test_unknown_niche_raises(self):
+        windows = {"warmtepomp": {"HOT": 14, "WARM": 28}}
+        captured = datetime(2026, 5, 19, 8, 0, 0, tzinfo=timezone.utc)
+        with pytest.raises(KeyError, match="niche"):
+            compute_expires_at(captured, "tovenarij", "HOT", windows)
+
+    def test_unknown_intent_strength_raises(self):
+        windows = {"warmtepomp": {"HOT": 14, "WARM": 28}}
+        captured = datetime(2026, 5, 19, 8, 0, 0, tzinfo=timezone.utc)
+        with pytest.raises(KeyError, match="intent_strength"):
+            compute_expires_at(captured, "warmtepomp", "TEPID", windows)
