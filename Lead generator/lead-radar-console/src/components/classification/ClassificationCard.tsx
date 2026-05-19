@@ -149,9 +149,10 @@ export function ClassificationCard({ decision, position, whyText, categories }: 
         <h2 className="text-xs uppercase text-zinc-500 mb-2">Agent&apos;s best guesses</h2>
         {candidates.map((c, i) => (
           <div key={c.categoryKey} className={`mb-2 ${primaryPick === c.categoryKey ? 'border border-blue-700 rounded p-2' : ''}`}>
-            {/* Doctrine §03.5 + A19: confidence percentage removed —
-                reviewer cognition must not be anchored on the model's
-                confidence number (rubber-stamping). */}
+            {/* Doctrine §02.2 + A8 + A19: confidence percentage removed —
+                bands, never numbers (§02.2); numerical scores anywhere a
+                band fits (A8). Reviewer cognition must not be anchored on
+                the model's confidence number (rubber-stamping, A19). */}
             <div className="text-sm">
               <span className="text-zinc-500">[{i + 1}]</span>{' '}
               <span className="font-medium">{c.categoryKey}</span>
