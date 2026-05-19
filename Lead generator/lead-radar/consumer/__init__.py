@@ -6,7 +6,6 @@ sources/, processor/ en output/ los van elkaar staan en testbaar blijven.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 import hashlib
@@ -46,6 +45,13 @@ class RawPost:
     author: str | None = None
     created_at: str | None = None  # ISO 8601
     metadata: dict[str, Any] = field(default_factory=dict)
+    # source_id: granular bron-label voor Sheets (bv. "reddit:r/duurzaam").
+    # Default = source (registry name) voor backwards compat.
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.source_id is None:
+            self.source_id = self.source
 
     def fingerprint(self) -> str:
         """Stable hash voor dedup — source + id + canonical url.
@@ -69,17 +75,31 @@ class Lead:
     city: str | None
     score: int
     intent: str  # 'hot' | 'warm' | 'cold'
-    breakdown: dict[str, int]
+    breakdown: dict[str, Any]
     niche: str
+    captured_at: str  # required: ISO-8601 UTC, sourced from RawPost.created_at
     author: str | None = None
     created_at: str | None = None
-    captured_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
-    )
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.source_id is None:
+            self.source_id = self.source
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        d["breakdown"] = {k: int(v) for k, v in d["breakdown"].items()}
+        coerced: dict[str, Any] = {}
+        for k, v in d["breakdown"].items():
+            if isinstance(v, bool):
+                coerced[k] = v
+            elif isinstance(v, int):
+                coerced[k] = v
+            elif isinstance(v, float):
+                coerced[k] = int(v) if v.is_integer() else v
+            else:
+                # strings, None, nested dict/list — pass through unchanged
+                coerced[k] = v
+        d["breakdown"] = coerced
         return d
 
 

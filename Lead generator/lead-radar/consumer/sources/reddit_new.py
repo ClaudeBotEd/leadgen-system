@@ -26,6 +26,30 @@ log = logging.getLogger("consumer.sources.reddit_new")
 BASE = "https://www.reddit.com"
 
 
+def fetch_from_json(data: dict, *, sub: str) -> list[RawPost]:
+    """Parse a /r/<sub>/new.json response into RawPosts (testable offline).
+
+    Args:
+        data: Parsed JSON dict from the Reddit /r/<sub>/new.json endpoint.
+        sub: Subreddit name (without 'r/' prefix), used in source_id.
+    """
+    raw = _reddit_search._parse_listing(data)
+    return [
+        RawPost(
+            id=p.id,
+            source="reddit_new",
+            source_id=f"reddit_new:r/{sub}",
+            url=p.url,
+            title=p.title,
+            text=p.text,
+            author=p.author,
+            created_at=p.created_at,
+            metadata=p.metadata,
+        )
+        for p in raw
+    ]
+
+
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
           session: PoliteSession | None = None, **_: object) -> list[RawPost]:
     """Fetch recente posts uit een subreddit zonder keyword-filter.
@@ -51,6 +75,6 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         log.warning("reddit_new: invalid JSON van r/%s: %s", sub, e)
         return []
 
-    posts = _reddit_search._parse_listing(data)[:limit]
+    posts = fetch_from_json(data, sub=sub)[:limit]
     log.info("Reddit /r/%s/new: %d posts", sub, len(posts))
     return posts

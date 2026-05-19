@@ -44,6 +44,7 @@ def niche_cfg() -> dict:
             "/Forum/forum/cv-ketels-gaskachels-en-geisers.33/",
             "/Forum/forum/verwarming-inclusief-leidingwerk.5/",
         ],
+        "ouders_subforums": ["/forum/huis-tuin-en-keuken"],
         "reddit_new_subs": ["Klussers", "Offertes", "DIYNL"],
     }
 

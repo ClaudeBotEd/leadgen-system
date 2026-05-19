@@ -30,6 +30,8 @@ defaults:
     - Klussers
     - Offertes
     - tweakers
+    # NL — niche-specifiek (warmtepomp community sub, hoogst geverifieerd intent)
+    - warmtepompNL
     # EN — niche (klein NL/BE-aandeel maar wel intent-rich)
     - hvac
     - heatpumps
@@ -166,6 +168,10 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    ouders_subforums:
+      # ouders.nl/forum/huis-tuin-en-keuken — gezinnen-segment met
+      # vloerverwarming/koelen/energie threads (warmtepomp-relevant)
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       # High-intent subs voor warmtepomp — pakt ALLE recente posts, geen keyword-filter
       - Klussers
@@ -298,6 +304,9 @@ niches:
       - /categories/technieken/ventilatie
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      # ouders.nl heeft koelen-huis / airco threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -419,6 +428,9 @@ niches:
       - /categories/technieken/elektriciteit
     klusidee_subforums:
       - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      # ouders.nl heeft zonnepanelen / energie-keuze threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -545,6 +557,9 @@ niches:
     klusidee_subforums:
       - /Forum/forum/cv-ketels-gaskachels-en-geisers.33/
       - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+    ouders_subforums:
+      # ouders.nl heeft vloerverwarming / cv-keuze threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -558,6 +573,511 @@ niches:
       - "cv ketel premie vlaanderen"
       - "ketel storing monteur antwerpen"
       - "gasketel installateur BE"
+
+  isolatie:
+    keywords_required:
+      - isolatie
+      - isoleren
+    queries_text:
+      - "isolatie installateur gezocht"
+      - "spouwmuurisolatie offerte"
+      - "dakisolatie offerte"
+      - "vloerisolatie offerte"
+      - "spouwisolatie laten doen"
+      - "dakisolatie laten plaatsen"
+      - "vloerisolatie advies nodig"
+      - "wie kan spouw isoleren"
+      - "wie kan dak isoleren"
+      - "isolatiebedrijf gezocht"
+      - "isolatie aannemer gezocht"
+      - "isolatie offerte nodig"
+      - "isolatie advies"
+      - "spouw isoleren prijs"
+      - "dak isoleren prijs"
+      - "vloer isoleren prijs"
+      - "Rd waarde isolatie advies"
+      - "lambda isolatie advies"
+      - "glaswol isolatie"
+      - "PIR isolatie"
+      - "EPS isolatie"
+      - "ISDE isolatie subsidie"
+      - "isolatie subsidie advies"
+      - "na-isolatie offerte"
+      - "kruipruimte isolatie"
+      - "binnenmuur isolatie"
+      - "gevel isolatie offerte"
+      - "isolatie aannemer aanrader"
+      # Product-specifieke fraseringen
+      - "ISOVER glaswol installateur"
+      - "Recticel PIR aanrader"
+      - "Knauf isolatie advies"
+      - "Rockwool dakisolatie"
+    google_queries:
+      - 'site:reddit.com isolatie offerte {location}'
+      - 'site:reddit.com spouwisolatie {location}'
+      - 'site:reddit.com dakisolatie {location}'
+      - 'site:reddit.com vloerisolatie {location}'
+      - 'site:gathering.tweakers.net isolatie offerte'
+      - 'site:gathering.tweakers.net spouwisolatie'
+      - 'site:gathering.tweakers.net dakisolatie'
+      - 'site:gathering.tweakers.net vloerisolatie'
+      - 'site:gathering.tweakers.net na-isolatie'
+      - 'site:bouwinfo.be isolatie aannemer'
+      - 'site:bouwinfo.be spouwmuurisolatie'
+      - 'site:bouwinfo.be dakisolatie prijs'
+      - '"isolatie aannemer gezocht" {location}'
+      - '"spouwmuurisolatie offerte" {location}'
+      - '"dakisolatie offerte" {location}'
+      - '"vloerisolatie offerte" {location}'
+      - '"wie kan isoleren" {location}'
+      - '"isolatie laten doen" {location}'
+      - '"isolatie installateur amsterdam"'
+      - '"isolatie installateur rotterdam"'
+      - '"isolatie installateur utrecht"'
+      - '"isolatie installateur eindhoven"'
+      - '"isolatie installateur den haag"'
+      - '"isolatie installateur groningen"'
+      - '"isolatie installateur tilburg"'
+      - '"isolatie installateur breda"'
+      - '"isolatie aannemer antwerpen"'
+      - '"isolatie aannemer gent"'
+      - '"isolatie aannemer brussel"'
+      - '"isolatie aannemer leuven"'
+      - '"isolatie aannemer hasselt"'
+      - '"spouwisolatie prijs"'
+      - '"dakisolatie prijs"'
+      - '"vloerisolatie prijs"'
+      - '"isolatie" "wat kost"'
+      - '"isolatie" "deze maand"'
+      - '"isolatie offerte" forum'
+      - '"isolatie advies" forum {location}'
+      - 'site:facebook.com/groups isolatie {location}'
+      - 'forum isolatie aannemer {location}'
+      - 'r/Klussers isolatie'
+      - 'r/Offertes isolatie'
+      - '"na-isolatie" "offerte" {location}'
+      - '"ISDE" "isolatie" advies'
+      - '"binnenmuur isoleren" {location}'
+      - '"gevelisolatie" "offerte" {location}'
+      - '"kruipruimte isolatie" {location}'
+      - '"Rd waarde" isolatie {location}'
+      - '"isolatie" "ik zoek" {location}'
+      - '"isolatie" "laten doen" {location}'
+    marktplaats_queries:
+      - "isolatie aannemer gezocht"
+      - "isolatie aannemer gevraagd"
+      - "spouwmuurisolatie gezocht"
+      - "dakisolatie gezocht"
+      - "vloerisolatie gezocht"
+      - "spouw isoleren gevraagd"
+      - "dak isoleren gevraagd"
+      - "wie kan isoleren"
+      - "isolatie laten doen"
+      - "na-isolatie gezocht"
+      - "isolatie specialist"
+      - "isolatie monteur gezocht"
+      - "isolatie installateur antwerpen"
+      - "isolatie installateur gent"
+      - "isolatie installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/ruwbouw/isolatie
+      - /categories/afwerking/isolatie-en-akoestiek
+    klusidee_subforums:
+      - /Forum/forum/dak-en-schoorsteen.4/
+      - /Forum/forum/binnenmuren-wanden-en-plafonds.8/
+      - /Forum/forum/gevels-en-gevelbekleding.34/
+    ouders_subforums:
+      # ouders.nl heeft isolatie/duurzaam-wonen threads in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - duurzaam
+      - DIYNL
+    tweedehands_queries:
+      # BE-specifiek: vlaamse premies + steden
+      - "isolatie aannemer antwerpen"
+      - "isolatie aannemer gent"
+      - "isolatie aannemer brussel"
+      - "isolatie aannemer leuven"
+      - "isolatiepremie vlaanderen"
+      - "Mijn VerbouwPremie isolatie"
+      - "spouwmuurisolatie BE"
+      - "dakisolatie vlaanderen"
+      - "vloerisolatie premie BE"
+
+  vloerverwarming:
+    keywords_required:
+      - vloerverwarming
+    queries_text:
+      - "vloerverwarming installateur gezocht"
+      - "vloerverwarming aanleg offerte"
+      - "vloerverwarming laten plaatsen"
+      - "vloerverwarming installateur nodig"
+      - "vloerverwarming advies nodig"
+      - "vloerverwarming offerte nodig"
+      - "wie kan vloerverwarming aanleggen"
+      - "wie kan vloerverwarming installeren"
+      - "vloerverwarming retrofit"
+      - "vloerverwarming infrezen"
+      - "vloerverwarming aanleg prijs"
+      - "vloerverwarming aanleggen kosten"
+      - "elektrische vloerverwarming installateur"
+      - "natte vloerverwarming aanleg"
+      - "vloerverwarming combi warmtepomp"
+      - "vloerverwarming verdelers advies"
+      - "vloerverwarming aanrader"
+      - "vloerverwarming tip"
+      - "vloerverwarming monteur gezocht"
+      - "vloerverwarming specialist gezocht"
+      - "vloerverwarming infreesmachine"
+      - "vloerverwarming dichtleggen"
+      - "vloerverwarming koppelen cv"
+      - "vloerverwarming installeren badkamer"
+      - "vloerverwarming woonkamer aanleg"
+      # Product-specifieke fraseringen
+      - "uponor vloerverwarming installateur"
+      - "henco vloerverwarming systeem"
+      - "rehau vloerverwarming aanleg"
+      - "thermoplan vloerverwarming infrezen"
+    google_queries:
+      - 'site:reddit.com vloerverwarming installateur {location}'
+      - 'site:reddit.com vloerverwarming offerte {location}'
+      - 'site:reddit.com vloerverwarming advies {location}'
+      - 'site:reddit.com vloerverwarming aanleg {location}'
+      - 'site:gathering.tweakers.net vloerverwarming installateur'
+      - 'site:gathering.tweakers.net vloerverwarming offerte'
+      - 'site:gathering.tweakers.net vloerverwarming retrofit'
+      - 'site:gathering.tweakers.net vloerverwarming infrezen'
+      - 'site:bouwinfo.be vloerverwarming aannemer'
+      - 'site:bouwinfo.be vloerverwarming prijs'
+      - '"vloerverwarming installateur gezocht" {location}'
+      - '"vloerverwarming aanleg" "offerte" {location}'
+      - '"wie kan vloerverwarming" {location}'
+      - '"vloerverwarming laten aanleggen" {location}'
+      - '"vloerverwarming retrofit" {location}'
+      - '"vloerverwarming infrezen" {location}'
+      - '"vloerverwarming installateur amsterdam"'
+      - '"vloerverwarming installateur rotterdam"'
+      - '"vloerverwarming installateur utrecht"'
+      - '"vloerverwarming installateur eindhoven"'
+      - '"vloerverwarming installateur den haag"'
+      - '"vloerverwarming installateur groningen"'
+      - '"vloerverwarming installateur tilburg"'
+      - '"vloerverwarming installateur breda"'
+      - '"vloerverwarming aannemer antwerpen"'
+      - '"vloerverwarming aannemer gent"'
+      - '"vloerverwarming aannemer brussel"'
+      - '"vloerverwarming aannemer leuven"'
+      - '"vloerverwarming aannemer hasselt"'
+      - '"vloerverwarming aanleg prijs"'
+      - '"vloerverwarming" "wat kost"'
+      - '"vloerverwarming" "deze maand"'
+      - '"vloerverwarming offerte" forum'
+      - '"vloerverwarming advies" forum {location}'
+      - 'site:facebook.com/groups vloerverwarming {location}'
+      - 'forum vloerverwarming installateur {location}'
+      - 'r/Klussers vloerverwarming'
+      - 'r/Offertes vloerverwarming'
+      - '"elektrische vloerverwarming" "installateur" {location}'
+      - '"natte vloerverwarming" "aanleg" {location}'
+      - '"vloerverwarming combi warmtepomp" {location}'
+      - '"vloerverwarming verdeler" "advies"'
+      - '"vloerverwarming dichtleggen" {location}'
+      - '"vloerverwarming" "ik zoek" {location}'
+      - '"vloerverwarming" "laten plaatsen" {location}'
+      - '"vloerverwarming" "monteur gezocht" {location}'
+      - '"vloerverwarming infrezen" "offerte"'
+    marktplaats_queries:
+      - "vloerverwarming installateur gezocht"
+      - "vloerverwarming installateur gevraagd"
+      - "vloerverwarming aanleg gezocht"
+      - "vloerverwarming monteur gezocht"
+      - "wie kan vloerverwarming aanleggen"
+      - "vloerverwarming laten aanleggen"
+      - "vloerverwarming retrofit gezocht"
+      - "vloerverwarming infrezen gevraagd"
+      - "elektrische vloerverwarming installateur"
+      - "natte vloerverwarming aanleg"
+      - "vloerverwarming specialist"
+      - "vloerverwarming aannemer antwerpen"
+      - "vloerverwarming aannemer gent"
+      - "vloerverwarming installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/verwarming-en-koeling/vloer-en-wandverwarming
+      - /categories/technieken/verwarming-en-koeling
+    klusidee_subforums:
+      - /Forum/forum/verwarming-inclusief-leidingwerk.5/
+      - /Forum/forum/vloer-en-trappen.7/
+    ouders_subforums:
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - duurzaam
+      - DIYNL
+    tweedehands_queries:
+      # BE-specifiek
+      - "vloerverwarming aannemer antwerpen"
+      - "vloerverwarming aannemer gent"
+      - "vloerverwarming aannemer brussel"
+      - "vloerverwarming aannemer leuven"
+      - "vloerverwarming aanleg vlaanderen"
+      - "vloerverwarming premie BE"
+      - "vloerverwarming retrofit antwerpen"
+      - "vloerverwarming infrezen BE"
+
+  ventilatie:
+    keywords_required:
+      - ventilatie
+      - wtw
+      - mv
+    queries_text:
+      - "ventilatie installateur gezocht"
+      - "ventilatie offerte"
+      - "ventilatie offerte nodig"
+      - "ventilatie advies nodig"
+      - "WTW installateur gezocht"
+      - "WTW unit installateur"
+      - "wtw systeem advies"
+      - "mechanische ventilatie installateur"
+      - "MV box vervangen"
+      - "MV systeem advies"
+      - "balansventilatie installateur"
+      - "balansventilatie offerte"
+      - "balansventilatie laten plaatsen"
+      - "wie kan ventilatie plaatsen"
+      - "wie kan WTW installeren"
+      - "ventilatie monteur gezocht"
+      - "ventilatie specialist"
+      - "ventilatiebedrijf gezocht"
+      - "ventilatie aanrader"
+      - "ventilatie tip"
+      - "WTW probleem installateur"
+      - "ventilatie kanaal aanleggen"
+      - "ventilatie systeem vervangen"
+      - "vraaggestuurde ventilatie installateur"
+      - "ventilatie reinigen specialist"
+      - "ventilatie nieuwbouw advies"
+      - "ventilatie renovatie advies"
+      # Product-specifieke fraseringen
+      - "zehnder comfoair installateur"
+      - "itho daalderop wtw advies"
+      - "ubbink wtw installatie"
+      - "duco ventilatie systeem"
+      - "stork wtw onderhoud"
+    google_queries:
+      - 'site:reddit.com ventilatie installateur {location}'
+      - 'site:reddit.com WTW installateur {location}'
+      - 'site:reddit.com mechanische ventilatie {location}'
+      - 'site:reddit.com balansventilatie {location}'
+      - 'site:gathering.tweakers.net WTW installateur'
+      - 'site:gathering.tweakers.net mechanische ventilatie'
+      - 'site:gathering.tweakers.net balansventilatie'
+      - 'site:gathering.tweakers.net ventilatie offerte'
+      - 'site:bouwinfo.be ventilatie installateur'
+      - 'site:bouwinfo.be WTW prijs'
+      - 'site:bouwinfo.be balansventilatie aannemer'
+      - '"ventilatie installateur gezocht" {location}'
+      - '"WTW installateur" {location}'
+      - '"mechanische ventilatie" "installateur" {location}'
+      - '"balansventilatie" "offerte" {location}'
+      - '"wie kan WTW plaatsen" {location}'
+      - '"wie kan ventilatie installeren" {location}'
+      - '"ventilatie installateur amsterdam"'
+      - '"ventilatie installateur rotterdam"'
+      - '"ventilatie installateur utrecht"'
+      - '"ventilatie installateur eindhoven"'
+      - '"ventilatie installateur den haag"'
+      - '"ventilatie installateur groningen"'
+      - '"ventilatie installateur tilburg"'
+      - '"ventilatie installateur breda"'
+      - '"ventilatie aannemer antwerpen"'
+      - '"ventilatie aannemer gent"'
+      - '"ventilatie aannemer brussel"'
+      - '"ventilatie aannemer leuven"'
+      - '"ventilatie aannemer hasselt"'
+      - '"WTW unit" "wat kost"'
+      - '"balansventilatie prijs"'
+      - '"ventilatie" "deze maand"'
+      - '"ventilatie offerte" forum'
+      - '"WTW advies" forum {location}'
+      - 'site:facebook.com/groups ventilatie {location}'
+      - 'forum WTW installateur {location}'
+      - 'r/Klussers ventilatie'
+      - 'r/Offertes ventilatie'
+      - 'r/Offertes WTW'
+      - '"MV box vervangen" {location}'
+      - '"WTW probleem" "installateur" {location}'
+      - '"ventilatie kanaal" "aanleggen" {location}'
+      - '"vraaggestuurde ventilatie" {location}'
+      - '"ventilatiesysteem vervangen" {location}'
+      - '"ventilatie" "monteur gezocht" {location}'
+      - '"ventilatie" "ik zoek" {location}'
+      - '"WTW" "laten plaatsen" {location}'
+      - '"balansventilatie" "monteur gezocht" {location}'
+    marktplaats_queries:
+      - "ventilatie installateur gezocht"
+      - "ventilatie installateur gevraagd"
+      - "WTW installateur gezocht"
+      - "WTW unit installateur"
+      - "mechanische ventilatie installateur"
+      - "balansventilatie installateur"
+      - "balansventilatie laten plaatsen"
+      - "ventilatie monteur gezocht"
+      - "wie kan WTW plaatsen"
+      - "MV box vervangen"
+      - "ventilatie specialist gezocht"
+      - "ventilatie kanaal aanleggen"
+      - "ventilatie aannemer antwerpen"
+      - "ventilatie aannemer gent"
+      - "ventilatie installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/ventilatie
+      - /categories/technieken/verwarming-en-koeling
+    klusidee_subforums:
+      - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - duurzaam
+      - DIYNL
+    tweedehands_queries:
+      # BE-specifiek
+      - "ventilatie aannemer antwerpen"
+      - "ventilatie aannemer gent"
+      - "ventilatie aannemer brussel"
+      - "ventilatie aannemer leuven"
+      - "WTW installateur antwerpen"
+      - "balansventilatie BE"
+      - "mechanische ventilatie vlaanderen"
+      - "ventilatie premie BE"
+      - "vraaggestuurde ventilatie BE"
+
+  laadpaal:
+    keywords_required:
+      - laadpaal
+      - laadpunt
+    queries_text:
+      - "laadpaal installateur gezocht"
+      - "laadpaal laten plaatsen"
+      - "laadpaal offerte"
+      - "laadpaal offerte nodig"
+      - "laadpaal advies nodig"
+      - "laadpunt installateur gezocht"
+      - "laadpunt thuis installeren"
+      - "wie kan laadpaal plaatsen"
+      - "wie kan laadpunt installeren"
+      - "thuis laadpaal advies"
+      - "laadpaal installatie woning"
+      - "EV laadpunt installateur"
+      - "EV charger installateur"
+      - "laadpaal monteur gezocht"
+      - "laadpaal specialist"
+      - "laadpaal bedrijfspand installateur"
+      - "laadpaal vve advies"
+      - "type 2 laadpaal installateur"
+      - "11kW laadpaal installateur"
+      - "22kW laadpaal installateur"
+      - "laadpaal kabel aanleggen"
+      - "groepenkast aanpassen laadpaal"
+      - "laadpaal subsidie advies"
+      - "laadpaal combi zonnepanelen"
+      - "laadpaal aanrader"
+      - "laadpunt tip"
+      # Product-specifieke fraseringen
+      - "wallbox installateur"
+      - "alfen eve installateur"
+      - "ev box laadpaal advies"
+      - "easee laadpaal installatie"
+      - "tesla wall connector installateur"
+    google_queries:
+      - 'site:reddit.com laadpaal installateur {location}'
+      - 'site:reddit.com laadpunt installateur {location}'
+      - 'site:reddit.com laadpaal offerte {location}'
+      - 'site:reddit.com EV laadpunt {location}'
+      - 'site:gathering.tweakers.net laadpaal installateur'
+      - 'site:gathering.tweakers.net laadpaal offerte'
+      - 'site:gathering.tweakers.net laadpunt thuis'
+      - 'site:gathering.tweakers.net wallbox installateur'
+      - 'site:bouwinfo.be laadpaal installateur'
+      - 'site:bouwinfo.be laadpunt prijs'
+      - '"laadpaal installateur gezocht" {location}'
+      - '"laadpunt installateur" {location}'
+      - '"wie kan laadpaal plaatsen" {location}'
+      - '"laadpaal laten plaatsen" {location}'
+      - '"laadpaal offerte nodig" {location}'
+      - '"laadpaal installateur amsterdam"'
+      - '"laadpaal installateur rotterdam"'
+      - '"laadpaal installateur utrecht"'
+      - '"laadpaal installateur eindhoven"'
+      - '"laadpaal installateur den haag"'
+      - '"laadpaal installateur groningen"'
+      - '"laadpaal installateur tilburg"'
+      - '"laadpaal installateur breda"'
+      - '"laadpaal installateur antwerpen"'
+      - '"laadpaal installateur gent"'
+      - '"laadpaal installateur brussel"'
+      - '"laadpaal installateur leuven"'
+      - '"laadpaal installateur hasselt"'
+      - '"laadpaal" "wat kost"'
+      - '"laadpaal" "deze maand"'
+      - '"laadpaal offerte" forum'
+      - '"laadpaal advies" forum {location}'
+      - 'site:facebook.com/groups laadpaal {location}'
+      - 'forum laadpaal installateur {location}'
+      - 'r/Klussers laadpaal'
+      - 'r/Offertes laadpaal'
+      - '"EV laadpunt" "installateur" {location}'
+      - '"11kW laadpaal" "installateur" {location}'
+      - '"22kW laadpaal" "installateur" {location}'
+      - '"groepenkast aanpassen" "laadpaal" {location}'
+      - '"laadpaal" "combi zonnepanelen" {location}'
+      - '"laadpaal" "VvE" {location}'
+      - '"laadpaal" "bedrijfspand" {location}'
+      - '"laadpaal" "monteur gezocht" {location}'
+      - '"laadpaal" "ik zoek" {location}'
+      - '"laadpaal" "laten plaatsen" {location}'
+      - '"wallbox" "installateur" {location}'
+      - '"laadpaal kabel aanleggen" {location}'
+    marktplaats_queries:
+      - "laadpaal installateur gezocht"
+      - "laadpaal installateur gevraagd"
+      - "laadpunt installateur"
+      - "laadpaal monteur gezocht"
+      - "wie kan laadpaal plaatsen"
+      - "laadpaal laten plaatsen"
+      - "EV laadpunt installateur"
+      - "wallbox installateur"
+      - "laadpaal specialist"
+      - "laadpaal VvE installateur"
+      - "laadpaal bedrijfspand installateur"
+      - "laadpaal installateur antwerpen"
+      - "laadpaal installateur gent"
+      - "laadpaal installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/technieken/elektriciteit
+      - /categories/technieken/elektriciteit/zonne-energie
+    klusidee_subforums:
+      - /Forum/forum/elektrisch-verlichting-en-ventilatie.11/
+    ouders_subforums:
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - duurzaam
+    tweedehands_queries:
+      # BE-specifiek
+      - "laadpaal installateur antwerpen"
+      - "laadpaal installateur gent"
+      - "laadpaal installateur brussel"
+      - "laadpaal installateur leuven"
+      - "EV laadpunt vlaanderen"
+      - "laadpaal premie BE"
+      - "laadpaal Fluvius keuring"
+      - "wallbox installateur BE"
 
   renovatie:
     keywords_required:
@@ -665,6 +1185,9 @@ niches:
       - /Forum/forum/keuken.3/
       - /Forum/forum/dak-en-schoorsteen.4/
       - /Forum/forum/gevels-en-gevelbekleding.34/
+    ouders_subforums:
+      # ouders.nl heeft renovatie/keuken/badkamer-overwegingen in huis-tuin-en-keuken
+      - /forum/huis-tuin-en-keuken
     reddit_new_subs:
       - Klussers
       - Offertes
@@ -680,3 +1203,268 @@ niches:
       - "vakman renovatie BE gezocht"
       - "klusbedrijf vlaanderen gezocht"
       - "isolatiepremie aannemer vlaanderen"
+
+  dakwerk:
+    keywords_required:
+      - dak
+      - dakwerk
+      - dakdekker
+    queries_text:
+      - "dakdekker gezocht"
+      - "dakdekker nodig"
+      - "dak vervangen offerte"
+      - "nieuw dak offerte"
+      - "dak laten vervangen"
+      - "dakvervanging offerte"
+      - "dakkapel installateur gezocht"
+      - "dakkapel offerte"
+      - "dakkapel laten plaatsen"
+      - "dakopbouw aannemer gezocht"
+      - "dakopbouw offerte"
+      - "wie kan dakkapel plaatsen"
+      - "wie kan dak vervangen"
+      - "wie kan dakopbouw doen"
+      - "dakpannen vervangen"
+      - "dakpannen vervangen offerte"
+      - "dak renovatie aannemer"
+      - "dakwerken aannemer"
+      - "dakwerker gezocht"
+      - "dakdekkerbedrijf gezocht"
+      - "dak lekkage installateur"
+      - "dak repareren aannemer"
+      - "dak isoleren combi"
+      - "platdak vervangen"
+      - "schuin dak vernieuwen"
+      - "dakkapel kunststof advies"
+      - "dakkapel hout advies"
+      - "EPDM dak installateur"
+      - "bitumen dak installateur"
+      - "dakraam plaatsen offerte"
+      # Product-specifieke fraseringen
+      - "velux dakraam installateur"
+      - "monier dakpannen advies"
+      - "wienerberger dakpannen"
+      - "firestone EPDM installateur"
+    google_queries:
+      - 'site:reddit.com dakdekker {location}'
+      - 'site:reddit.com dakkapel offerte {location}'
+      - 'site:reddit.com dak vervangen {location}'
+      - 'site:reddit.com dakopbouw {location}'
+      - 'site:gathering.tweakers.net dakdekker'
+      - 'site:gathering.tweakers.net dakkapel offerte'
+      - 'site:gathering.tweakers.net dak vervangen'
+      - 'site:gathering.tweakers.net dakopbouw offerte'
+      - 'site:bouwinfo.be dakdekker'
+      - 'site:bouwinfo.be dakkapel prijs'
+      - 'site:bouwinfo.be dak vervangen aannemer'
+      - '"dakdekker gezocht" {location}'
+      - '"dakkapel installateur" {location}'
+      - '"dak vervangen offerte" {location}'
+      - '"dakopbouw aannemer" {location}'
+      - '"wie kan dakkapel plaatsen" {location}'
+      - '"dakdekker amsterdam"'
+      - '"dakdekker rotterdam"'
+      - '"dakdekker utrecht"'
+      - '"dakdekker eindhoven"'
+      - '"dakdekker den haag"'
+      - '"dakdekker groningen"'
+      - '"dakdekker tilburg"'
+      - '"dakdekker breda"'
+      - '"dakwerker antwerpen"'
+      - '"dakwerker gent"'
+      - '"dakwerker brussel"'
+      - '"dakwerker leuven"'
+      - '"dakwerker hasselt"'
+      - '"dakkapel" "wat kost"'
+      - '"dakopbouw" "wat kost"'
+      - '"dak vervangen" "wat kost"'
+      - '"dakdekker" "deze maand"'
+      - '"dakwerk offerte" forum'
+      - '"dakkapel advies" forum {location}'
+      - 'site:facebook.com/groups dakdekker {location}'
+      - 'forum dakdekker {location}'
+      - 'r/Klussers dakdekker'
+      - 'r/Offertes dakwerk'
+      - 'r/Offertes dakkapel'
+      - '"dakpannen vervangen" "offerte" {location}'
+      - '"platdak vervangen" {location}'
+      - '"dakraam plaatsen" "offerte" {location}'
+      - '"EPDM dak" "installateur" {location}'
+      - '"dak lekkage" "installateur" {location}'
+      - '"dakkapel kunststof" {location}'
+      - '"dakkapel" "ik zoek" {location}'
+      - '"dakwerk" "laten doen" {location}'
+      - '"dakdekker" "spoed" {location}'
+    marktplaats_queries:
+      - "dakdekker gezocht"
+      - "dakdekker gevraagd"
+      - "dakwerker gezocht"
+      - "dak vervangen aannemer"
+      - "dakkapel installateur gezocht"
+      - "dakkapel laten plaatsen"
+      - "dakopbouw aannemer gezocht"
+      - "wie kan dakkapel plaatsen"
+      - "dakpannen vervangen monteur"
+      - "platdak vervangen"
+      - "EPDM dak installateur"
+      - "dak lekkage installateur"
+      - "dakraam plaatsen monteur"
+      - "dakwerker antwerpen"
+      - "dakwerker gent"
+      - "dakdekker amsterdam"
+    bouwinfo_categories:
+      - /categories/ruwbouw/dak
+      - /categories/afwerking/dakwerken
+    klusidee_subforums:
+      - /Forum/forum/dak-en-schoorsteen.4/
+      - /Forum/forum/gevels-en-gevelbekleding.34/
+    ouders_subforums:
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - DIYNL
+    tweedehands_queries:
+      # BE-specifiek
+      - "dakwerker antwerpen"
+      - "dakwerker gent"
+      - "dakwerker brussel"
+      - "dakwerker leuven"
+      - "dakwerken vlaanderen"
+      - "dakkapel premie BE"
+      - "dak vervangen vlaanderen"
+      - "dakopbouw aannemer BE"
+      - "dakdekker hasselt"
+
+  kozijnen:
+    keywords_required:
+      - kozijn
+      - kozijnen
+    queries_text:
+      - "kozijnen installateur gezocht"
+      - "kozijnen offerte"
+      - "kozijnen offerte nodig"
+      - "kozijnen laten plaatsen"
+      - "kozijnen vervangen offerte"
+      - "kozijnen advies nodig"
+      - "kunststof kozijnen installateur"
+      - "kunststof kozijnen offerte"
+      - "houten kozijnen installateur"
+      - "aluminium kozijnen installateur"
+      - "wie kan kozijnen plaatsen"
+      - "wie kan kozijnen vervangen"
+      - "HR++ glas installateur"
+      - "HR++ glas offerte"
+      - "HR+++ glas installateur"
+      - "triple glas installateur"
+      - "dubbele beglazing offerte"
+      - "isolatieglas installateur"
+      - "kozijnen monteur gezocht"
+      - "kozijnen specialist"
+      - "kozijnen renovatie offerte"
+      - "gevelrenovatie aannemer"
+      - "gevel renovatie offerte"
+      - "kozijnen aanrader"
+      - "kozijnen tip"
+      - "kozijnen subsidie advies"
+      - "ISDE kozijnen subsidie"
+      - "kunststof kozijnen prijs"
+      - "houten kozijnen prijs"
+      - "kozijnen prijs vergelijking"
+      # Product-specifieke fraseringen
+      - "select windows kozijnen advies"
+      - "kawneer aluminium kozijnen"
+      - "schueco kozijnen installateur"
+      - "rehau kunststof kozijnen"
+      - "veka kozijnen aanrader"
+    google_queries:
+      - 'site:reddit.com kozijnen offerte {location}'
+      - 'site:reddit.com kozijnen installateur {location}'
+      - 'site:reddit.com HR++ glas {location}'
+      - 'site:reddit.com kunststof kozijnen {location}'
+      - 'site:gathering.tweakers.net kozijnen offerte'
+      - 'site:gathering.tweakers.net kozijnen installateur'
+      - 'site:gathering.tweakers.net HR++ glas'
+      - 'site:gathering.tweakers.net triple glas'
+      - 'site:bouwinfo.be kozijnen installateur'
+      - 'site:bouwinfo.be kozijnen prijs'
+      - 'site:bouwinfo.be gevelrenovatie aannemer'
+      - '"kozijnen installateur gezocht" {location}'
+      - '"kozijnen offerte" {location}'
+      - '"wie kan kozijnen plaatsen" {location}'
+      - '"kozijnen laten plaatsen" {location}'
+      - '"kozijnen vervangen" "offerte" {location}'
+      - '"HR++ glas installateur" {location}'
+      - '"kunststof kozijnen installateur" {location}'
+      - '"houten kozijnen installateur" {location}'
+      - '"aluminium kozijnen installateur" {location}'
+      - '"kozijnen installateur amsterdam"'
+      - '"kozijnen installateur rotterdam"'
+      - '"kozijnen installateur utrecht"'
+      - '"kozijnen installateur eindhoven"'
+      - '"kozijnen installateur den haag"'
+      - '"kozijnen installateur groningen"'
+      - '"kozijnen installateur tilburg"'
+      - '"kozijnen installateur breda"'
+      - '"kozijnen aannemer antwerpen"'
+      - '"kozijnen aannemer gent"'
+      - '"kozijnen aannemer brussel"'
+      - '"kozijnen aannemer leuven"'
+      - '"kozijnen aannemer hasselt"'
+      - '"kozijnen" "wat kost"'
+      - '"kozijnen" "deze maand"'
+      - '"kozijnen offerte" forum'
+      - '"kozijnen advies" forum {location}'
+      - 'site:facebook.com/groups kozijnen {location}'
+      - 'forum kozijnen installateur {location}'
+      - 'r/Klussers kozijnen'
+      - 'r/Offertes kozijnen'
+      - '"triple glas" "installateur" {location}'
+      - '"isolatieglas" "offerte" {location}'
+      - '"gevelrenovatie" "aannemer" {location}'
+      - '"ISDE kozijnen" advies'
+      - '"kozijnen" "ik zoek" {location}'
+      - '"kozijnen" "laten plaatsen" {location}'
+      - '"kozijnen" "monteur gezocht" {location}'
+      - '"dubbele beglazing" "offerte" {location}'
+    marktplaats_queries:
+      - "kozijnen installateur gezocht"
+      - "kozijnen installateur gevraagd"
+      - "kozijnen monteur gezocht"
+      - "kozijnen aannemer gezocht"
+      - "kozijnen vervangen monteur"
+      - "wie kan kozijnen plaatsen"
+      - "kozijnen laten plaatsen"
+      - "kunststof kozijnen installateur"
+      - "aluminium kozijnen installateur"
+      - "houten kozijnen installateur"
+      - "HR++ glas installateur"
+      - "triple glas installateur"
+      - "gevelrenovatie aannemer"
+      - "kozijnen aannemer antwerpen"
+      - "kozijnen aannemer gent"
+      - "kozijnen installateur amsterdam"
+    bouwinfo_categories:
+      - /categories/afwerking/ramen-en-deuren
+      - /categories/ruwbouw/gevel
+    klusidee_subforums:
+      - /Forum/forum/gevels-en-gevelbekleding.34/
+      - /Forum/forum/binnenmuren-wanden-en-plafonds.8/
+    ouders_subforums:
+      - /forum/huis-tuin-en-keuken
+    reddit_new_subs:
+      - Klussers
+      - Offertes
+      - DIYNL
+      - duurzaam
+    tweedehands_queries:
+      # BE-specifiek
+      - "kozijnen aannemer antwerpen"
+      - "kozijnen aannemer gent"
+      - "kozijnen aannemer brussel"
+      - "kozijnen aannemer leuven"
+      - "ramen vervangen vlaanderen"
+      - "kozijnen premie BE"
+      - "Mijn VerbouwPremie kozijnen"
+      - "HR++ glas vlaanderen"
+      - "gevelrenovatie aannemer hasselt"

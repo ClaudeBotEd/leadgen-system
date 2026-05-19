@@ -1,0 +1,85 @@
+# Facebook scraper target config — operator edits this file.
+#
+# Each niche lists which Facebook surfaces to scrape and what input to
+# feed them.  Group IDs come from the URL bar when you visit a group:
+# https://www.facebook.com/groups/123456789  ->  id: "123456789"
+# Slugs also work: facebook.com/groups/zonnepanelenforum -> id: "zonnepanelenforum".
+# Page slugs come from the URL too: facebook.com/<slug>
+#
+# Leave any surface (groups, pages, marketplace) empty to skip it.
+defaults:
+  max_posts_per_target: 20
+  max_age_days: 7
+
+niches:
+  warmtepomp:
+    groups:
+      - id: "1520566101657472"
+        name: "Hybride warmtepomp"
+      - id: "1430530037683847"
+        name: "DeWarmte AO hybride / MP warmtepomp gebruikers"
+      # Verwijderd 2026-05-17: groep 413638707531015 ("Quatt Hybride Warmtepomp ervaringen")
+      # is PRIVATE — Apify-actor kan zonder FB-login geen data ophalen.
+      # Quatt-content blijft gedekt door groep 500485775066150 hieronder.
+      - id: "500485775066150"
+        name: "Quatt hybride warmtepomp"
+      - id: "649786509481882"
+        name: "Warmtepompboiler ervaringen (NL)"
+    pages: []
+    marketplace:
+      - query: "warmtepomp installateur gezocht"
+      - query: "warmtepomp installatie hulp"
+
+  airco:
+    groups:
+      - id: "1806659976335494"
+        name: "Airco forum Nederland"
+      - id: "1097290930461372"
+        name: "Split-unit airco installatie / service NL"
+    pages: []
+    marketplace:
+      - query: "airco installateur gezocht"
+
+  zonnepanelen:
+    groups:
+      # Verwijderd 2026-05-17: groep "zonnepanelenforum" is PRIVATE —
+      # Apify-actor kan zonder FB-login geen data ophalen.
+      - id: "550933513413032"
+        name: "Zonnepanelen Vragen en Opbrengst forum"
+      - id: "1463894423872949"
+        name: "Alles over zonnepanelen, advies en bijhouden opbrengst"
+      - id: "246000092424511"
+        name: "Vraag en Aanbod Zonnepanelen"
+    pages: []
+    marketplace:
+      - query: "zonnepanelen installateur gezocht"
+
+  cv:
+    # Standalone NL cv-ketel consumer groups zijn schaars op FB.
+    # cv-ketel intent komt veelal bovendrijven in warmtepomp/renovatie groepen
+    # via keyword filters in de pipeline. Marketplace + cvketelcollectief page
+    # dekken de directe intent.
+    groups: []
+    pages:
+      - slug: "cvketelcollectief"
+        name: "Het CV-ketel Inkoop Collectief"
+    marketplace:
+      - query: "cv ketel installateur gezocht"
+      - query: "cv ketel vervangen"
+
+  renovatie:
+    groups:
+      - id: "Bouwplannen.Renoveren.Verbouwen"
+        name: "Bouwplannen Renoveren Verbouwen"
+      - id: "852743155081257"
+        name: "Bouwen en verbouwen NL/BE aannemers tips"
+      - id: "273869256438215"
+        name: "Bouwen en verbouwen (public)"
+      - id: "2093475647580779"
+        name: "Klusser gezocht/aangeboden Nederland"
+      - id: "klussen.gezocht.aangeboden"
+        name: "Klussen gezocht/aangeboden - Klustips Nederland"
+    pages: []
+    marketplace:
+      - query: "aannemer renovatie gezocht"
+      - query: "klusser gezocht"

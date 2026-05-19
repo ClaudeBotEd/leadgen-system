@@ -51,6 +51,25 @@ PROMO_SIGNALS = [
     r"\b(vacature|vacatures|in dienst|dienstverband|fulltime|parttime|full[\s\-]?time|part[\s\-]?time|salaris|salariëring|loon|leuk team|aanmelden|wij zoeken|werken bij)\b",
     # Discount/sale promo
     r"\b(\d{1,2}\s?%\s?korting|korting op|kortingsactie|introductieprijs|aanbiedingsprijs|scherp tarief|laagste tarief)\b",
+    # Service-doer pronouns (broader dan bestaande "wij installeren") — vakman
+    # die actief klussen aanbiedt. "Wie kan dit regelen?" matcht NIET (geen "wij").
+    r"\b(wij regelen|wij zorgen voor|wij realiseren|wij maken voor|wij komen langs|wij geven)\b",
+    # "Met onze <branded service>" — opening line voor service-pitch.
+    r"\bmet onze\s+\w+(?:scan|service|werkwijze|aanpak|specialiteit|aanbod|methode|expertise|tool)\b",
+    # "Bij <BedrijfsNaam> bieden/verzorgen wij" — bedrijf introduceert zichzelf
+    # met capital-cased naam (2-4 woorden) gevolgd door service-verb + wij/we.
+    r"\bbij\s+[A-Z][\w]+(?:\s+[A-Z][\w]+){1,3}\s+(?:bieden|verzorgen|helpen|kijken|adviseren|installeren|regelen|zorgen|denken)\s+(?:wij|we)\b",
+    # Sale openers (specifieker dan bestaande €-patterns)
+    r"\b(nu verkrijgbaar|speciale prijs|prijs op aanvraag)\b",
+    # Freelancer/ZZP self-ad: aankondigt eigen beschikbaarheid voor klussen.
+    r"\b(beschikbaar voor (?:nieuwe )?klussen|nemen we (?:nog )?klussen aan|mijn man (?:is|zit) (?:weer )?beschikbaar|per direct beschikbaar voor)\b",
+    # Checkmark-bullet service-lijst (3+ items) — klassiek installer-ad format.
+    # Sluit alleen andere checkmark-chars uit (\n staat toegestaan in 5-80 gap),
+    # zodat zowel \n-gescheiden als spatie-gescheiden lijsten matchen
+    # (clean_post() comprimeert newlines naar spaces).
+    r"(?:[✔✅☑][^✔✅☑]{5,80}){3,}",
+    # CTA-closer met URL: "Bekijk de quickscan via: https://..." — direct sales pitch.
+    r"\b(?:bekijk|lees|ontdek|download|aanmelden).{0,40}(?:via|op|bij|hier)[:\s]+(?:https?|www\.)",
 ]
 
 # All-caps SHOUTING (vaak job ad of advertentie) — case-sensitive check

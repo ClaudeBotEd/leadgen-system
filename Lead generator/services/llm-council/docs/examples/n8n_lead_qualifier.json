@@ -1,0 +1,62 @@
+{
+  "name": "LLM Council — Qualify a lead",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "name", "value": "Jane Cooper" },
+            { "name": "company", "value": "Acme Solar BV" },
+            { "name": "title", "value": "CFO" },
+            { "name": "location", "value": "Amsterdam" },
+            { "name": "domain", "value": "acme-solar.nl" }
+          ]
+        }
+      },
+      "name": "Lead Fixture",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://llm-council-backend:8001/api/council/analyze-lead",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead\": $json,\n  \"objective\": \"qualify for a 30-min discovery call about lead-radar\",\n  \"locale\": \"nl\"\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "name": "Council: analyze-lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const text = $input.first().json.stage3.response;\nconst m = text.match(/ICP\\s*score[^\\d]*(\\d{1,3})/i);\nreturn [{ json: { score: m ? parseInt(m[1], 10) : null, council: text } }];"
+      },
+      "name": "Extract Score",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Lead Fixture", "type": "main", "index": 0 }]] },
+    "Lead Fixture": { "main": [[{ "node": "Council: analyze-lead", "type": "main", "index": 0 }]] },
+    "Council: analyze-lead": { "main": [[{ "node": "Extract Score", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "lead-generator-llm-council-example" }
+}

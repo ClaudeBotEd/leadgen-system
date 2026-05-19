@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lead-radar-console-pg
+    environment:
+      POSTGRES_USER: console
+      POSTGRES_PASSWORD: console
+      POSTGRES_DB: lead_radar
+    ports: ["5432:5432"]
+    volumes: [lead_radar_pg_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U console"]
+      interval: 5s
+      retries: 5
+volumes:
+  lead_radar_pg_data:

@@ -79,6 +79,7 @@ def _parse_search(html: str, query_terms: list[str] | None = None) -> list[RawPo
         out.append(RawPost(
             id=rid,
             source="tweakers",
+            source_id="tweakers:keywords",
             url=url,
             title=title,
             text="",
@@ -161,5 +162,39 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         if len(deduped) >= limit:
             break
 
+    if not deduped:
+        deduped = _google_site_fallback(q, limit)
+
     log.info("Tweakers: %d posts voor q=%r", len(deduped), q)
     return deduped
+
+
+def _google_site_fallback(q: str, limit: int) -> list[RawPost]:
+    """Tweakers' eigen /forum/find filtert niet meer op keyword (KNOWN ISSUE).
+    Bij 0 directe hits vragen we Google via site:gathering.tweakers.net.
+    Posts blijven herkenbaar als source='tweakers' voor downstream filters.
+    """
+    try:
+        from . import google as _g
+    except Exception:
+        return []
+    try:
+        results = _g.fetch(f"site:gathering.tweakers.net {q}", limit=limit)
+    except Exception as e:
+        log.warning("Tweakers Google-fallback faalde: %s", e)
+        return []
+    rebadged: list[RawPost] = []
+    for p in results:
+        thread_id = _extract_thread_id(p.url) or p.url
+        rebadged.append(RawPost(
+            id=f"tweakers:{thread_id}",
+            source="tweakers",
+            source_id="tweakers:keywords",
+            url=p.url,
+            title=p.title,
+            text=p.text,
+            author=p.author,
+            created_at=p.created_at,
+            metadata={**(p.metadata or {}), "via": "google_site_fallback"},
+        ))
+    return rebadged

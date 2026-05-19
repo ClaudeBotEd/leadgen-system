@@ -1,0 +1,18 @@
+# Lead Radar — Facebook scraper crontab entries
+# Install with:  crontab -e
+# Verify with:   crontab -l
+#
+# Adjust PROJECT_DIR and PYTHON to your environment.
+# Schedule: 2-4x daily with a 4h gap.  Quota resets at midnight.
+
+PROJECT_DIR=/Users/claudebot/Lead generator/lead-radar
+PYTHON=/usr/local/bin/python3
+
+# Scrape runs
+0 8  * * * cd "$PROJECT_DIR" && "$PYTHON" -m consumer.sources.facebook.runner scrape --niche all >> data/fb_state/cron.log 2>&1
+0 12 * * * cd "$PROJECT_DIR" && "$PYTHON" -m consumer.sources.facebook.runner scrape --niche all >> data/fb_state/cron.log 2>&1
+0 17 * * * cd "$PROJECT_DIR" && "$PYTHON" -m consumer.sources.facebook.runner scrape --niche all >> data/fb_state/cron.log 2>&1
+0 21 * * * cd "$PROJECT_DIR" && "$PYTHON" -m consumer.sources.facebook.runner scrape --niche all >> data/fb_state/cron.log 2>&1
+
+# Quota reset at midnight
+0 0  * * * cd "$PROJECT_DIR" && "$PYTHON" -c "from pathlib import Path; from consumer.sources.facebook.core.accounts import AccountPool; AccountPool(Path('data/fb_state')).reset_quota()"

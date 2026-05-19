@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Iterable
 
+from pcs import ensure_leads_master_workflow, normalize_state
+
 
 CSV_COLUMNS = [
     "lead_id",
@@ -38,6 +40,9 @@ CSV_COLUMNS = [
     "title",
     "snippet",
     "query",
+    "assigned_to",
+    "sent_at",
+    "state",
 ]
 
 
@@ -60,6 +65,7 @@ def normalize_lead(lead: dict, idx: int = 0, niche: str = "") -> dict:
     out["lead_id"] = lead_id
     if niche and not out.get("niche"):
         out["niche"] = niche
+    out["state"] = normalize_state(out.get("state"))
     return out
 
 
@@ -70,14 +76,28 @@ def export_leads(
     fmt: str = "csv",
     directory: str | Path = "data",
 ) -> list[Path]:
-    """Schrijf leads naar bestand(en). Returns lijst van paths."""
+    """Schrijf leads naar bestand(en). Returns lijst van paths.
+
+    If LEAD_RADAR_INTELLIGENCE_ENABLED=1, every exported lead is also fed
+    through the llm-council AI intelligence layer (scoring -> outreach ->
+    CRM persist -> optional n8n webhook). The CSV/JSON output is unchanged
+    so existing downstream tools keep working.
+    """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
 
     today = datetime.now().strftime("%Y%m%d")
     base = f"leads_{niche}_{location}_{today}"
 
-    leads_list = [normalize_lead(lead, idx=i, niche=niche) for i, lead in enumerate(leads, 1)]
+    raw_list = list(leads)
+    leads_list = [normalize_lead(lead, idx=i, niche=niche) for i, lead in enumerate(raw_list, 1)]
+    # Stamp the assigned lead_id back onto the raw row so the moderation
+    # layer (which keeps arbitrary fields like source_url / snippet that
+    # CSV normalisation strips) still has a stable identifier.
+    moderation_rows: list[dict] = []
+    for i, (raw, normed) in enumerate(zip(raw_list, leads_list), 1):
+        merged = {**raw, "lead_id": normed.get("lead_id"), "candidate_id": normed.get("lead_id")}
+        moderation_rows.append(merged)
 
     paths: list[Path] = []
 
@@ -98,13 +118,64 @@ def export_leads(
         paths.append(json_path)
         print(f"[export] JSON: {json_path} ({len(leads_list)} leads)")
 
+    _maybe_run_moderation(moderation_rows)
+
     return paths
+
+
+def _maybe_run_moderation(leads_list: list[dict]) -> None:
+    """Best-effort moderation hook. Never raises into the exporter.
+
+    The moderation layer takes captured *public posts* (source_url +
+    snippet + captured_at), not B2B company rows. Most lead-radar
+    exporters today produce company rows, so we only forward rows that
+    actually look like post candidates. Activated by
+    LEAD_RADAR_MODERATION_ENABLED.
+    """
+    try:
+        from moderation import get_config, moderate_posts  # lazy import
+    except ImportError as e:
+        print(f"[export] moderation import failed (skipping): {e}")
+        return
+
+    config = get_config()
+    if not config.enabled:
+        return
+
+    candidates = [
+        row for row in leads_list
+        if str(row.get("source_url") or "").strip()
+        and str(row.get("snippet") or "").strip()
+        and str(row.get("captured_at") or "").strip()
+    ]
+    if not candidates:
+        print(
+            f"[moderation] skipped — none of the {len(leads_list)} rows are post-shaped "
+            "(need source_url + snippet + captured_at). The moderation layer is "
+            "intended for forum/social scrape output, not the company exporter."
+        )
+        return
+
+    try:
+        summary = moderate_posts(candidates, config=config)
+        print(
+            f"[moderation] reviewed={summary.reviewed} approved={summary.approved} "
+            f"persisted={summary.persisted} webhooks={summary.webhooks_fired} "
+            f"errors={summary.errors}"
+        )
+        if summary.temperature_counts:
+            print(f"[moderation] temperatures={dict(summary.temperature_counts)}")
+        if summary.error_kinds:
+            print(f"[moderation] error_kinds={dict(summary.error_kinds)}")
+    except Exception as e:  # noqa: BLE001 — protect the pipeline from any bug
+        print(f"[moderation] crashed (continuing): {e}")
 
 
 def append_to_master(leads: Iterable[dict], master_path: str | Path = "data/leads_master.csv") -> Path:
     """Voeg leads toe aan een master CSV (cumulatief over alle scrapes)."""
     master_path = Path(master_path)
     master_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_leads_master_workflow(master_path, base_fields=CSV_COLUMNS)
 
     file_exists = master_path.exists()
     with open(master_path, "a", encoding="utf-8", newline="") as f:

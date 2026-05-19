@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lead Radar — heartbeat launchd agent (macOS).
+
+  Roept scripts/heartbeat.sh aan op 6 gestaggerde tijden per dag. Script
+  checkt mtime van apify.log + consumer.log; te oud = Telegram alert.
+
+  Installatie:
+    cp consumer/sources/facebook/com.leadradar.heartbeat.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.leadradar.heartbeat.plist
+
+  Handmatige trigger:
+    launchctl start com.leadradar.heartbeat
+
+  Uitschakelen:
+    launchctl unload ~/Library/LaunchAgents/com.leadradar.heartbeat.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.leadradar.heartbeat</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/claudebot/Lead generator/lead-radar/scripts/heartbeat.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/claudebot/Lead generator/lead-radar</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- 6x/day staggered to avoid colliding with pipeline triggers
+       (08:00/08:30/12:00/13:00/17:00/18:00/21:00). -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>14</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>30</integer></dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/heartbeat.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/heartbeat.err</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>

@@ -60,7 +60,7 @@ def test_offtopic_penalty_applies() -> None:
     )
     cleaned = clean_post(raw)
     score, breakdown = score_post(cleaned, niche_keywords=["warmtepomp"])
-    assert breakdown.get("off_topic_penalty") == -30
+    assert breakdown.get("off_topic_penalty") == -50
 
 
 def test_score_caps_at_100() -> None:

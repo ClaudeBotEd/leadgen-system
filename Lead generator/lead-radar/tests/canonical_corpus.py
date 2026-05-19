@@ -444,6 +444,132 @@ PROMO_POSTS: list[dict] = [
             "city": None,
         },
     },
+    # ─── FB-groups patterns (post-Apify-integratie, 2026-05-17 corpus uitbreiding) ───
+    {
+        # CTA-closer met URL — "Bekijk de quickscan via: https://..." pattern.
+        "id": "promo_fb_quickscan_cta",
+        "title": "Herkent u dit?",
+        "text": (
+            "De ene installateur adviseert hybride, de andere zegt all-electric.\n"
+            "Bij Klimaat Techniek Nederland kijken wij onafhankelijk mee met uw situatie.\n"
+            "Met onze Warmtepomp Quickscan beoordelen wij onder andere:\n"
+            "* Of uw woning geschikt is voor een warmtepomp\n"
+            "* Welk type warmtepomp het beste past\n\n"
+            "Bekijk de Warmtepomp Quickscan via: https://www.voorbeeld.nl/quickscan/"
+        ),
+        "niche": "warmtepomp",
+        "expected": {
+            "classifier_kind": "promo",
+            "classifier_keep": False,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 100,
+            "city": None,
+        },
+    },
+    {
+        # Sale opener — "Nu verkrijgbaar: ..." commercial ad.
+        "id": "promo_fb_sale_opener",
+        "title": "Ultiem comfort met energiebesparing",
+        "text": (
+            "Nu verkrijgbaar: hoogwaardige Inverter airconditioners\n"
+            "Grote besparing op elektriciteitsverbruik\n"
+            "Speciale prijs: slechts 1000 euro inclusief montage."
+        ),
+        "niche": "airco",
+        "expected": {
+            "classifier_kind": "promo",
+            "classifier_keep": False,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 100,
+            "city": None,
+        },
+    },
+    {
+        # "Wij regelen ..." service-doer pronoun (broader dan bestaande "wij installeren").
+        "id": "promo_fb_wij_regelen",
+        "title": "Buitenkraan laten plaatsen?",
+        "text": (
+            "Met dit weer is een buitenkraan geen luxe maar een must.\n"
+            "Wij regelen het snel en vakkundig voor je.\n"
+            "Tuin sproeien, auto wassen, zwembad vullen — geen gedoe meer."
+        ),
+        "niche": "renovatie",
+        "expected": {
+            "classifier_kind": "promo",
+            "classifier_keep": False,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 100,
+            "city": None,
+        },
+    },
+    {
+        # Freelancer self-ad — aankondigt eigen beschikbaarheid.
+        "id": "promo_fb_freelancer_available",
+        "title": "Hallo allemaal",
+        "text": (
+            "Mijn man is weer beschikbaar voor nieuwe klussen in omgeving Apeldoorn.\n"
+            "Hij is allround vakman en helpt met schilderwerk, plafonds, laminaat en timmerwerk."
+        ),
+        "niche": "renovatie",
+        "expected": {
+            "classifier_kind": "promo",
+            "classifier_keep": False,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 100,
+            "city": None,
+        },
+    },
+    {
+        # Checkmark-bullet service-lijst (3+ regels) — installer-ad format.
+        "id": "promo_fb_checkmark_bullets",
+        "title": "Geen commissies, geen tussenpersonen",
+        "text": (
+            "Waarom betalen voor een platform? Bij ons is het simpel.\n"
+            "✅ Geen commissies voor de vakman\n"
+            "✅ Geen tussenpersonen tussen jou en de klusser\n"
+            "✅ Gewoon rechtstreeks contact tussen partijen\n"
+        ),
+        "niche": "renovatie",
+        "expected": {
+            "classifier_kind": "promo",
+            "classifier_keep": False,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 100,
+            "city": None,
+        },
+    },
+    {
+        # FALSE-POSITIVE GUARD — consumer die zelf zoekt en "interesse? stuur" als
+        # uitnodiging gebruikt MAG NIET geflipt worden naar promo.  Regressie-test
+        # voor de patroon-keuze (we hebben "interesse?" bewust niet opgenomen in
+        # sale_opener).
+        "id": "lead_fb_consumer_invites_response",
+        "title": "Op zoek naar iemand voor dakwerken",
+        "text": (
+            "Dag iedereen,\n"
+            "Ik ben op zoek naar iemand voor dakwerken in Willebroek. Het volledige dak "
+            "moet worden afgebroken en vervangen.\n"
+            "Heeft u interesse? Stuur gerust een bericht.\n"
+            "Alvast bedankt."
+        ),
+        "niche": "renovatie",
+        # score-range is bewust ruim: deze test verifieert primair dat de
+        # classifier NIET promo-flipt op "interesse? stuur"; exacte score is
+        # secundair en afhankelijk van renovatie-keyword coverage.
+        "expected": {
+            "classifier_kind": "lead",
+            "classifier_keep": True,
+            "intent": "cold",
+            "score_min": 0,
+            "score_max": 80,
+            "city": None,
+        },
+    },
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────

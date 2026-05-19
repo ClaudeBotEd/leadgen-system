@@ -68,6 +68,8 @@ HEADERS = [
     # --- v2 workflow fields ---
     "provincie", "bericht_voorstel", "contacted_at", "installateur",
 ]
+# Same column order as HEADERS — used for row-building and testing.
+SHEET_COLUMNS = HEADERS
 HOT_TAB = "HOT LEADS"
 ALL_TAB = "ALL LEADS"
 OPP_TAB = "OPPORTUNITIES"
@@ -174,8 +176,13 @@ def _now_str() -> str:
     return datetime.now(_NL_TZ).strftime("%Y-%m-%d %H:%M")
 
 
-def lead_to_row(lead: Lead) -> list:
-    """Bouwt een rij in HEADERS-volgorde (15 kolommen)."""
+def _build_sheet_row(lead: Lead) -> list:
+    """Build a Sheets row in SHEET_COLUMNS order. Pure function — no gspread calls.
+
+    This is the authoritative row-builder for all three tabs (HOT, ALL, OPPORTUNITIES).
+    Key change: bron column uses lead.source_id (granular per-source identifier)
+    with fallback to lead.source for backwards compatibility.
+    """
     urgency = has_urgency(f"{lead.title} {lead.text}")
     summary = smart_summary(
         text=lead.text or "",
@@ -200,7 +207,7 @@ def lead_to_row(lead: Lead) -> list:
         (lead.city or "").strip(),                 # stad
         lead.niche,                                # niche
         summary,                                   # samenvatting
-        lead.source,                               # bron
+        lead.source_id or lead.source,             # bron — granular source_id
         lead.url,                                  # link
         found_at,                                  # gevonden_op
         "",                                        # notitie  (user)
@@ -210,6 +217,15 @@ def lead_to_row(lead: Lead) -> list:
         "",                                        # contacted_at  (user)
         "",                                        # installateur  (user)
     ]
+
+
+def lead_to_row(lead: Lead) -> list:
+    """Bouwt een rij in HEADERS-volgorde (15 kolommen).
+
+    Delegates to _build_sheet_row for the actual row construction.
+    Kept for backwards compatibility with existing callers.
+    """
+    return _build_sheet_row(lead)
 
 
 def _resolve_credentials_path(explicit: str | None) -> Path:
