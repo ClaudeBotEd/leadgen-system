@@ -676,11 +676,8 @@ A28  Disputes that route to a support queue instead of the reviewer
 A29  Charging for leads the installateur disputed and won
 A30  Selling the corpus
 A31  Letting a week pass without contact
+A32  Closed-group lead delivered zonder volledige archive-bundle: een lead met source_class = burner_closed mag NOOIT DELIVERED worden als één van de archive-bundle items ontbreekt (HTML-DOM, screenshot, manifest-entry met SHA-256 hashes). Fail-closed — geen runtime override.
 ```
-
-### A32 — Closed-group lead delivered zonder volledige archive-bundle
-
-Een lead met `source_class = burner_closed` mag NOOIT DELIVERED worden als één van de archive-bundle items ontbreekt: HTML-DOM, screenshot, manifest-entry met SHA-256 hashes. Fail-closed — geen runtime override.
 
 ---
 
@@ -758,6 +755,7 @@ homeowner           the person whose public post became a signal
 
 - **verifiable public intent** — homeowner's eigen sentence in een publicly resolvable bron (Reddit, publieke FB-groep, Marketplace, forum, page-comment). Default verifieerbaarheid-modaliteit.
 - **verifiable member-witnessed intent** (v0.2) — homeowner's eigen sentence in een member-resolvable bron (closed Facebook group). Sub-categorie van verifiable intent met verplichte archive-bundle + reviewer-attestation per §00.2.b.
+- **intent-strength** (v0.2) — categorisch attribuut van een inventory-lead: `HOT` of `WARM`. Apart concept van `band` (band is reviewer-assigned classification met drie waarden HOT/WARM/OPP; intent-strength is een inventory-pool categorisering met twee waarden, gekozen door Sem bij approval).
 
 ### B.2 Terms we never use
 
@@ -794,7 +792,7 @@ magic                  traceability             anti-doctrine
 
 ## Revision policy
 
-This document is frozen at v0.1. Once frozen:
+This document is frozen at v0.2. Once frozen:
 
 - Sections 00–04 change only with an explicit version bump
   (v0.2, v1.0, etc.) and a revision rationale committed alongside.
@@ -830,7 +828,7 @@ Member-resolvable URL toegevoegd als geldige provenance-modaliteit voor closed F
 
 Toegevoegd: §00.0 Moderation-filosofie (commerciële bruikbaarheid + trust preservation als optimaliseringsdoelen, niet perfecte waarheid). §00.2.b Closed-group provenance. §01.3 screenshot-uitbreiding. §02.2 intent-strength HOT/WARM als gelijkwaardige delivery-categorieën. §02.3 source-class-aware vocab-lint. A32 fail-closed bij missing archive-bundle. B.1 verifiable member-witnessed intent.
 
-Geen breuk in §00.5 accountable reviewer pattern.
+Geen breuk in §00.5 honesty constraints.
 
 ### v0.1 — 2026-05-18
 
