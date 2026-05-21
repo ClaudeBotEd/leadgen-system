@@ -49,7 +49,7 @@ def test_intent_matches(post: dict) -> None:
     keywords = NICHE_KEYWORDS.get(post["niche"], [post["niche"]])
     score, _ = score_post(cleaned, niche_keywords=keywords)
     intent = intent_from_score(score)
-    assert intent in {"hot", "warm", "cold"}
+    assert intent in {"hot", "warm", "opp", "cold"}
 
 
 def test_offtopic_penalty_applies() -> None:

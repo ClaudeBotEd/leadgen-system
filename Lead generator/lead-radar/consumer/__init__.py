@@ -74,7 +74,7 @@ class Lead:
     url: str
     city: str | None
     score: int
-    intent: str  # 'hot' | 'warm' | 'cold'
+    intent: str  # 'hot' | 'warm' | 'opp' | 'cold'
     breakdown: dict[str, Any]
     niche: str
     captured_at: str  # required: ISO-8601 UTC, sourced from RawPost.created_at
@@ -104,11 +104,13 @@ class Lead:
 
 
 def intent_from_score(score: int) -> str:
-    """>=70 hot, 40-69 warm, <40 cold."""
-    if score >= 70:
+    """>=80 hot, 60-79 warm, 40-59 opp, <40 cold."""
+    if score >= 80:
         return "hot"
-    if score >= 40:
+    if score >= 60:
         return "warm"
+    if score >= 40:
+        return "opp"
     return "cold"
 
 
