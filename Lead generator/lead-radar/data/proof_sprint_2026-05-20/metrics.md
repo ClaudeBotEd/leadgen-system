@@ -26,6 +26,12 @@ Sprint window: 2026-05-20 to 2026-05-22
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | rehearsal_warmtepomp |  |  |  |  |  |  |  |  |  |
 
+## Full-System Rehearsal Runs
+
+| Timestamp | Niches | Total Leads | LLM € | Sheets+ | Notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+|  |  |  |  |  | Per-run details live at `data/proof_sprint_2026-05-20/consumer/full_rehearsal_<timestamp>/summary.md` |
+
 ## Notes
 
 -
