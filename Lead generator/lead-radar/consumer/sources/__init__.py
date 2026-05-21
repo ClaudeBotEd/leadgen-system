@@ -33,6 +33,11 @@ REGISTRY: dict[str, Callable] = {
 
 ALL_SOURCES: list[str] = list(REGISTRY.keys())
 
+# Canonical source baseline for proof-sprint rehearsal runs.  Keep this
+# separate from ALL_SOURCES so rehearsal commands can stay intentionally
+# narrow without changing default source registry behavior.
+PROOF_SPRINT_SOURCES: list[str] = ["reddit", "reddit_new"]
+
 # Sources die `location` negeren of waar location-suffix de resultaten niet
 # beïnvloedt — bij multi-locatie daily-runs draaien ze 1× per niche, NIET
 # 1× per niche-locatie.  Bespaart 95%+ verspilde HTTP calls bij --locations all.
@@ -107,6 +112,7 @@ def is_source_dead(name: str) -> bool:
 __all__ = [
     "REGISTRY",
     "ALL_SOURCES",
+    "PROOF_SPRINT_SOURCES",
     "NATIONAL_SOURCES",
     "LOCATION_AWARE_SOURCES",
     "DEAD_THRESHOLD",

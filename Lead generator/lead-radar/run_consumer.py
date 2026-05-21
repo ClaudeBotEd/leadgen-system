@@ -31,7 +31,8 @@ sys.path.insert(0, str(HERE))
 
 from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import (  # noqa: E402
-    REGISTRY, ALL_SOURCES, NATIONAL_SOURCES, LOCATION_AWARE_SOURCES,
+    REGISTRY, ALL_SOURCES, PROOF_SPRINT_SOURCES, NATIONAL_SOURCES,
+    LOCATION_AWARE_SOURCES,
     analyze_manual_posts,
     reset_source_health, mark_source_yield, is_source_dead,
 )
@@ -181,7 +182,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--limit", type=int, default=50,
                    help="Max raw posts per source-query (default 50)")
     p.add_argument("--sources", default="",
-                   help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}")
+                   help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}. "
+                        f"Proof-sprint rehearsal: --sources {','.join(PROOF_SPRINT_SOURCES)}")
     p.add_argument("--min-score", type=int, default=30,
                    help="Minimum score om in output op te nemen (default 30; --daily dwingt 60)")
     p.add_argument("--max-age-days", type=int, default=0,
