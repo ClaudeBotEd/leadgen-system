@@ -74,9 +74,25 @@ HOT_TAB = "HOT LEADS"
 ALL_TAB = "ALL LEADS"
 OPP_TAB = "OPPORTUNITIES"
 
-HOT_THRESHOLD = 80   # >= 80  -> 'contact nu'
-WARM_THRESHOLD = 70  # 70-79  -> 'later'
-OPP_THRESHOLD = 60   # 60-69  -> 'skip' (zichtbaar in OPPORTUNITIES)
+def _env_int(key: str, default: int) -> int:
+    raw = os.environ.get(key)
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        log.warning(
+            "Env %s=%r is geen geldig getal; gebruik default %d",
+            key,
+            raw,
+            default,
+        )
+        return default
+
+
+HOT_THRESHOLD = _env_int("LEAD_RADAR_SHEETS_HOT_FLOOR", 80)    # >= 80  -> 'contact nu'
+WARM_THRESHOLD = _env_int("LEAD_RADAR_SHEETS_WARM_FLOOR", 70)  # 70-79  -> 'later'
+OPP_THRESHOLD = _env_int("LEAD_RADAR_SHEETS_OPP_FLOOR", 60)    # 60-69  -> 'skip'
 # < 60: niet exporteren
 
 DEFAULT_WORKFLOW_STATUS = "new"
