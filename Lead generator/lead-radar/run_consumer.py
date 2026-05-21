@@ -675,7 +675,9 @@ def run_one_niche(
         skipped_hardblock = skipped_fuzzy_dup = 0
         skipped_aged_out = skipped_cross_run = skipped_author = 0
         skipped_no_ts = 0
-        llm_calls = author_calls = 0
+        from consumer.processor import llm_verifier as _llm_verifier
+        _llm_verifier.reset_run_counters()
+        author_calls = 0
 
         # Load source weights once per niche-run (file read; cached dict).
         _source_weights = load_source_weights(config_path=HERE / "config.yaml")
@@ -831,12 +833,13 @@ def run_one_niche(
                 niche_keywords=keywords_required, min_score=args.min_score,
             ))
 
+        llm_stats = _llm_verifier.get_run_stats()
         log.info(
             "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d no_ts=%d hardblock=%d fuzzy=%d "
-            "llm_calls=%d author_calls=%d)",
+            "llm_calls=%d cost=EUR%.4f author_calls=%d)",
             niche, len(raw_total), len(leads), skipped_promo, skipped_old,
             skipped_low, skipped_no_ts, skipped_hardblock, skipped_fuzzy_dup,
-            llm_calls, author_calls,
+            llm_stats["api_calls"], llm_stats["estimated_cost_eur"], author_calls,
         )
 
         export_leads(leads, niche=niche, outdir=args.outdir)
