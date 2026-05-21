@@ -76,6 +76,7 @@ from consumer.output import (  # noqa: E402
     send_lead_alert,
     sync_to_sheets,
 )
+from consumer.niche_relevance import is_niche_relevant  # noqa: E402
 from consumer.utils import PoliteSession, HttpConfig, SeenStore  # noqa: E402
 from consumer.logging_setup import setup_logging  # noqa: E402
 
@@ -854,6 +855,23 @@ def run_one_niche(
     return leads
 
 
+def filter_leads_for_sheets(leads: list[Lead], niche: str) -> list[Lead]:
+    """Apply niche-anchor gate before Sheets writes.
+
+    Returns a new list containing only leads whose title+text contains at
+    least one anchor for `niche` (see consumer/niche_anchors.yaml). The
+    input list is never mutated — CSV/JSON export, which runs earlier
+    inside run_one_niche, is unaffected by this gate.
+    """
+    kept = [lead for lead in leads if is_niche_relevant(lead.title, lead.text, niche)]
+    dropped = len(leads) - len(kept)
+    log.info(
+        "[%s] niche-anchor gate: kept %d / dropped %d before Sheets",
+        niche, len(kept), dropped,
+    )
+    return kept
+
+
 def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) -> None:
     hot = sum(1 for lead in leads if lead.score >= 80)
     warm = sum(1 for lead in leads if 70 <= lead.score < 80)
@@ -1079,18 +1097,20 @@ def run_daily(args: argparse.Namespace) -> int:
                 fb_for_niche = None  # only first call gets FB posts
         sheets_result = None
         if niche_leads and not getattr(args, "dry_run", False):
-            try:
-                sheets_result = sync_to_sheets(
-                    niche_leads,
-                    spreadsheet_id=args.spreadsheet_id,
-                    credentials_path=args.credentials,
-                )
-                sheets_total["all_added"] += sheets_result.get("all_added", 0)
-                sheets_total["hot_added"] += sheets_result.get("hot_added", 0)
-                sheets_total["opp_added"] += sheets_result.get("opp_added", 0)
-                sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
-            except Exception as e:
-                log.error("Sheets sync (%s) faalde: %s", niche, e)
+            sheets_leads = filter_leads_for_sheets(niche_leads, niche)
+            if sheets_leads:
+                try:
+                    sheets_result = sync_to_sheets(
+                        sheets_leads,
+                        spreadsheet_id=args.spreadsheet_id,
+                        credentials_path=args.credentials,
+                    )
+                    sheets_total["all_added"] += sheets_result.get("all_added", 0)
+                    sheets_total["hot_added"] += sheets_result.get("hot_added", 0)
+                    sheets_total["opp_added"] += sheets_result.get("opp_added", 0)
+                    sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
+                except Exception as e:
+                    log.error("Sheets sync (%s) faalde: %s", niche, e)
         _print_summary(niche, niche_leads, sheets_result)
         grand_total.extend(niche_leads)
         # Progress-heartbeat: per voltooide niche logt elapsed + running ETA
@@ -1161,14 +1181,16 @@ def run_single(args: argparse.Namespace) -> int:
     leads = run_one_niche(args, args.niche, fb_extra_posts=fb_extra_posts)
     sheets_result = None
     if args.sheets and leads and not getattr(args, "dry_run", False):
-        try:
-            sheets_result = sync_to_sheets(
-                leads,
-                spreadsheet_id=args.spreadsheet_id,
-                credentials_path=args.credentials,
-            )
-        except Exception as e:
-            log.error("Sheets sync faalde: %s", e)
+        sheets_leads = filter_leads_for_sheets(leads, args.niche)
+        if sheets_leads:
+            try:
+                sheets_result = sync_to_sheets(
+                    sheets_leads,
+                    spreadsheet_id=args.spreadsheet_id,
+                    credentials_path=args.credentials,
+                )
+            except Exception as e:
+                log.error("Sheets sync faalde: %s", e)
     _print_summary(args.niche, leads, sheets_result)
     print()
     return 0
