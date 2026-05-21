@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Keys and secrets
+.env
+.env.local
+.env.*.local
+
+# Data files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

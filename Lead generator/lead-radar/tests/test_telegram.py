@@ -21,6 +21,7 @@ def _lead(score: int = 85, niche: str = "warmtepomp", city: str | None = "utrech
         text="Mijn cv is kapot, spoed.", summary="Mijn cv is kapot, spoed.",
         url="https://reddit.com/r/x/abc", city=city, score=score,
         intent="hot", breakdown={"location": 20}, niche=niche,
+        captured_at="2026-05-18T08:00:00+00:00",
     )
 
 
@@ -146,6 +147,7 @@ def test_format_lead_escapes_close_paren_in_url() -> None:
         title="CV kapot", text="spoed", summary="spoed",
         url="https://reddit.com/r/foo_(bar)/comments/abc",
         city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     out = _format_lead(lead)
     assert "foo_(bar\\)/comments" in out, f"Expected escaped \\) in URL, got: {out!r}"
@@ -158,6 +160,7 @@ def test_format_lead_url_without_parens_unchanged() -> None:
         title="x", text="y", summary="y",
         url="https://reddit.com/r/x/abc",
         city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     out = _format_lead(lead)
     assert "(https://reddit.com/r/x/abc)" in out
@@ -170,6 +173,7 @@ def test_format_lead_escapes_backslash_in_url() -> None:
         title="x", text="y", summary="y",
         url="https://example.com/path\\with\\backslash",
         city="utrecht", score=85, intent="hot", breakdown={}, niche="cv",
+        captured_at="2026-05-18T08:00:00+00:00",
     )
     out = _format_lead(lead)
     assert "path\\\\with\\\\backslash" in out

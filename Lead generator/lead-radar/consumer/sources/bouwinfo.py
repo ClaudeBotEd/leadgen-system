@@ -56,6 +56,7 @@ def _parse(html: str) -> list[RawPost]:
         out.append(RawPost(
             id=rid,
             source="bouwinfo",
+            source_id="bouwinfo:search",
             url=url,
             title=title,
             text=snippet,

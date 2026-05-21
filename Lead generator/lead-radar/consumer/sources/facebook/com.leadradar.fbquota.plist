@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lead Radar -- FB quota reset launchd agent (macOS).
+  Reset per-account quota om middernacht.
+
+  Installatie:
+    cp consumer/sources/facebook/com.leadradar.fbquota.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.leadradar.fbquota.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.leadradar.fbquota</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/claudebot/Lead generator/lead-radar/.venv/bin/python</string>
+    <string>-c</string>
+    <string>from pathlib import Path; from consumer.sources.facebook.core.accounts import AccountPool; AccountPool(Path('data/fb_state')).reset_quota()</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/claudebot/Lead generator/lead-radar</string>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>0</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/data/fb_state/launchd-quota.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/data/fb_state/launchd-quota.err</string>
+</dict>
+</plist>

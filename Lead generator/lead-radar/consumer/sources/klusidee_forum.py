@@ -41,7 +41,7 @@ SOURCE_NAME = "klusidee"
 THREAD_PATH_RE = re.compile(r"^/Forum/topic/[^/]+?\.(\d+)/?")
 
 
-def _parse_category_page(html: str) -> list[RawPost]:
+def _parse_category_page(html: str, *, subforum_slug: str = "unknown") -> list[RawPost]:
     """Plukt thread-anchors uit een /Forum/forum/<slug>.<id>/ pagina.
 
     Robuust tegen HTML-wijzigingen: we selecteren op URL-pattern in
@@ -73,6 +73,7 @@ def _parse_category_page(html: str) -> list[RawPost]:
         out.append(RawPost(
             id=rid,
             source=SOURCE_NAME,
+            source_id=f"klusidee_forum:{subforum_slug}",
             url=f"{BASE}{href}",
             title=title,
             text="",
@@ -95,11 +96,15 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         log.debug("klusidee_forum: skipping non-subforum query %r", query)
         return []
 
+    # Derive the XenForo subforum slug+id from the path, e.g.
+    # "/Forum/forum/cv-ketels-gaskachels-en-geisers.33/" -> "cv-ketels-gaskachels-en-geisers.33"
+    slug = next((s for s in reversed(query.rstrip("/").split("/")) if s), "unknown")
+
     sess = session or PoliteSession(HttpConfig(request_delay=3.0))
     url = f"{BASE}{query}"
     resp = sess.get(url)
     if resp is None:
         return []
-    posts = _parse_category_page(resp.text)[:limit]
+    posts = _parse_category_page(resp.text, subforum_slug=slug)[:limit]
     log.info("Klusidee forum: %d posts uit %s", len(posts), query)
     return posts

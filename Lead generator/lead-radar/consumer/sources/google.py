@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from typing import Iterable
+from urllib.parse import urlsplit
 
 from .. import RawPost
 
@@ -110,6 +111,51 @@ def _is_post_url(url: str) -> bool:
     return any(p in u for p in _FORUM_URL_PATTERNS)
 
 
+def _parse_results(
+    raw: list[dict],
+    *,
+    limit: int = 25,
+    query: str = "",
+) -> list[RawPost]:
+    """Parse a list of DDG result dicts into RawPosts (testable offline).
+
+    Each dict must contain at least one of: 'href'/'url' (URL), 'title',
+    'body'/'description'.  Applies the same _is_post_url filter as fetch().
+
+    Args:
+        raw: List of result dicts as returned by DDGS.text().
+        limit: Maximum number of RawPosts to return.
+        query: Original query string — stored in metadata for traceability.
+    """
+    out: list[RawPost] = []
+    skipped = 0
+    for r in raw:
+        url = r.get("href") or r.get("url") or ""
+        title = r.get("title") or ""
+        body = r.get("body") or r.get("description") or ""
+        if not url:
+            continue
+        if not _is_post_url(url):
+            skipped += 1
+            continue
+        rid = f"google:{_short_hash(url)}"
+        host = urlsplit(url).netloc.lower().removeprefix("www.")
+        out.append(RawPost(
+            id=rid,
+            source="google",
+            source_id=f"google:{host}",
+            url=url,
+            title=title,
+            text=body,
+            created_at=None,
+            metadata={"query": query},
+        ))
+        if len(out) >= limit:
+            break
+    log.debug("_parse_results: %d posts, %d skipped (non-forum)", len(out), skipped)
+    return out
+
+
 def fetch(query: str, *, limit: int = 25, location: str | None = None,
           **_: object) -> list[RawPost]:
     if not _HAS_DDG:
@@ -123,29 +169,6 @@ def fetch(query: str, *, limit: int = 25, location: str | None = None,
         q = f"{q} {location}"
 
     raw = _ddg_search(q, max_results=limit * 3)  # over-fetch want we filteren ~70% weg
-    out: list[RawPost] = []
-    skipped = 0
-    for r in raw:
-        url = r.get("href") or r.get("url") or ""
-        title = r.get("title") or ""
-        body = r.get("body") or r.get("description") or ""
-        if not url:
-            continue
-        if not _is_post_url(url):
-            skipped += 1
-            continue
-        rid = f"google:{_short_hash(url)}"
-        out.append(RawPost(
-            id=rid,
-            source="google",
-            url=url,
-            title=title,
-            text=body,
-            created_at=None,
-            metadata={"query": q},
-        ))
-        if len(out) >= limit:
-            break
-
-    log.info("Google/DDG: %d post-URLs voor q=%r (skipped %d non-forum)", len(out), q, skipped)
+    out = _parse_results(raw, limit=limit, query=q)
+    log.info("Google/DDG: %d post-URLs voor q=%r (filtered)", len(out), q)
     return out

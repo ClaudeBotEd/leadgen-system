@@ -1,0 +1,141 @@
+# Per-niche anchor terms for the relevance gate that filters leads
+# before Google Sheets writes. Each anchor is a case-insensitive
+# substring matched against (title + " " + text). A lead passes the
+# gate iff at least one anchor for its niche is present.
+#
+# Design rules:
+#  - prefer compound terms unique to the niche (e.g. "cv-ketel" not "cv")
+#  - include common Dutch + brand-name forms so genuine posts pass
+#  - avoid 2-3 letter substrings that match unrelated Dutch words
+#
+# Tuning: anchors are config, not code. Update this file when a real
+# niche post is dropped by the gate (false negative) or a contaminant
+# slips through (false positive).
+
+niches:
+  warmtepomp:
+    - warmtepomp
+    - lucht-water
+    - lucht/water
+    - monoblock
+    - monoblok
+    - hybride warmtepomp
+    - bron-warmtepomp
+    - all-electric
+
+  airco:
+    - airco
+    - airconditioning
+    - multisplit
+    - split-unit
+    - splitunit
+    - daikin
+    - mitsubishi electric
+
+  zonnepanelen:
+    - zonnepanelen
+    - zonnepaneel
+    - pv-paneel
+    - pv paneel
+    - pv-installatie
+    - omvormer
+    - micro-omvormer
+    - salderen
+    - terugleveren
+    - solaredge
+
+  cv:
+    - cv-ketel
+    - cv ketel
+    - cv installatie
+    - cv-installatie
+    - hr-ketel
+    - combiketel
+    - gasketel
+    - intergas
+    - nefit
+    - remeha
+    - vaillant
+    - atag ketel
+
+  isolatie:
+    - isolatie
+    - isoleren
+    - spouwmuur
+    - spouwmuurisolatie
+    - dakisolatie
+    - vloerisolatie
+    - gevelisolatie
+    - na-isolatie
+    - glaswol
+    - pir-plaat
+
+  vloerverwarming:
+    - vloerverwarming
+    - vloerverwarmingsverdeler
+    - infrezen
+    - infreezen
+    - vloerverdeler
+    - vloersleuven
+    - slangen leggen
+
+  ventilatie:
+    - mechanische ventilatie
+    - warmteterugwinning
+    - balansventilatie
+    - mv-unit
+    - mv unit
+    - wtw-unit
+    - wtw unit
+    - zehnder ventilatie
+    - brink renovent
+    - itho daalderop
+
+  laadpaal:
+    - laadpaal
+    - laadstation
+    - ev-lader
+    - ev lader
+    - wallbox
+    - 11kw lader
+    - 22kw lader
+    - 3-fase aansluiting
+    - alfen eve
+    - wallconnector
+
+  renovatie:
+    - renovatie
+    - verbouwing
+    - aanbouw
+    - uitbouw
+    - dakopbouw
+    - verbouwen
+    - verbouw
+    - aannemer
+    - bouwbedrijf
+    - dakkapel
+
+  dakwerk:
+    - dakwerk
+    - dakdekker
+    - dakbedekking
+    - dakpannen
+    - plat dak
+    - hellend dak
+    - bitumen
+    - epdm
+    - zinkwerk
+    - dakraam
+    - dakgoot
+
+  kozijnen:
+    - kozijnen
+    - kozijn
+    - raamkozijn
+    - deurkozijn
+    - kunststof kozijn
+    - houten kozijn
+    - aluminium kozijn
+    - hr++ glas
+    - triple glas
+    - triplebeglazing

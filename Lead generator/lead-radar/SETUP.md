@@ -1,4 +1,4 @@
-# Lead Radar — Setup Guide
+ 4# Lead Radar — Setup Guide
 
 Volledige setup van consumer pipeline v2 — van zero naar HOT leads in je Telegram.
 
@@ -73,6 +73,25 @@ Skip per-run met `--no-llm`. Pipeline draait gewoon door zonder key (regex-only)
 
 Test: `python3 -c "from consumer.output.telegram import ping_bot; print(ping_bot())"`
 Verwacht: `(True, "@jouwbotnaam")`.
+
+## 4b. Facebook scraping via Apify (sterk aanbevolen)
+
+Apify-cloud scraper voor FB Groups vervangt de self-hosted Playwright route —
+geen burner-accounts, geen browser, geen detection-jojo. Output landt in
+dezelfde queue (`data/fb_queue/*.jsonl`) als de andere bronnen.
+
+```bash
+# Token op https://console.apify.com/settings/integrations
+export APIFY_API_TOKEN="apify_api_..."
+export APIFY_DAILY_BUDGET_USD="5.00"   # hard cap, ~$3.80/dag bij 4 runs
+
+# Smoke-test
+python3 -m consumer.sources.facebook.runner apify --niche warmtepomp
+```
+
+Volledige operator setup (token, launchd schedule, budget runbook,
+0-posts groep diagnose, monitoring) → zie
+[`consumer/sources/facebook/APIFY_SETUP.md`](consumer/sources/facebook/APIFY_SETUP.md).
 
 ## 5. Eerste daily run
 

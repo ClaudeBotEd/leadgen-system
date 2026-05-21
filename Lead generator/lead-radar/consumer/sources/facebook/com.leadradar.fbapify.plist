@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lead Radar — Apify FB-scraper + pipeline drain launchd agent (macOS).
+
+  Roept scripts/run_apify_pipeline.sh aan, dat:
+    1. .env source't (laadt APIFY_API_TOKEN + APIFY_DAILY_BUDGET_USD)
+    2. Apify Groups actor draait per niche (collect → JSONL queue)
+    3. run_consumer.py --daily draait (drain queue → score → export)
+
+  Schedule: 08:00 / 12:00 / 17:00 / 21:00 lokale tijd (Amsterdam mits Mac
+  op CET staat). Launchd schedule een gemiste run zodra de Mac wakker is.
+
+  Installatie:
+    cp consumer/sources/facebook/com.leadradar.fbapify.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.leadradar.fbapify.plist
+    launchctl list | grep leadradar     # verify
+
+  Handmatige trigger (smoke-test na installatie):
+    launchctl start com.leadradar.fbapify
+    tail -f "/Users/claudebot/Lead generator/lead-radar/logs/apify.log"
+
+  Uitschakelen:
+    launchctl unload ~/Library/LaunchAgents/com.leadradar.fbapify.plist
+
+  Vóór gebruik: zorg dat de oude self-hosted com.leadradar.fbscrape.plist
+  NIET ook geladen is — anders concurreren ze om dezelfde data/fb_queue.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.leadradar.fbapify</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/claudebot/Lead generator/lead-radar/scripts/run_apify_pipeline.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/claudebot/Lead generator/lead-radar</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Schedule: 08:00, 12:00, 17:00, 21:00 lokale tijd -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>8</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>12</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>17</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>21</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/apify.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/claudebot/Lead generator/lead-radar/logs/apify.err</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>

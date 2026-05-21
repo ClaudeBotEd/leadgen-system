@@ -12,6 +12,7 @@ from . import tweakers as _tweakers
 from . import bouwinfo as _bouwinfo
 from . import bouwinfo_forum as _bouwinfo_forum
 from . import klusidee_forum as _klusidee_forum
+from . import ouders_forum as _ouders_forum
 from . import google as _google
 from . import marktplaats as _marktplaats
 from . import tweedehands as _tweedehands
@@ -24,12 +25,18 @@ REGISTRY: dict[str, Callable] = {
     "bouwinfo": _bouwinfo.fetch,
     "bouwinfo_forum": _bouwinfo_forum.fetch,
     "klusidee_forum": _klusidee_forum.fetch,
+    "ouders_forum": _ouders_forum.fetch,
     "google": _google.fetch,
     "marktplaats": _marktplaats.fetch,
     "2dehands": _tweedehands.fetch,
 }
 
 ALL_SOURCES: list[str] = list(REGISTRY.keys())
+
+# Canonical source baseline for proof-sprint rehearsal runs.  Keep this
+# separate from ALL_SOURCES so rehearsal commands can stay intentionally
+# narrow without changing default source registry behavior.
+PROOF_SPRINT_SOURCES: list[str] = ["reddit", "reddit_new"]
 
 # Sources die `location` negeren of waar location-suffix de resultaten niet
 # beïnvloedt — bij multi-locatie daily-runs draaien ze 1× per niche, NIET
@@ -40,12 +47,14 @@ ALL_SOURCES: list[str] = list(REGISTRY.keys())
 #  - reddit_new: /r/<sub>/new.json — sub-feed, location genegeerd (reddit_new.py:34)
 #  - bouwinfo, bouwinfo_forum: BE nationaal forum, geen city-routing
 #  - klusidee_forum: NL nationaal forum, geen city-routing (klusidee_forum.py:92)
+#  - ouders_forum: NL nationaal forum, geen city-routing (ouders_forum.py)
 NATIONAL_SOURCES: frozenset[str] = frozenset({
     "tweakers",
     "reddit_new",
     "bouwinfo",
     "bouwinfo_forum",
     "klusidee_forum",
+    "ouders_forum",
 })
 
 # Sources waar location-string het query-resultaat WEL beïnvloedt:
@@ -74,9 +83,17 @@ DEAD_THRESHOLD = 3
 _source_health: dict[str, int] = {}
 
 
-def reset_source_health() -> None:
-    """Reset per-source 0-yield counters.  Aan te roepen bij start van een run."""
-    _source_health.clear()
+def reset_source_health(source: str | None = None) -> None:
+    """Reset per-source 0-yield counters.
+
+    Args:
+        source: If None, reset all sources. Otherwise reset only this source.
+                Aan te roepen bij start van een run of voor specifieke troubleshooting.
+    """
+    if source is None:
+        _source_health.clear()
+    else:
+        _source_health[source] = 0
 
 
 def mark_source_yield(name: str, yield_count: int) -> None:
@@ -95,6 +112,7 @@ def is_source_dead(name: str) -> bool:
 __all__ = [
     "REGISTRY",
     "ALL_SOURCES",
+    "PROOF_SPRINT_SOURCES",
     "NATIONAL_SOURCES",
     "LOCATION_AWARE_SOURCES",
     "DEAD_THRESHOLD",

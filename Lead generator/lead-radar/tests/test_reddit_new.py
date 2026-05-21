@@ -66,13 +66,13 @@ def test_fetch_dispatches_to_new_json_endpoint() -> None:
 
 
 def test_fetch_returns_rawposts_with_reddit_source() -> None:
-    """Source-naam blijft 'reddit' — gedeelde dedup-namespace met search-source."""
+    """Source-naam is 'reddit_new' — eigen dedup-namespace (apart van reddit search-source)."""
     sess = _mock_session(SAMPLE_LISTING)
     posts = reddit_new.fetch("Klussers", limit=10, session=sess)
     assert len(posts) == 2
     for p in posts:
-        assert p.source == "reddit"
-        assert p.id in {"abc123", "def456"}
+        assert p.source == "reddit_new"
+        assert p.source_id == "reddit_new:r/Klussers"
 
 
 def test_fetch_captures_metadata() -> None:

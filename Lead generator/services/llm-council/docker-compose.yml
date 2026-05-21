@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lead-generator/llm-council-backend:dev
+    container_name: llm-council-backend
+    env_file:
+      - .env.local
+    environment:
+      LLM_COUNCIL_HOST: 0.0.0.0
+      LLM_COUNCIL_PORT: 8001
+      LLM_COUNCIL_DATABASE_URL: sqlite+aiosqlite:////app/data/llm_council.db
+      LLM_COUNCIL_CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+    ports:
+      - "8001:8001"
+    volumes:
+      - llm-council-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    image: lead-generator/llm-council-frontend:dev
+    container_name: llm-council-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+volumes:
+  llm-council-data:
+    driver: local

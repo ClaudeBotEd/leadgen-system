@@ -1,0 +1,16 @@
+# Facebook scraper runtime data
+data/fb_queue/
+data/fb_state/
+
+# Apify daily spend ledger — runtime state, regenerates per dag.
+data/apify_spend.json
+
+# Runtime logs (launchd, scrape runs, daily runs).
+logs/
+
+# Receipt delivery - runtime data
+data/reviewed/
+data/delivery_log.jsonl
+
+# Demo bundle - generated HTML artifacts
+output/

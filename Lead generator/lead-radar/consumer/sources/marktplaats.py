@@ -13,6 +13,11 @@ import logging
 import re
 from urllib.parse import quote, urljoin
 
+
+def _slug(s: str) -> str:
+    """Lowercase-hyphen slug for use in source_id values."""
+    return re.sub(r"[^a-z0-9_-]+", "-", (s or "").lower()).strip("-") or "unknown"
+
 from bs4 import BeautifulSoup
 
 from .. import RawPost
@@ -23,7 +28,7 @@ log = logging.getLogger("consumer.sources.marktplaats")
 BASE = "https://www.marktplaats.nl"
 
 
-def _parse_html(html: str, base: str, source_name: str) -> list[RawPost]:
+def _parse_html(html: str, base: str, source_name: str, source_id_prefix: str = "") -> list[RawPost]:
     soup = BeautifulSoup(html, "html.parser")
     out: list[RawPost] = []
 
@@ -53,6 +58,7 @@ def _parse_html(html: str, base: str, source_name: str) -> list[RawPost]:
             out.append(RawPost(
                 id=f"{source_name}:{ad_id}",
                 source=source_name,
+                source_id=source_id_prefix or source_name,
                 url=url,
                 title=title,
                 text=desc,
@@ -78,6 +84,7 @@ def _parse_html(html: str, base: str, source_name: str) -> list[RawPost]:
         out.append(RawPost(
             id=f"{source_name}:{ad_id}",
             source=source_name,
+            source_id=source_id_prefix or source_name,
             url=url,
             title=title,
             text=desc,
@@ -105,6 +112,11 @@ def fetch_classifieds(
     sess = session or PoliteSession(HttpConfig(request_delay=2.5))
     q = f"{query} {location}".strip() if location else query
 
+    # Build source_id prefix: <source_name>:<category_slug>/<city_slug>
+    cat_slug = _slug(query)
+    city_slug = _slug(location) if location else "alles"
+    source_id_prefix = f"{source_name}:{cat_slug}/{city_slug}"
+
     # Search-URL.  Sorteer op datum (recent eerst) voor verse leads.
     out: list[RawPost] = []
     seen: set[str] = set()
@@ -117,7 +129,7 @@ def fetch_classifieds(
         if resp is None:
             continue
         try:
-            page = _parse_html(resp.text, base=base, source_name=source_name)
+            page = _parse_html(resp.text, base=base, source_name=source_name, source_id_prefix=source_id_prefix)
         except Exception as e:
             log.warning("%s parsing fout (q=%r): %s", source_name, variant, e)
             page = []

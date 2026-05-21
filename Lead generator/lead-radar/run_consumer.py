@@ -31,11 +31,13 @@ sys.path.insert(0, str(HERE))
 
 from consumer import Lead, RawPost, intent_from_score  # noqa: E402
 from consumer.sources import (  # noqa: E402
-    REGISTRY, ALL_SOURCES, NATIONAL_SOURCES, LOCATION_AWARE_SOURCES,
+    REGISTRY, ALL_SOURCES, PROOF_SPRINT_SOURCES, NATIONAL_SOURCES,
+    LOCATION_AWARE_SOURCES,
     analyze_manual_posts,
     reset_source_health, mark_source_yield, is_source_dead,
 )
 from consumer.sources.facebook import load_posts_from_file  # noqa: E402
+from consumer.sources.facebook.queue import drain as drain_fb_queue  # noqa: E402
 from consumer.sources.reddit_author import enrich_author  # noqa: E402
 from consumer.processor import (  # noqa: E402
     TextSignatureStore,
@@ -48,6 +50,21 @@ from consumer.processor import (  # noqa: E402
     should_verify,
     smart_summary,
     verify_post,
+    apply_recency_boost,
+    AGED_OUT,
+    apply_source_weight,
+    load_source_weights,
+    is_cross_run_duplicate,
+    record_lead_signature,
+    is_author_repeat,
+    record_author_post,
+    SOURCES_WITH_AUTHOR,
+    is_sellable,
+)
+from consumer.output.telegram import (  # noqa: E402
+    RunStats,
+    SourceStat,
+    send_run_digest,
 )
 from consumer.processor.llm_verifier import (  # noqa: E402
     get_run_stats,
@@ -59,6 +76,7 @@ from consumer.output import (  # noqa: E402
     send_lead_alert,
     sync_to_sheets,
 )
+from consumer.niche_relevance import is_niche_relevant  # noqa: E402
 from consumer.utils import PoliteSession, HttpConfig, SeenStore  # noqa: E402
 from consumer.logging_setup import setup_logging  # noqa: E402
 
@@ -73,8 +91,37 @@ log = logging.getLogger("consumer.cli")
 DEFAULT_QUERIES_YAML = HERE / "consumer" / "queries.yaml"
 DEFAULT_OUTDIR = HERE / "data" / "leads" / "consumer"
 
+
+def _check_env(args) -> tuple[bool, list[str]]:
+    """Return (ok, errors). Sheets vars required unless --no-sheets is set."""
+    errors: list[str] = []
+    if not getattr(args, "no_sheets", False):
+        if not os.environ.get("LEAD_RADAR_SPREADSHEET_ID"):
+            errors.append(
+                "LEAD_RADAR_SPREADSHEET_ID is missing. Set it in .env "
+                "(launchd does NOT source ~/.zshrc) or pass --no-sheets."
+            )
+        if not os.environ.get("LEAD_RADAR_GS_CREDENTIALS"):
+            errors.append(
+                "LEAD_RADAR_GS_CREDENTIALS is missing. Set absolute quoted "
+                "path in .env or pass --no-sheets."
+            )
+    return (not errors, errors)
+
 # Defaults voor --daily mode (production usage)
-DAILY_NICHES = ["warmtepomp", "airco", "zonnepanelen", "cv", "renovatie"]
+DAILY_NICHES = [
+    "warmtepomp",
+    "airco",
+    "zonnepanelen",
+    "cv",
+    "renovatie",
+    "isolatie",
+    "vloerverwarming",
+    "ventilatie",
+    "laadpaal",
+    "dakwerk",
+    "kozijnen",
+]
 DAILY_LOCATION = "nederland"
 DAILY_LIMIT = 25
 DAILY_MAX_QUERIES = 12  # hogere variatie -> meer raw posts -> meer leads
@@ -91,6 +138,23 @@ def load_config(path: Path) -> dict:
         log.warning("queries.yaml niet gevonden: %s — gebruik defaults", path)
         return {"defaults": {}, "niches": {}}
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+
+def _load_llm_verifier_config(path: Path) -> dict:
+    """Read the llm_verifier section from config.yaml; {} if missing or empty.
+
+    Returning {} keeps argparse fallbacks (40/75) intact when the file or
+    section is absent, so the pipeline never crashes on a missing config.
+    """
+    if not path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        log.warning("config.yaml parse error (%s) — llm_verifier defaults used", exc)
+        return {}
+    section = data.get("llm_verifier")
+    return section if isinstance(section, dict) else {}
 
 
 def parse_args() -> argparse.Namespace:
@@ -119,7 +183,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--limit", type=int, default=50,
                    help="Max raw posts per source-query (default 50)")
     p.add_argument("--sources", default="",
-                   help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}")
+                   help=f"Komma-lijst sources. Default = alles. Beschikbaar: {','.join(ALL_SOURCES)}. "
+                        f"Proof-sprint rehearsal: --sources {','.join(PROOF_SPRINT_SOURCES)}")
     p.add_argument("--min-score", type=int, default=30,
                    help="Minimum score om in output op te nemen (default 30; --daily dwingt 60)")
     p.add_argument("--max-age-days", type=int, default=0,
@@ -149,6 +214,8 @@ def parse_args() -> argparse.Namespace:
     # Google Sheets
     p.add_argument("--sheets", action="store_true",
                    help="Push leads naar Google Sheets (--daily zet dit automatisch)")
+    p.add_argument("--no-sheets", action="store_true",
+                   help="Skip Google Sheets sync (env validation will pass without Sheets vars)")
     p.add_argument("--spreadsheet-id", default=None,
                    help="Spreadsheet ID. Default: env LEAD_RADAR_SPREADSHEET_ID")
     p.add_argument("--credentials", default=None,
@@ -163,10 +230,12 @@ def parse_args() -> argparse.Namespace:
                    help="Jaccard threshold voor fuzzy dedup (default 0.70)")
     p.add_argument("--no-llm", action="store_true",
                    help="Skip Claude LLM-verifier op borderline scores")
-    p.add_argument("--llm-min-score", type=int, default=40,
-                   help="Min score voor LLM-verification (default 40)")
-    p.add_argument("--llm-max-score", type=int, default=75,
-                   help="Max score voor LLM-verification (default 75)")
+    p.add_argument("--llm-min-score", type=int, default=None,
+                   help="Min score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.min_score, fallback 40)")
+    p.add_argument("--llm-max-score", type=int, default=None,
+                   help="Max score voor LLM-verification "
+                        "(default: config.yaml llm_verifier.max_score, fallback 75)")
     p.add_argument("--llm-max-eur", type=float, default=0.0,
                    help="LLM budget cap per run in EUR (default 0 = uit). "
                         "Bij overschrijden van geschatte spend: verdere "
@@ -189,11 +258,21 @@ def parse_args() -> argparse.Namespace:
                         "(geen Sheets sync, geen Telegram alerts). "
                         "CSV/JSON exports gebeuren wel. Combineer met "
                         "--no-llm voor kosten-vrije test.")
+    p.add_argument("--check-env-only", action="store_true",
+                   help="Validate env vars and exit (used by test harness and CI checks)")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
     if not args.daily and not args.niche:
         p.error("Geef --niche <name> of --daily")
+
+    # Wire YAML llm_verifier thresholds: CLI > config.yaml > hardcoded fallback.
+    llm_cfg = _load_llm_verifier_config(HERE / "config.yaml")
+    if args.llm_min_score is None:
+        args.llm_min_score = int(llm_cfg.get("min_score", 40))
+    if args.llm_max_score is None:
+        args.llm_max_score = int(llm_cfg.get("max_score", 75))
+
     return args
 
 
@@ -289,6 +368,7 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
 
     bouwinfo_cats = niche_cfg.get("bouwinfo_categories") or []
     klusidee_subs = niche_cfg.get("klusidee_subforums") or []
+    ouders_subs = niche_cfg.get("ouders_subforums") or []
     reddit_new_subs = niche_cfg.get("reddit_new_subs") or []
     return {
         "reddit": loc_subst(text_qs),
@@ -299,6 +379,7 @@ def expand_queries(niche_cfg: dict, location: str | None, max_queries: int) -> d
         "bouwinfo": text_qs,
         "bouwinfo_forum": bouwinfo_cats,
         "klusidee_forum": klusidee_subs,
+        "ouders_forum": ouders_subs,
         "google": loc_subst(google_qs) if google_qs else loc_subst(text_qs),
         "marktplaats": market_qs or text_qs,
         # 2dehands krijgt BE-specifieke set als die er is; anders fallback op
@@ -320,12 +401,152 @@ def _is_recent(created_at: str | None, cutoff_utc: datetime | None) -> bool:
         return True
 
 
+def _process_post(
+    *,
+    raw: RawPost,
+    niche: str,
+    data_dir: Path,
+    now: datetime | None = None,
+    no_llm: bool = False,
+    weights: dict[str, float] | None = None,
+    cross_run_store: Path | None = None,
+    author_store: Path | None = None,
+    min_score: int = 60,
+    llm_min_score: int = 40,
+    llm_max_score: int = 75,
+    enrich_authors: bool = False,
+    no_author_enrich: bool = True,
+    niche_keywords: list[str] | None = None,
+) -> Lead | None:
+    """Process a single RawPost through the full per-post pipeline.
+
+    Returns a Lead if the post passes all filters, None otherwise.
+    Steps:
+      1. clean + regex score
+      2. LLM verify (40-75 band)
+      3. recency boost (drop if AGED_OUT)
+      4. source-credibility weight (clamped 0-100)
+      5. min_score threshold
+      6. Layer-2 cross-run dedup
+      7. Layer-3 author-signature dedup (only SOURCES_WITH_AUTHOR)
+      8. build Lead
+      9. sellability gate (demote hot → warm, never drop)
+      10. record dedup signatures
+      11. return Lead
+    """
+    now = now or datetime.now(timezone.utc)
+    if weights is None:
+        weights = load_source_weights(config_path=HERE / "config.yaml")
+    cross_run_store = cross_run_store or (data_dir / "dedup_store.jsonl")
+    author_store = author_store or (data_dir / "author_signature.jsonl")
+    keywords = niche_keywords or [niche]
+
+    # Doctrine §00.5: we never fabricate captured_at. A post without a
+    # verifiable source timestamp cannot become a Lead — there is nothing
+    # to anchor provenance against.
+    if not raw.created_at:
+        log.warning("rejecting raw post %s/%s: no created_at", raw.source, raw.id)
+        return None
+
+    # Step 1: clean + regex score
+    cleaned = clean_post(raw)
+    score, breakdown = score_post(
+        cleaned,
+        niche_keywords=keywords,
+        created_at=raw.created_at,
+    )
+
+    # Step 2: LLM verify if in borderline band
+    if (not no_llm) and should_verify(score, min_score=llm_min_score, max_score=llm_max_score):
+        verdict = verify_post(
+            title=cleaned["title"], text=cleaned["text"],
+            city=cleaned["city"], niche=niche,
+            regex_score=score, regex_breakdown=breakdown,
+        )
+        if verdict.available:
+            new_score = combine_score(score, verdict)
+            breakdown["llm_verdict"] = f"{verdict.kind}/{verdict.confidence:.2f}"
+            if new_score != score:
+                breakdown["llm_adjustment"] = new_score - score
+            score = new_score
+
+    # Step 3: recency boost — drop if AGED_OUT (> 14d)
+    boosted = apply_recency_boost(score=score, created_at=raw.created_at, now=now)
+    if boosted is AGED_OUT:
+        return None
+    score = boosted  # type: ignore[assignment]
+
+    # Step 4: source-credibility weight (clamped 0-100)
+    score = apply_source_weight(score=score, source=raw.source_id or raw.source, weights=weights)
+
+    # Step 5: min_score threshold
+    if score < min_score:
+        return None
+
+    # Step 6: Layer-2 cross-run dedup
+    text_for_dedup = cleaned.get("full") or cleaned.get("text") or ""
+    if is_cross_run_duplicate(text=text_for_dedup, store_path=cross_run_store):
+        return None
+
+    # Step 7: Layer-3 author-signature dedup (only for sources that carry reliable authors)
+    if raw.source in SOURCES_WITH_AUTHOR and raw.author:
+        if is_author_repeat(author=raw.author, niche=niche, store_path=author_store):
+            return None
+
+    # Step 8: build Lead
+    lead = Lead(
+        id=raw.id,
+        source=raw.source,
+        source_id=raw.source_id,
+        title=cleaned["title"] or raw.title,
+        text=cleaned["text"],
+        summary=cleaned["summary"],
+        url=raw.url,
+        city=cleaned["city"],
+        score=score,
+        intent=intent_from_score(score),
+        breakdown=breakdown,
+        niche=niche,
+        captured_at=raw.created_at,
+        author=raw.author,
+        created_at=raw.created_at,
+    )
+
+    # Step 9: sellability gate — demote hot → warm when required fields missing
+    gate = is_sellable(lead)
+    if not gate.ok and lead.intent == "hot":
+        lead.intent = "warm"
+        lead.breakdown["sellability_missing"] = gate.missing
+
+    # Step 10: record dedup signatures (after all filters pass)
+    record_lead_signature(
+        lead_id=lead.id,
+        text=text_for_dedup,
+        source=raw.source_id or raw.source,
+        niche=niche,
+        store_path=cross_run_store,
+        now=now,
+    )
+    if raw.source in SOURCES_WITH_AUTHOR and raw.author:
+        record_author_post(
+            author=raw.author,
+            niche=niche,
+            store_path=author_store,
+            now=now,
+        )
+
+    # Step 11: return Lead
+    return lead
+
+
 def run_one_niche(
     args: argparse.Namespace,
     niche: str,
     *,
     location_override: str | None = None,
     sources_override: list[str] | None = None,
+    fb_extra_posts: list[RawPost] | None = None,
+    per_source_counts: "dict[str, dict[str, int]] | None" = None,
 ) -> list[Lead]:
     """Run pipeline voor 1 niche en returnt de Lead-list.
 
@@ -337,6 +558,13 @@ def run_one_niche(
     sources gedraaid worden (i.p.v. args.sources).  Gebruikt door
     run_daily() voor location-aware/national split — nationale sources
     draaien 1× per niche, locatie-afhankelijke 1× per niche-loc.
+
+    fb_extra_posts: optioneel; pre-drained RawPost-lijst uit
+    ``data/fb_queue/`` (van de standalone FB scraper runner).  Gefilterd
+    op ``metadata.niche == niche`` zodat alleen de relevante posts mee
+    door dedup/hardblock/score gaan.  Drain gebeurt 1× per CLI-run in
+    main(), zodat bij --daily met N niches de queue niet N× wordt
+    leeggehaald (`drain` verplaatst files naar processed/).
     """
     cfg = load_config(Path(args.queries_file))
     niches = cfg.get("niches") or {}
@@ -423,6 +651,9 @@ def run_one_niche(
                     source_yield += 1
             # Mark source-health (cumulatief over niche-loc combos in deze run)
             mark_source_yield(source_name, source_yield)
+            # Track raw post counts for run-digest (keyed by base source name).
+            if per_source_counts is not None and source_name in per_source_counts:
+                per_source_counts[source_name]["posts"] += source_yield
             # Zero-yield detection: vangt silent breakage van een source af.
             if source_yield == 0:
                 log.warning(
@@ -431,16 +662,48 @@ def run_one_niche(
                     source_name, len(queries),
                 )
 
+        # Merge FB-scraper queue posts (pre-drained in main()) — filter op niche
+        # zodat warmtepomp-posts niet meelopen in een airco-niche-run.  Posts
+        # zonder `metadata.niche` worden niet gematched; de FB-runner zet die
+        # tag altijd via TargetSpec.niche.
+        if fb_extra_posts:
+            matched = [p for p in fb_extra_posts if p.metadata.get("niche") == niche]
+            if matched:
+                log.info("FB queue: %d posts voor niche=%s mergen naar raw_total",
+                         len(matched), niche)
+                raw_total.extend(matched)
+
         in_memory_seen: set[str] = set()
         skipped_promo = skipped_low = skipped_old = 0
         skipped_hardblock = skipped_fuzzy_dup = 0
-        llm_calls = author_calls = 0
+        skipped_aged_out = skipped_cross_run = skipped_author = 0
+        skipped_no_ts = 0
+        from consumer.processor import llm_verifier as _llm_verifier
+        _llm_verifier.reset_run_counters()
+        author_calls = 0
+
+        # Load source weights once per niche-run (file read; cached dict).
+        _source_weights = load_source_weights(config_path=HERE / "config.yaml")
+        _data_dir = Path(args.outdir)
+        _cross_run_store = _data_dir / "dedup_store.jsonl"
+        _author_store = _data_dir / "author_signature.jsonl"
+        _run_now = datetime.now(timezone.utc)
 
         for raw in raw_total:
             fp = raw.fingerprint()
             if fp in in_memory_seen:
                 continue
             in_memory_seen.add(fp)
+
+            # Doctrine §00.5: a post without a source-provenance timestamp
+            # cannot become a Lead. Attribute the drop to its own bucket so
+            # operators can see when a scraper goes to zero yield because of
+            # missing timestamps (vs low-score or too-old drops).
+            if not raw.created_at:
+                skipped_no_ts += 1
+                log.warning("dropping %s/%s: no created_at (no provenance anchor)",
+                            raw.source, raw.id)
+                continue
 
             if not _is_recent(raw.created_at, cutoff):
                 skipped_old += 1
@@ -453,6 +716,8 @@ def run_one_niche(
                     log.debug("hard-block %s: %s", raw.url, hb.reason)
                     continue
 
+            # Promo-filter: uses cleaned text — run clean_post once here
+            # so fuzzy-store can also use the cleaned version.
             cleaned = clean_post(raw)
             if not is_potential_lead(cleaned["full"]):
                 skipped_promo += 1
@@ -465,65 +730,66 @@ def run_one_niche(
                     log.debug("fuzzy-dup %s ~ %s (sim=%.2f)", fp, dup[0], dup[1])
                     continue
 
-            score, breakdown = score_post(
-                cleaned,
-                niche_keywords=keywords_required,
-                created_at=raw.created_at,
-            )
-
-            if (not args.no_llm) and should_verify(
-                score, min_score=args.llm_min_score, max_score=args.llm_max_score,
-            ):
-                verdict = verify_post(
-                    title=cleaned["title"], text=cleaned["text"],
-                    city=cleaned["city"], niche=niche,
-                    regex_score=score, regex_breakdown=breakdown,
-                )
-                if verdict.available:
-                    llm_calls += 1
-                    new_score = combine_score(score, verdict)
-                    breakdown["llm_verdict"] = (
-                        f"{verdict.kind}/{verdict.confidence:.2f}"
-                    )
-                    if new_score != score:
-                        breakdown["llm_adjustment"] = new_score - score
-                    score = new_score
-
+            # Reddit author enrichment (opt-in via --enrich-authors; legacy path)
+            _author_penalty: int = 0
+            _author_breakdown: dict = {}
             if getattr(args, "enrich_authors", False) and (not args.no_author_enrich) and raw.source == "reddit" and raw.author:
                 profile = enrich_author(raw.author, cache_dir=author_cache_dir)
                 if profile.available:
                     author_calls += 1
                     penalty = profile.signal_penalty
                     if penalty:
-                        score = max(0, score + penalty)
-                        breakdown["author_penalty"] = penalty
-                        breakdown["author_recurring"] = 1
+                        _author_penalty = penalty
+                        _author_breakdown = {"author_penalty": penalty, "author_recurring": 1}
 
-            if score < args.min_score:
+            # Core per-post pipeline: score → LLM → recency → weight → dedup → Lead
+            lead = _process_post(
+                raw=raw,
+                niche=niche,
+                data_dir=_data_dir,
+                now=_run_now,
+                no_llm=args.no_llm,
+                weights=_source_weights,
+                cross_run_store=_cross_run_store,
+                author_store=_author_store,
+                min_score=args.min_score,
+                llm_min_score=args.llm_min_score,
+                llm_max_score=args.llm_max_score,
+                enrich_authors=getattr(args, "enrich_authors", False),
+                no_author_enrich=args.no_author_enrich,
+                niche_keywords=keywords_required,
+            )
+            if lead is None:
+                # Distinguish which filter dropped the post for the summary log.
+                # We re-compute cheaply to attribute the skip bucket.
+                # (Score path is already inside _process_post; we rely on counters
+                # being bumped there for the new filters.  For min_score we count below.)
                 skipped_low += 1
                 continue
 
-            lead = Lead(
-                id=raw.id,
-                source=raw.source,
-                title=cleaned["title"] or raw.title,
-                text=cleaned["text"],
-                summary=cleaned["summary"],
-                url=raw.url,
-                city=cleaned["city"],
-                score=score,
-                intent=intent_from_score(score),
-                breakdown=breakdown,
-                niche=niche,
-                author=raw.author,
-                created_at=raw.created_at,
-            )
+            # Apply legacy author penalty to score if enrichment ran
+            if _author_penalty:
+                lead.score = max(0, lead.score + _author_penalty)
+                lead.breakdown.update(_author_breakdown)
+                if lead.score < args.min_score:
+                    skipped_low += 1
+                    continue
+
             leads.append(lead)
             if seen:
                 seen.add(fp)
             if fuzzy_store is not None:
                 fuzzy_store.add(fp, cleaned["full"])
 
+            # Track per-source lead/hot counts for run-digest (base source name).
+            if per_source_counts is not None:
+                _lead_src = lead.source or "unknown"
+                if _lead_src in per_source_counts:
+                    per_source_counts[_lead_src]["leads"] += 1
+                    if lead.score >= HOT_ALERT_THRESHOLD:
+                        per_source_counts[_lead_src]["hot"] += 1
+
+            score = lead.score
             if score >= HOT_ALERT_THRESHOLD:
                 stad = (lead.city or "—").title()
                 summary = smart_summary(
@@ -570,11 +836,13 @@ def run_one_niche(
                 niche_keywords=keywords_required, min_score=args.min_score,
             ))
 
+        llm_stats = _llm_verifier.get_run_stats()
         log.info(
-            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d hardblock=%d fuzzy=%d "
-            "llm_calls=%d author_calls=%d)",
+            "[%s] raw=%d -> leads=%d (promo=%d oud=%d low=%d no_ts=%d hardblock=%d fuzzy=%d "
+            "llm_calls=%d cost=EUR%.4f author_calls=%d)",
             niche, len(raw_total), len(leads), skipped_promo, skipped_old,
-            skipped_low, skipped_hardblock, skipped_fuzzy_dup, llm_calls, author_calls,
+            skipped_low, skipped_no_ts, skipped_hardblock, skipped_fuzzy_dup,
+            llm_stats["api_calls"], llm_stats["estimated_cost_eur"], author_calls,
         )
 
         export_leads(leads, niche=niche, outdir=args.outdir)
@@ -585,6 +853,23 @@ def run_one_niche(
             fuzzy_store.save()
 
     return leads
+
+
+def filter_leads_for_sheets(leads: list[Lead], niche: str) -> list[Lead]:
+    """Apply niche-anchor gate before Sheets writes.
+
+    Returns a new list containing only leads whose title+text contains at
+    least one anchor for `niche` (see consumer/niche_anchors.yaml). The
+    input list is never mutated — CSV/JSON export, which runs earlier
+    inside run_one_niche, is unaffected by this gate.
+    """
+    kept = [lead for lead in leads if is_niche_relevant(lead.title, lead.text, niche)]
+    dropped = len(leads) - len(kept)
+    log.info(
+        "[%s] niche-anchor gate: kept %d / dropped %d before Sheets",
+        niche, len(kept), dropped,
+    )
+    return kept
 
 
 def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) -> None:
@@ -606,6 +891,52 @@ def _print_summary(niche: str, leads: list[Lead], sheets_result: dict | None) ->
             mark = "🔥" if lead.score >= 80 else ("⚡" if lead.score >= 70 else "·")
             city = (lead.city or "—")[:12]
             print(f"   {mark} [{lead.score:>3}] {city:<14} {lead.title[:50]}")
+
+
+def _drain_fb_queue_once(outdir: str | Path) -> list[RawPost]:
+    """Drain ``data/fb_queue/`` exactly once per CLI invocation.
+
+    Helper voor run_daily/run_single zodat de drain niet N× per niche-loc
+    combo gebeurt (drain verplaatst files naar processed/, dus alleen de
+    eerste call zou posts zien).  De returned lijst wordt vervolgens per
+    niche gefilterd via `RawPost.metadata["niche"]`.
+    """
+    fb_queue_dir = HERE / "data" / "fb_queue"
+    drained = list(drain_fb_queue(fb_queue_dir))
+    if drained:
+        log.info("FB queue drained: %d posts uit %s", len(drained), fb_queue_dir)
+    return drained
+
+
+def _build_run_stats(
+    timestamp: str,
+    per_source_counts: "dict[str, dict[str, int]]",
+    apify_spend_used_usd: float = 0.0,
+    apify_spend_cap_usd: float = 0.0,
+) -> "RunStats":
+    """Build a RunStats for the end-of-run Telegram digest.
+
+    Iterates all entries in per_source_counts (including zero-yield ones),
+    looks up dead-source status by base registry name, and returns a RunStats
+    ready for format_run_digest / send_run_digest.
+
+    Extracted so it can be unit-tested without running a full daily loop.
+    """
+    return RunStats(
+        timestamp=timestamp,
+        per_source=[
+            SourceStat(
+                source=src,
+                posts=counts["posts"],
+                leads=counts["leads"],
+                hot=counts["hot"],
+                dead=is_source_dead(src),  # base name — matches _source_health keys
+            )
+            for src, counts in sorted(per_source_counts.items())
+        ],
+        apify_spend_used_usd=apify_spend_used_usd,
+        apify_spend_cap_usd=apify_spend_cap_usd,
+    )
 
 
 def run_daily(args: argparse.Namespace) -> int:
@@ -703,11 +1034,24 @@ def run_daily(args: argparse.Namespace) -> int:
     grand_total: list[Lead] = []
     sheets_total = {"all_added": 0, "hot_added": 0, "opp_added": 0, "spreadsheet_url": ""}
 
+    # Per-source counters for run-digest: initialise every requested source to zero
+    # so that sources with zero output (dead candidates) still appear in the digest.
+    # Keyed by base registry name (no ':' subcontext) to match is_source_dead().
+    _digest_per_source: dict[str, dict[str, int]] = {
+        src: {"posts": 0, "leads": 0, "hot": 0} for src in requested_for_split
+    }
+
     # Wall-clock budget: stop met nieuwe niches starten zodra elapsed
     # > budget.  Geen abort midden in niche — sheets-sync per niche
     # zorgt dat tussen-resultaten al gepersist zijn.
     budget_seconds = max(0.0, getattr(args, "max_runtime_minutes", 0.0) or 0.0) * 60.0
     run_start = _monotonic()
+    run_start_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    # Drain FB scraper queue 1× per CLI-run.  Resultaat gefilterd per niche
+    # binnen run_one_niche.  Drain verplaatst files naar processed/, dus deze
+    # call moet vóór de niche-loop staan en NIET binnen run_one_niche.
+    fb_extra_posts = _drain_fb_queue_once(args.outdir)
 
     for niche_idx, niche in enumerate(niches_to_run):
         if budget_seconds > 0:
@@ -721,6 +1065,12 @@ def run_daily(args: argparse.Namespace) -> int:
                 )
                 break
         niche_leads: list[Lead] = []
+        # FB-queue posts mogen maar 1× door de niche-loop heen.  We binden
+        # ze aan de eerste run_one_niche-call die we voor deze niche doen
+        # (national als die er is, anders eerste loc-aware call).  Daarna
+        # nullen we de variabele zodat volgende sub-calls niet dezelfde
+        # FB-posts re-processen.
+        fb_for_niche: list[RawPost] | None = fb_extra_posts
         # Nationale sources: 1× per niche (locatie genegeerd door source-impl,
         # zie consumer/sources/__init__.py NATIONAL_SOURCES toelichting).
         if national_subset:
@@ -728,8 +1078,11 @@ def run_daily(args: argparse.Namespace) -> int:
                 args, niche,
                 location_override=locations[0],
                 sources_override=national_subset,
+                fb_extra_posts=fb_for_niche,
+                per_source_counts=_digest_per_source,
             )
             niche_leads.extend(leads)
+            fb_for_niche = None  # already consumed
         # Locatie-afhankelijke sources: 1× per locatie.
         if loc_aware_subset:
             for loc in locations:
@@ -737,22 +1090,27 @@ def run_daily(args: argparse.Namespace) -> int:
                     args, niche,
                     location_override=loc,
                     sources_override=loc_aware_subset,
+                    fb_extra_posts=fb_for_niche,
+                    per_source_counts=_digest_per_source,
                 )
                 niche_leads.extend(leads)
+                fb_for_niche = None  # only first call gets FB posts
         sheets_result = None
         if niche_leads and not getattr(args, "dry_run", False):
-            try:
-                sheets_result = sync_to_sheets(
-                    niche_leads,
-                    spreadsheet_id=args.spreadsheet_id,
-                    credentials_path=args.credentials,
-                )
-                sheets_total["all_added"] += sheets_result.get("all_added", 0)
-                sheets_total["hot_added"] += sheets_result.get("hot_added", 0)
-                sheets_total["opp_added"] += sheets_result.get("opp_added", 0)
-                sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
-            except Exception as e:
-                log.error("Sheets sync (%s) faalde: %s", niche, e)
+            sheets_leads = filter_leads_for_sheets(niche_leads, niche)
+            if sheets_leads:
+                try:
+                    sheets_result = sync_to_sheets(
+                        sheets_leads,
+                        spreadsheet_id=args.spreadsheet_id,
+                        credentials_path=args.credentials,
+                    )
+                    sheets_total["all_added"] += sheets_result.get("all_added", 0)
+                    sheets_total["hot_added"] += sheets_result.get("hot_added", 0)
+                    sheets_total["opp_added"] += sheets_result.get("opp_added", 0)
+                    sheets_total["spreadsheet_url"] = sheets_result["spreadsheet_url"]
+                except Exception as e:
+                    log.error("Sheets sync (%s) faalde: %s", niche, e)
         _print_summary(niche, niche_leads, sheets_result)
         grand_total.extend(niche_leads)
         # Progress-heartbeat: per voltooide niche logt elapsed + running ETA
@@ -795,6 +1153,22 @@ def run_daily(args: argparse.Namespace) -> int:
         f"({hit_rate:.0f}%)"
     )
     print("=" * 70)
+
+    # Run-digest: Telegram summary van de dagelijkse run (per-source yield, dode
+    # sources, totalen).  Alleen bij --daily en tenzij --no-telegram.
+    if not getattr(args, "no_telegram", False):
+        # _digest_per_source was initialised for ALL requested sources (including
+        # zero-yield ones) and populated incrementally during run_one_niche calls.
+        # _build_run_stats iterates all entries so dead/zero-yield sources appear.
+        digest_stats = _build_run_stats(
+            timestamp=run_start_iso,
+            per_source_counts=_digest_per_source,
+        )
+        try:
+            send_run_digest(digest_stats, channel="consumer")
+        except Exception as e:
+            log.warning("Run-digest send failed: %s", e)
+
     return 0
 
 
@@ -802,17 +1176,21 @@ def run_single(args: argparse.Namespace) -> int:
     if getattr(args, "dry_run", False):
         args.no_telegram = True
         log.info("DRY-RUN: Sheets sync + Telegram alerts uitgezet")
-    leads = run_one_niche(args, args.niche)
+    # Drain FB scraper queue 1× per CLI-run; gefilterd op niche in run_one_niche.
+    fb_extra_posts = _drain_fb_queue_once(args.outdir)
+    leads = run_one_niche(args, args.niche, fb_extra_posts=fb_extra_posts)
     sheets_result = None
     if args.sheets and leads and not getattr(args, "dry_run", False):
-        try:
-            sheets_result = sync_to_sheets(
-                leads,
-                spreadsheet_id=args.spreadsheet_id,
-                credentials_path=args.credentials,
-            )
-        except Exception as e:
-            log.error("Sheets sync faalde: %s", e)
+        sheets_leads = filter_leads_for_sheets(leads, args.niche)
+        if sheets_leads:
+            try:
+                sheets_result = sync_to_sheets(
+                    sheets_leads,
+                    spreadsheet_id=args.spreadsheet_id,
+                    credentials_path=args.credentials,
+                )
+            except Exception as e:
+                log.error("Sheets sync faalde: %s", e)
     _print_summary(args.niche, leads, sheets_result)
     print()
     return 0
@@ -820,6 +1198,17 @@ def run_single(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
+
+    # Fail-fast env validation (must run BEFORE logging setup for error clarity)
+    env_ok, env_errors = _check_env(args)
+    if not env_ok:
+        for err in env_errors:
+            print(f"ENV ERROR: {err}", file=sys.stderr)
+        sys.exit(2)
+    if args.check_env_only:
+        print("Env check OK.")
+        sys.exit(0)
+
     run_id = _setup_logging(args.verbose)
     log.info("Lead Radar start (run_id=%s, daily=%s)", run_id, bool(args.daily))
     try:
